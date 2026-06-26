@@ -42,6 +42,23 @@ IframesSei(driver, IframesSei.VISUALIZACAO).navegar()
 
 Mais exemplos em [`examples/`](examples/).
 
+### Login (opcional)
+
+O pacote pode fazer o login por você. **⚠️ Este módulo ainda não foi verificado contra um SEI real — use com cautela e reporte problemas.** Obtenha a senha de forma segura (`getpass`, variável de ambiente, cofre); nunca a escreva no código.
+
+```python
+from getpass import getpass
+from integra.sei import LoginSei
+
+LoginSei(
+    driver,
+    base_url="https://sei.exemplo.gov.br",  # a URL da SUA instância do SEI
+    orgao="MGI",                            # a sigla do SEU órgão
+    usuario="seu.usuario",
+    senha=getpass("Senha do SEI: "),
+).logar()
+```
+
 ## Módulos
 
 | Módulo | Descrição | Status |
@@ -49,8 +66,10 @@ Mais exemplos em [`examples/`](examples/).
 | `integra.sei.iframes` | Navegação entre iframes (tolerante a SEI 3.x/4.x) | ✅ |
 | `integra.sei.processo` | Acesso a um processo existente | ✅ |
 | `integra.sei.exceptions` | Exceções tipadas | ✅ |
-| `integra.sei.login` | Autenticação no SEI | planejado |
+| `integra.sei.login` | Autenticação no SEI | ✅ ¹ |
 | _(demais)_ | e-SIAPE, SIAPE, utilidades | planejado |
+
+¹ Disponível, mas **ainda não verificado contra um SEI real**. Use com cautela e reporte problemas.
 
 ## Como contribuir
 

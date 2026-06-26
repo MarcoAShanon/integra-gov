@@ -6,6 +6,10 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não publicado]
 
 ### Adicionado
+- `integra.sei.login`: autenticação no SEI (`LoginSei.logar()` e
+  `montar_url_login()`), com **URL base e órgão parametrizáveis** (serve a
+  qualquer órgão, não só ao MGI) e exceções `SeiLoginError` /
+  `CredenciaisInvalidas`. ⚠️ Ainda não verificado contra um SEI real.
 - `integra.sei.processo`: acesso a um processo existente via pesquisa rápida
   (`ProcessoSei.acessar()` e `.ir_para_raiz()`), com **validação real** do
   acesso (substitui o antigo stub que sempre retornava `True`) e reúso de

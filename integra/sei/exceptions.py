@@ -13,3 +13,11 @@ class SeiNavegacaoError(SeiError):
 class ProcessoNaoEncontrado(SeiError):
     """O processo pesquisado não foi aberto — não encontrado ou com número
     divergente do esperado."""
+
+
+class SeiLoginError(SeiError):
+    """Falha no login do SEI (formulário não carregou ou login não confirmado)."""
+
+
+class CredenciaisInvalidas(SeiLoginError):
+    """Usuário ou senha rejeitados pelo SEI."""
