@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+ENV/
+
+# Testes / cobertura / lint
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# IDEs / SO
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Segredos / configuração local
+.env
+config.ini
+*.key
+*.pem
+credentials.json
+senhas.txt
+
+# Dados pessoais — NUNCA versionar
+*cpf*.json
+*_cpfs_*.json
+dados_reais/
+
+# Artefatos acidentais (Windows / cópias / backups)
+nul
+* - Copia.*
+* - Copy.*
+*.bak
+*.backup*

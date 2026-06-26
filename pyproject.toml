@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# ATENÇÃO: verificar disponibilidade do nome no PyPI antes de publicar.
+# Se "integra" estiver ocupado, troque o nome de DISTRIBUIÇÃO aqui (ex.: "integra-gov")
+# — isso NÃO muda os imports, que continuam `import integra`.
+name = "integra"
+version = "0.0.1"
+description = "Automação de sistemas do governo federal brasileiro (a começar pelo SEI), para ajudar servidores públicos."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Marco Aurélio da Silva" }]
+keywords = ["sei", "governo", "automação", "selenium", "administração pública", "rpa"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Natural Language :: Portuguese (Brazilian)",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Operating System :: OS Independent",
+    "Topic :: Office/Business",
+]
+dependencies = [
+    "selenium>=4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-mock>=3.10",
+    "ruff>=0.1",
+]
+
+[project.urls]
+# Ajustar quando o repositório no GitHub for criado.
+Homepage = "https://github.com/MarcoAShanon/integra-publico"
+Issues = "https://github.com/MarcoAShanon/integra-publico/issues"
+
+[tool.setuptools.packages.find]
+include = ["integra*"]
+
+[tool.setuptools.package-data]
+integra = ["py.typed"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
