@@ -21,3 +21,7 @@ class SeiLoginError(SeiError):
 
 class CredenciaisInvalidas(SeiLoginError):
     """Usuário ou senha rejeitados pelo SEI."""
+
+
+class UnidadeNaoEncontrada(SeiError):
+    """A unidade pedida não está entre as que o operador pode acessar."""

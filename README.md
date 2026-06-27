@@ -26,7 +26,7 @@ A publicação no PyPI virá quando os primeiros módulos estiverem estáveis.
 
 ```python
 from selenium import webdriver
-from integra.sei import ProcessoSei, IframesSei, fechar_tela_aviso
+from integra.sei import ProcessoSei, IframesSei, SelecaoUnidade, fechar_tela_aviso
 
 driver = webdriver.Chrome()
 # ... abra o SEI e faça login nesta sessão ...
@@ -34,6 +34,9 @@ driver = webdriver.Chrome()
 # O SEI quase sempre exibe um aviso pós-login que bloqueia a tela — feche-o
 # (se você usou o módulo LoginSei, isso já é feito automaticamente):
 fechar_tela_aviso(driver)
+
+# (Opcional) garantir a unidade de trabalho correta (pela sigla):
+SelecaoUnidade(driver).selecionar("MGI-SGP-DECIPEX-CGPAG-EXANTE")  # sua unidade
 
 # Abrir um processo existente (levanta ProcessoNaoEncontrado se não achar):
 processo = ProcessoSei(driver, "00000.000000/0000-00")  # número fictício
@@ -69,6 +72,7 @@ LoginSei(
 |--------|-----------|--------|
 | `integra.sei.iframes` | Navegação entre iframes (tolerante a SEI 3.x/4.x) | ✅ |
 | `integra.sei.processo` | Acesso a um processo existente | ✅ |
+| `integra.sei.selecao_unidade` | Troca a unidade de trabalho | ✅ |
 | `integra.sei.tela_aviso` | Fecha o aviso pós-login que bloqueia a tela | ✅ |
 | `integra.sei.exceptions` | Exceções tipadas | ✅ |
 | `integra.sei.login` | Autenticação no SEI | ✅ ¹ |

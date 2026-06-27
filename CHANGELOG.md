@@ -6,6 +6,13 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não publicado]
 
 ### Adicionado
+- `integra.sei.selecao_unidade`: `SelecaoUnidade.selecionar(sigla)` troca a
+  unidade de trabalho (idempotente) e `listar_unidades()` devolve as unidades
+  disponíveis como dados (`Unidade`: sigla, descrição, órgão, id) — para uma
+  interface LOCAL oferecer a escolha (a biblioteca não inclui GUI). Seletores verificados ao vivo no SEI
+  4.1.5: abre via `a#lnkInfraUnidade` e seleciona pelo radio cujo `title` é a
+  sigla (que dispara `selecionarUnidade(id)` — sem botão de confirmar). Exceção
+  `UnidadeNaoEncontrada`.
 - `integra.sei.tela_aviso`: `fechar_tela_aviso()` fecha o aviso que o SEI exibe
   após o login (e que bloqueia os demais campos). Chamado automaticamente por
   `LoginSei.logar()`. Idempotente; um seletor combinado evita esperas longas
