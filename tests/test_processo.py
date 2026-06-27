@@ -33,6 +33,7 @@ class _FakeWait:
 @pytest.fixture
 def selenium(monkeypatch):
     monkeypatch.setattr(mod, "WebDriverWait", _FakeWait)
+    monkeypatch.setattr(mod.time, "sleep", lambda *_a, **_k: None)
     monkeypatch.setattr(
         mod.EC,
         "element_to_be_clickable",

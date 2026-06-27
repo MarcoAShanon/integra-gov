@@ -6,6 +6,10 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não publicado]
 
 ### Adicionado
+- `integra.sei.tela_aviso`: `fechar_tela_aviso()` fecha o aviso que o SEI exibe
+  após o login (e que bloqueia os demais campos). Chamado automaticamente por
+  `LoginSei.logar()`. Idempotente; um seletor combinado evita esperas longas
+  quando não há aviso.
 - `integra.sei.login`: autenticação no SEI (`LoginSei.logar()` e
   `montar_url_login()`), com **URL base e órgão parametrizáveis** (serve a
   qualquer órgão, não só ao MGI) e exceções `SeiLoginError` /

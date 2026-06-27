@@ -32,6 +32,7 @@ def fila(monkeypatch):
             return payload
 
     monkeypatch.setattr(mod, "WebDriverWait", _FilaWait)
+    monkeypatch.setattr(mod, "fechar_tela_aviso", lambda *_a, **_k: 0)
     return eventos
 
 

@@ -11,7 +11,7 @@ import logging
 
 from selenium import webdriver
 
-from integra.sei import IframesSei, ProcessoSei
+from integra.sei import IframesSei, ProcessoSei, fechar_tela_aviso
 from integra.sei.exceptions import ProcessoNaoEncontrado
 
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +27,9 @@ def main() -> None:
     try:
         driver.get("https://SEU-SEI.exemplo.gov.br/sei/")
         input("Faça login no SEI e tecle ENTER para continuar...")
+
+        # O SEI costuma exibir um aviso pós-login que bloqueia a tela.
+        fechar_tela_aviso(driver)
 
         # 2) Abrir o processo (levanta ProcessoNaoEncontrado se não achar).
         processo = ProcessoSei(driver, NUMERO_PROCESSO)

@@ -21,6 +21,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from .exceptions import CredenciaisInvalidas, SeiLoginError
+from .tela_aviso import fechar_tela_aviso
 
 _log = logging.getLogger(__name__)
 
@@ -94,6 +95,8 @@ class LoginSei:
         self.driver.get(self.url_login)
         self._preencher_formulario()
         self._confirmar_login()
+        # O SEI costuma exibir um aviso pós-login que bloqueia os demais campos.
+        fechar_tela_aviso(self.driver)
 
     def _preencher_formulario(self) -> None:
         wait = WebDriverWait(self.driver, self.timeout)

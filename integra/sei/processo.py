@@ -8,6 +8,7 @@ autenticada — o login não é feito por este módulo.
 from __future__ import annotations
 
 import logging
+import time
 
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
@@ -41,6 +42,10 @@ class ProcessoSei:
     CSS_NO_SELECIONADO = ".infraArvoreNoSelecionado"
     CSS_NO_VISITADO = ".noVisitado"
     CSS_NOS_ARVORE = f"{CSS_NO_SELECIONADO}, {CSS_NO_VISITADO}"
+    # Pausa após digitar, antes do ENTER: a pesquisa rápida do SEI usa um
+    # autocomplete via AJAX, e o ENTER imediato pode disparar antes de o valor
+    # ser registrado (a busca então não navega).
+    INTERVALO_AUTOCOMPLETE = 1.0
 
     def __init__(self, driver, numero_processo: str | None = None, timeout: float = 10):
         self.driver = driver
@@ -85,6 +90,7 @@ class ProcessoSei:
 
         campo.clear()
         campo.send_keys(numero)
+        time.sleep(self.INTERVALO_AUTOCOMPLETE)  # deixa o autocomplete registrar
         campo.send_keys(Keys.ENTER)
 
         self._validar_acesso(numero)
