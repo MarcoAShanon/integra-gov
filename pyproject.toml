@@ -34,6 +34,11 @@ dev = [
     "pytest-mock>=3.10",
     "ruff>=0.1",
 ]
+# SIAPE (terminal 3270): automatiza um emulador IBM HOD via pywinauto.
+# Somente Windows — o marcador evita tentar instalar pywinauto no Linux/CI.
+siape = [
+    "pywinauto>=0.6; platform_system == 'Windows'",
+]
 
 [project.urls]
 Homepage = "https://github.com/MarcoAShanon/integra-gov"
