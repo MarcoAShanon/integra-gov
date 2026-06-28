@@ -59,9 +59,6 @@ finally:
     driver.quit()
 ```
 
-> ⚠️ O módulo `login` ainda **não foi verificado contra um SEI real** — use com
-> cautela e reporte problemas.
-
 **Já está logado** numa sessão que controla com seu próprio `driver`? Aí pule o
 `LoginSei` e só feche o aviso à mão (idempotente — retorna `0` se não houver):
 
@@ -82,10 +79,8 @@ Mais exemplos em [`examples/`](examples/).
 | `integra.sei.selecao_unidade` | Troca a unidade de trabalho | ✅ |
 | `integra.sei.tela_aviso` | Fecha o aviso pós-login que bloqueia a tela | ✅ |
 | `integra.sei.exceptions` | Exceções tipadas | ✅ |
-| `integra.sei.login` | Autenticação no SEI | ✅ ¹ |
+| `integra.sei.login` | Autenticação no SEI | ✅ |
 | _(demais)_ | e-SIAPE, SIAPE, utilidades | planejado |
-
-¹ Disponível, mas **ainda não verificado contra um SEI real**. Use com cautela e reporte problemas.
 
 ## Como contribuir
 

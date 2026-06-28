@@ -142,8 +142,8 @@ except SeiLoginError as exc:
     ...  # algo na instância/seletor; veja a mensagem
 ```
 
-> ⚠️ O módulo `login` ainda **não foi verificado contra um SEI real** — use com
-> cautela e reporte problemas.
+> ✅ O módulo `login` foi verificado ao vivo contra o SEI 4.1.5 (instância
+> ColaboraGov/MGI).
 
 ---
 

@@ -6,13 +6,11 @@ documentados):
   - ``navegador``         : abre o Chrome (ajustes gov) + limpa órfãos   ✅
   - ``iframes``           : navegação entre os iframes do SEI (3.x/4.x)  ✅
   - ``processo``          : acesso a um processo existente               ✅
-  - ``login``             : autenticação no SEI                          ✅ ¹
+  - ``login``             : autenticação no SEI                          ✅
   - ``selecao_unidade``   : troca a unidade de trabalho                  ✅
   - ``tela_aviso``        : fecha o aviso pós-login que bloqueia a tela  ✅
   - ``exceptions``        : exceções tipadas do pacote                   ✅
   - ``iniciar_processo``  : criação de um novo processo (planejado)
-
-¹ ``login`` ainda não foi verificado contra um SEI real — use com cautela.
 """
 
 from .exceptions import (
