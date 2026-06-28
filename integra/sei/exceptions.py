@@ -10,6 +10,11 @@ class SeiNavegacaoError(SeiError):
     (por exemplo, uma sessão que não está autenticada)."""
 
 
+class NavegadorError(SeiError):
+    """Não foi possível abrir o navegador (ex.: o Chrome não subiu mesmo após as
+    tentativas — ``"Chrome instance exited"`` em ambiente gerenciado)."""
+
+
 class ProcessoNaoEncontrado(SeiError):
     """O processo pesquisado não foi aberto — não encontrado ou com número
     divergente do esperado."""

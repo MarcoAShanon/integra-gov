@@ -20,6 +20,10 @@ ENV/
 htmlcov/
 .ruff_cache/
 
+# Logs do Selenium/chromedriver
+chromedriver.log
+*.log
+
 # IDEs / SO
 .idea/
 .vscode/

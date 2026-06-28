@@ -3,6 +3,7 @@
 Módulos, portados de forma incremental (já generalizados, testados e
 documentados):
 
+  - ``navegador``         : abre o Chrome (ajustes gov) + limpa órfãos   ✅
   - ``iframes``           : navegação entre os iframes do SEI (3.x/4.x)  ✅
   - ``processo``          : acesso a um processo existente               ✅
   - ``login``             : autenticação no SEI                          ✅ ¹
@@ -16,6 +17,7 @@ documentados):
 
 from .exceptions import (
     CredenciaisInvalidas,
+    NavegadorError,
     ProcessoNaoEncontrado,
     SeiError,
     SeiLoginError,
@@ -24,6 +26,11 @@ from .exceptions import (
 )
 from .iframes import IframesSei, switch_to_iframe_visualizacao
 from .login import LoginSei, montar_url_login
+from .navegador import (
+    criar_driver_chrome,
+    encerrar_chrome,
+    encerrar_chromedriver_orfaos,
+)
 from .processo import ProcessoSei
 from .selecao_unidade import SelecaoUnidade, Unidade
 from .tela_aviso import fechar_tela_aviso
@@ -32,6 +39,7 @@ __all__ = [
     "CredenciaisInvalidas",
     "IframesSei",
     "LoginSei",
+    "NavegadorError",
     "ProcessoNaoEncontrado",
     "ProcessoSei",
     "SeiError",
@@ -40,6 +48,9 @@ __all__ = [
     "SelecaoUnidade",
     "Unidade",
     "UnidadeNaoEncontrada",
+    "criar_driver_chrome",
+    "encerrar_chrome",
+    "encerrar_chromedriver_orfaos",
     "fechar_tela_aviso",
     "montar_url_login",
     "switch_to_iframe_visualizacao",

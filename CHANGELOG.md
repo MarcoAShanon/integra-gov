@@ -6,6 +6,20 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não publicado]
 
 ### Adicionado
+- `integra.sei.navegador`: helper opcional `criar_driver_chrome()` que abre o
+  Chrome já com os ajustes de ambiente gerenciado/gov (`--no-sandbox`,
+  `--disable-dev-shm-usage`) e trata o erro "Chrome instance exited" / navegador
+  que não abre por duas frentes: (a) **retry automático** (`tentativas=3`,
+  `intervalo=1.0`) para a falha transitória de *cold start* (antivírus/EDR no
+  primeiro launch) — verificado ao vivo: a 1ª tentativa falhou e a 2ª subiu; e
+  (b) encerramento de `chromedriver` órfãos **antes de cada tentativa**. A
+  limpeza padrão é segura (`encerrar_chromedriver_orfaos()`, não toca nas janelas
+  pessoais); há a opção destrutiva opt-in `encerrar_chrome()` /
+  `encerrar_todo_chrome=True`. Esgotadas as tentativas, levanta `NavegadorError`
+  (encadeando a causa do Selenium). A lib continua headless: passar o seu próprio
+  `driver` segue funcionando.
+- Guia de uso passo a passo: `docs/uso-basico.md` (sequência navegador → login →
+  tela de aviso → unidade → processo e o porquê de cada passo).
 - `integra.sei.selecao_unidade`: `SelecaoUnidade.selecionar(sigla)` troca a
   unidade de trabalho (idempotente) e `listar_unidades()` devolve as unidades
   disponíveis como dados (`Unidade`: sigla, descrição, órgão, id) — para uma
