@@ -51,3 +51,7 @@ class TokenOtpError(AcessoSiapeError):
 
 class LancamentoHodError(SiapeError):
     """Falha ao localizar/executar o módulo HOD baixado ou ao chegar ao terminal."""
+
+
+class TransacaoError(SiapeError):
+    """Falha ao acessar/confirmar uma transação do SIAPE (``>COMANDO``)."""

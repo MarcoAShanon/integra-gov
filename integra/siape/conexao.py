@@ -19,8 +19,9 @@ import logging
 import re
 import time
 
+from ._menu import garantir_menu_principal
 from .controle import ControleTerminal3270
-from .exceptions import CodigoSegurancaError, TerminalError
+from .exceptions import CodigoSegurancaError, TerminalError, TransacaoError
 
 _log = logging.getLogger(__name__)
 
@@ -46,6 +47,9 @@ class ConexaoTerminal3270:
     INTERVALO_OTP = 1.0
     DELAY_ESTABILIZACAO = 3.0
     DELAY_PADRAO = 0.5
+    DELAY_TRANSACAO = 0.8  # espera a tela da transação renderizar após o ENTER
+    # Nome de transação válido (após o '>'): só letras maiúsculas e dígitos.
+    NOME_TRANSACAO_VALIDO = re.compile(r"[A-Z0-9]+")
 
     def __init__(
         self,
@@ -147,6 +151,50 @@ class ConexaoTerminal3270:
     def enviar_comando(self, comando: str) -> None:
         """Envia um comando de teclas ao terminal (delegado ao controle)."""
         self.controle.enviar_teclas(comando)
+
+    def acessar_transacao(
+        self, comando: str, confirmacao: str | None = None
+    ) -> None:
+        """Acessa uma transação do SIAPE digitando ``>COMANDO`` na linha de comando.
+
+        Garante o menu principal, digita ``>COMANDO`` + ENTER e, se
+        ``confirmacao`` for dada, verifica que a tela resultante a contém.
+
+        Pré-requisito: estar na **habilitação** (ÓRGÃO/UPAG) correta — use
+        :class:`~integra.siape.habilitacao.TrocaHabilitacao` antes, se preciso.
+
+        Args:
+            comando: nome da transação (ex.: ``"GRCOSITPRO"``); o ``>`` é
+                acrescentado se faltar e o nome é normalizado para maiúsculas.
+                Deve conter só letras e dígitos.
+            confirmacao: texto que deve aparecer na tela após acessar (ex.: o
+                próprio nome da transação). ``None`` (padrão) não verifica.
+
+        Raises:
+            ValueError: se o nome da transação for inválido.
+            TransacaoError: se ``confirmacao`` for dada e não aparecer na tela.
+            TerminalError / SessaoSiapePerdida / PywinautoIndisponivel: da
+                camada de terminal.
+        """
+        nome = (comando[1:] if comando.startswith(">") else comando).strip().upper()
+        if not self.NOME_TRANSACAO_VALIDO.fullmatch(nome):
+            raise ValueError(
+                f"nome de transação inválido: {comando!r} "
+                "(use só letras e dígitos, ex.: 'GRCOSITPRO')"
+            )
+
+        garantir_menu_principal(self.controle)
+        self.controle.enviar_teclas(">" + nome)
+        self.controle.enviar_teclas("{ENTER}", aguardar=self.DELAY_TRANSACAO)
+        _log.info("Transação >%s acessada", nome)
+
+        if confirmacao is not None:
+            tela = self.controle.copiar_tela()
+            if confirmacao not in tela:
+                raise TransacaoError(
+                    f"transação >{nome} não confirmada "
+                    f"(texto {confirmacao!r} ausente na tela)"
+                )
 
     def capturar_tela(self) -> str:
         """Devolve o texto atual da tela do terminal."""

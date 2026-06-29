@@ -14,6 +14,7 @@ import logging
 import re
 import time
 
+from ._menu import garantir_menu_principal
 from .controle import ControleTerminal3270
 from .exceptions import HabilitacaoNaoEncontrada, TerminalError
 
@@ -30,17 +31,14 @@ class TrocaHabilitacao:
     """
 
     COMANDO_TROCAHAB = "TROCAHAB"
-    TEXTO_COMANDO_LINHA = "COMANDO....."
     TEXTO_CONTINUA = "CONTINUA ==>"
 
-    POSICAO_COMANDO = (22, 2, 22, 13)
     LINHA_INICIO_LISTA = 12
 
     TECLA_SELECIONAR = "X"
     TECLA_CONFIRMAR = "S"
 
     MAX_PAGINAS = 20
-    MAX_TENTATIVAS_MENU = 3
     UPAG_DIGITOS = 9  # padrão SIAPE: UPAG formatada com zeros à esquerda
 
     # Geometria da tela (mesma da camada base; fixada aqui para não depender de
@@ -76,7 +74,7 @@ class TrocaHabilitacao:
             )
             return
 
-        self._garantir_menu_principal()
+        garantir_menu_principal(self.controle)
         self._enviar_comando_trocahab()
         self._buscar_e_selecionar(self._texto_busca())
         self._ultimo_orgao, self._ultima_upag = self.orgao, self.upag
@@ -97,26 +95,7 @@ class TrocaHabilitacao:
         """Força a próxima :meth:`trocar` a executar (esquece o histórico)."""
         self._ultimo_orgao = self._ultima_upag = None
 
-    # ----- menu / comando -----
-
-    def _garantir_menu_principal(self) -> None:
-        for _ in range(self.MAX_TENTATIVAS_MENU):
-            if self._linha_comando_disponivel():
-                return
-            # Não está no menu: F3 (sai da tela) → F2 (confirma/entra).
-            self.controle.enviar_teclas("{F3}")
-            time.sleep(self.DELAY_PADRAO)
-            self.controle.enviar_teclas("{F2}")
-            time.sleep(self.DELAY_PADRAO)
-        raise TerminalError("não foi possível retornar ao menu principal do SIAPE")
-
-    def _linha_comando_disponivel(self) -> bool:
-        try:
-            tela = self.controle.copiar_tela()
-        except TerminalError:
-            return False
-        comando = self.controle.extrair_texto(tela, *self.POSICAO_COMANDO)
-        return bool(comando) and comando.strip() == self.TEXTO_COMANDO_LINHA
+    # ----- comando -----
 
     def _enviar_comando_trocahab(self) -> None:
         self.controle.enviar_teclas(self.COMANDO_TROCAHAB)

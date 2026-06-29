@@ -12,7 +12,7 @@ Módulos:
   - ``acesso_web``   : início de acesso pela web (SIAPENet) + captura do OTP    ✅ ¹ ²
   - ``lancador``     : executa o módulo HOD baixado e abre o Terminal 3270      ✅ ¹
   - ``controle``     : interação base com o terminal (ler tela, enviar teclas)  ✅ ¹
-  - ``conexao``      : acesso/login (código de segurança OTP)                   ✅ ¹
+  - ``conexao``      : acesso/login (OTP) + acessar transação (``>COMANDO``)     ✅ ¹
   - ``habilitacao``  : troca de habilitação (ÓRGÃO/UPAG) via TROCAHAB           ✅ ¹
   - ``exceptions``   : exceções tipadas do subpacote                           ✅
 
@@ -36,6 +36,7 @@ from .exceptions import (
     TerminalError,
     TerminalNaoEncontrado,
     TokenOtpError,
+    TransacaoError,
 )
 from .habilitacao import TrocaHabilitacao
 from .lancador import LancadorHod
@@ -55,5 +56,6 @@ __all__ = [
     "TerminalError",
     "TerminalNaoEncontrado",
     "TokenOtpError",
+    "TransacaoError",
     "TrocaHabilitacao",
 ]

@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
+from integra.siape import _menu
 from integra.siape import habilitacao as mod
 from integra.siape.controle import ControleTerminal3270
 from integra.siape.exceptions import HabilitacaoNaoEncontrada, TerminalError
@@ -17,6 +18,8 @@ LARGURA = TrocaHabilitacao.CARACTERES_POR_LINHA
 @pytest.fixture(autouse=True)
 def _sem_espera(monkeypatch):
     monkeypatch.setattr(mod.time, "sleep", lambda *_a, **_k: None)
+    # O "garantir menu" agora vive em _menu — neutraliza o sleep dele também.
+    monkeypatch.setattr(_menu.time, "sleep", lambda *_a, **_k: None)
 
 
 def _tela_com_texto_na_linha(texto: str, linha: int, extra: str = "") -> str:
@@ -27,9 +30,9 @@ def _tela_com_texto_na_linha(texto: str, linha: int, extra: str = "") -> str:
 
 def _controle(menu_ok=True):
     c = MagicMock(spec=ControleTerminal3270)
-    # _linha_comando_disponivel: extrair_texto devolve a linha de comando.
+    # linha_comando_disponivel (_menu): extrair_texto devolve a linha de comando.
     c.extrair_texto.return_value = (
-        TrocaHabilitacao.TEXTO_COMANDO_LINHA if menu_ok else "OUTRA TELA"
+        _menu.TEXTO_LINHA_COMANDO if menu_ok else "OUTRA TELA"
     )
     return c
 

@@ -10,15 +10,29 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
+from integra.siape import _menu
 from integra.siape import conexao as mod
 from integra.siape.conexao import ConexaoTerminal3270
 from integra.siape.controle import ControleTerminal3270
-from integra.siape.exceptions import CodigoSegurancaError
+from integra.siape.exceptions import (
+    CodigoSegurancaError,
+    TerminalError,
+    TransacaoError,
+)
 
 
 @pytest.fixture(autouse=True)
 def _sem_espera(monkeypatch):
     monkeypatch.setattr(mod.time, "sleep", lambda *_a, **_k: None)
+    monkeypatch.setattr(_menu.time, "sleep", lambda *_a, **_k: None)
+
+
+def _controle_no_menu(tela="tela da transacao"):
+    """Controle mockado já no menu (linha de comando disponível)."""
+    c = MagicMock(spec=ControleTerminal3270)
+    c.extrair_texto.return_value = _menu.TEXTO_LINHA_COMANDO
+    c.copiar_tela.return_value = tela
+    return c
 
 
 def _controle_fake(tela="tela qualquer", trecho_uorg=""):
@@ -98,6 +112,50 @@ def test_otp_unicode_no_construtor_levanta():
         ConexaoTerminal3270(
             controle=_controle_fake(), codigo_seguranca="²³⁴⁵⁶⁷"
         )
+
+
+def test_acessar_transacao_digita_comando_com_maior():
+    c = _controle_no_menu()
+    ConexaoTerminal3270(controle=c).acessar_transacao("GRCOSITPRO")
+    enviados = [ch.args[0] for ch in c.enviar_teclas.call_args_list if ch.args]
+    assert ">GRCOSITPRO" in enviados
+    assert "{ENTER}" in enviados
+
+
+def test_acessar_transacao_normaliza_prefixo_e_caixa():
+    c = _controle_no_menu()
+    ConexaoTerminal3270(controle=c).acessar_transacao(">grcositpro")  # já com >, minúsc.
+    enviados = [ch.args[0] for ch in c.enviar_teclas.call_args_list if ch.args]
+    assert ">GRCOSITPRO" in enviados
+
+
+def test_acessar_transacao_confirmacao_presente_ok():
+    c = _controle_no_menu(tela="bem-vindo a GRCOSITPRO")
+    ConexaoTerminal3270(controle=c).acessar_transacao(
+        "GRCOSITPRO", confirmacao="GRCOSITPRO"
+    )  # não deve levantar
+
+
+def test_acessar_transacao_confirmacao_ausente_levanta():
+    c = _controle_no_menu(tela="outra tela qualquer")
+    with pytest.raises(TransacaoError):
+        ConexaoTerminal3270(controle=c).acessar_transacao(
+            "GRCOSITPRO", confirmacao="GRCOSITPRO"
+        )
+
+
+def test_acessar_transacao_nome_invalido_levanta():
+    c = _controle_no_menu()
+    with pytest.raises(ValueError):
+        ConexaoTerminal3270(controle=c).acessar_transacao(">GR COSIT")  # espaço
+
+
+def test_acessar_transacao_sem_menu_levanta_terminal_error():
+    c = MagicMock(spec=ControleTerminal3270)
+    c.extrair_texto.return_value = "OUTRA TELA"  # linha de comando nunca disponível
+    c.copiar_tela.return_value = "x"
+    with pytest.raises(TerminalError):
+        ConexaoTerminal3270(controle=c).acessar_transacao("GRCOSITPRO")
 
 
 def test_uorg_coordenadas_reais_disparam_f3(monkeypatch):
