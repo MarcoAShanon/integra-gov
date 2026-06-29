@@ -16,8 +16,9 @@ Módulos:
   - ``habilitacao``  : troca de habilitação (ÓRGÃO/UPAG) via TROCAHAB           ✅ ¹
   - ``exceptions``   : exceções tipadas do subpacote                           ✅
 
-¹ Portado e testado (Selenium/pywinauto mockado); ainda **não verificado ao
-vivo** neste pacote.
+¹ Portado, testado (Selenium/pywinauto mockado) e **verificado ao vivo** no
+SIAPE: acesso web → captura do OTP → lançamento do HOD → terminal → troca de
+habilitação (TROCAHAB).
 ² ``acesso_web`` é só Selenium (não exige o extra ``siape``/pywinauto).
 """
 
