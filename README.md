@@ -1,6 +1,6 @@
 # integra
 
-Biblioteca Python de **automação de sistemas do governo federal brasileiro**, começando pelo **SEI** (Sistema Eletrônico de Informações). O objetivo é ajudar servidores públicos a automatizar tarefas repetitivas de forma segura e reutilizável.
+Biblioteca Python de **automação de sistemas do governo federal brasileiro** — hoje o **SEI** (Sistema Eletrônico de Informações) e o **SIAPE** (terminal 3270). O objetivo é ajudar servidores públicos a automatizar tarefas repetitivas de forma segura e reutilizável.
 
 > **Status:** 🚧 em construção. O projeto é publicado **de forma incremental** — cada módulo é generalizado, testado e documentado antes de ser disponibilizado.
 
@@ -13,10 +13,13 @@ Biblioteca Python de **automação de sistemas do governo federal brasileiro**, 
 ## Instalação
 
 ```bash
-pip install -e ".[dev]"   # ambiente de desenvolvimento
+pip install -e ".[dev]"     # ambiente de desenvolvimento
+pip install -e ".[siape]"   # módulos SIAPE 3270 (Windows; instala o pywinauto)
 ```
 
-A publicação no PyPI virá quando os primeiros módulos estiverem estáveis.
+A publicação no PyPI virá quando os primeiros módulos estiverem estáveis. O
+núcleo (**SEI**) é multiplataforma; os módulos do **SIAPE 3270** exigem Windows e
+o extra `[siape]` (automatizam um emulador de terminal IBM HOD).
 
 ## Uso
 
@@ -69,7 +72,34 @@ fechar_tela_aviso(driver)
 
 Mais exemplos em [`examples/`](examples/).
 
+### SIAPE (terminal 3270)
+
+O acesso ao SIAPE passa pelo portal SIAPENet (web, com certificado digital) e por
+um emulador de terminal 3270 (IBM HOD). Você se autentica; a biblioteca conduz o
+resto:
+
+```python
+from integra.sei import criar_driver_chrome
+from integra.siape import (
+    AcessoSiapeWeb, LancadorHod, ControleTerminal3270,
+    ConexaoTerminal3270, TrocaHabilitacao,
+)
+
+driver = criar_driver_chrome()
+otp = AcessoSiapeWeb(driver).executar()          # você autentica (PIN/push); captura o OTP
+LancadorHod("C:/Users/voce/Downloads").lancar()  # executa o HOD e abre o Terminal 3270
+
+controle = ControleTerminal3270()
+conexao = ConexaoTerminal3270(controle, codigo_seguranca=otp)
+conexao.conectar()                                               # atacha + OTP + menu
+
+TrocaHabilitacao(controle, orgao="00000", upag="000000000").trocar()  # contexto
+conexao.acessar_transacao("GRCOSITPRO", confirmacao="GRCOSITPRO")     # >transação
+```
+
 ## Módulos
+
+### SEI — multiplataforma (núcleo)
 
 | Módulo | Descrição | Status |
 |--------|-----------|--------|
@@ -78,9 +108,21 @@ Mais exemplos em [`examples/`](examples/).
 | `integra.sei.processo` | Acesso a um processo existente | ✅ |
 | `integra.sei.selecao_unidade` | Troca a unidade de trabalho | ✅ |
 | `integra.sei.tela_aviso` | Fecha o aviso pós-login que bloqueia a tela | ✅ |
-| `integra.sei.exceptions` | Exceções tipadas | ✅ |
 | `integra.sei.login` | Autenticação no SEI | ✅ |
-| _(demais)_ | e-SIAPE, SIAPE, utilidades | planejado |
+| `integra.sei.exceptions` | Exceções tipadas | ✅ |
+
+### SIAPE 3270 — Windows, extra `[siape]`
+
+| Módulo | Descrição | Status |
+|--------|-----------|--------|
+| `integra.siape.acesso_web` | SIAPENet → certificado (você autentica) → captura do OTP (só Selenium) | ✅ |
+| `integra.siape.lancador` | Executa o módulo HOD baixado e abre o Terminal 3270 | ✅ |
+| `integra.siape.controle` | Interação base com o terminal (ler tela, enviar teclas) | ✅ |
+| `integra.siape.conexao` | Acesso/login (OTP) + acessar transação (`>COMANDO`) | ✅ |
+| `integra.siape.habilitacao` | Troca de habilitação (ÓRGÃO/UPAG) via `TROCAHAB` | ✅ |
+| `integra.siape.exceptions` | Exceções tipadas | ✅ |
+
+| _(planejado)_ | e-SIAPE (web), demais transações, utilidades | 🔜 |
 
 ## Como contribuir
 

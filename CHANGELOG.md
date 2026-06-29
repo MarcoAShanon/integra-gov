@@ -6,6 +6,18 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não publicado]
 
 ### Adicionado
+- **Subpacote `integra.siape`** — automação do SIAPE pelo **terminal 3270**
+  (emulador IBM HOD), como extra opcional Windows-only (`pip install
+  integra-gov[siape]`, instala `pywinauto`); o `pywinauto` é importado de forma
+  protegida, então o núcleo e a CI Linux seguem intactos. Camadas (sala limpa,
+  exceções tipadas, **OTP/credencial nunca digitados pela lib — você autentica**):
+  `acesso_web` (Selenium: SIAPENet → certificado → captura do OTP),
+  `lancador` (executa o `hodcivws*.jsp` e abre o terminal),
+  `controle` (ler tela via clipboard / enviar teclas),
+  `conexao` (acesso/login com OTP + `acessar_transacao(">COMANDO")`),
+  `habilitacao` (troca de habilitação ÓRGÃO/UPAG via `TROCAHAB`).
+  **Verificado ao vivo** de ponta a ponta (web → OTP → HOD → terminal →
+  trocahab → transação `>GRCOSITPRO`).
 - `integra.sei.navegador`: helper opcional `criar_driver_chrome()` que abre o
   Chrome já com os ajustes de ambiente gerenciado/gov (`--no-sandbox`,
   `--disable-dev-shm-usage`) e trata o erro "Chrome instance exited" / navegador
