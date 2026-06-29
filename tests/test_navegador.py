@@ -50,6 +50,8 @@ def driver_falso(monkeypatch):
             capturado["args"] = list(options.arguments)
 
     monkeypatch.setattr(mod.webdriver, "Chrome", _ChromeFake)
+    # Sem Chrome real: a varredura de PIDs não tem o que listar.
+    monkeypatch.setattr(mod, "_listar_pids_chrome", lambda: set())
     return capturado
 
 
@@ -163,6 +165,7 @@ def _chrome_que_falha(monkeypatch, falhas: int):
 
 def test_retry_abre_apos_falhas_transitorias(monkeypatch, comandos, _sem_espera):
     _forcar_windows(monkeypatch)
+    monkeypatch.setattr(mod, "_listar_pids_chrome", lambda: set())
     estado = _chrome_que_falha(monkeypatch, falhas=2)
     driver = criar_driver_chrome(tentativas=3)
     assert driver is not None
@@ -176,9 +179,61 @@ def test_esgota_tentativas_levanta_navegador_error(
     monkeypatch, comandos, _sem_espera
 ):
     _forcar_posix(monkeypatch)
+    monkeypatch.setattr(mod, "_listar_pids_chrome", lambda: set())
     _chrome_que_falha(monkeypatch, falhas=99)
     with pytest.raises(NavegadorError) as exc:
         criar_driver_chrome(tentativas=2)
     # Encadeia a causa original (selenium) para diagnóstico.
     assert isinstance(exc.value.__cause__, SessionNotCreatedException)
     assert len(_sem_espera) == 1  # espera entre as 2 tentativas, não após a última
+
+
+def test_orfao_da_tentativa_falha_e_encerrado(monkeypatch, _sem_espera):
+    _forcar_windows(monkeypatch)
+    # Snapshots de PIDs: antes da 1ª (chrome pessoal "100"); depois da falha
+    # surgiu o órfão "200"; antes da 2ª (já sem o órfão).
+    snapshots = iter([{"100"}, {"100", "200"}, {"100"}])
+    monkeypatch.setattr(mod, "_listar_pids_chrome", lambda: next(snapshots))
+    mortos: list[set[str]] = []
+    monkeypatch.setattr(mod, "_matar_pids", lambda pids: mortos.append(set(pids)))
+    monkeypatch.setattr(mod, "encerrar_chromedriver_orfaos", lambda: None)
+    _chrome_que_falha(monkeypatch, falhas=1)
+
+    assert criar_driver_chrome(tentativas=2) is not None
+    # Matou SÓ o órfão "200" — nunca o Chrome pessoal "100".
+    assert mortos == [{"200"}]
+
+
+def test_sucesso_na_primeira_nao_mata_chrome(monkeypatch, driver_falso):
+    _forcar_windows(monkeypatch)
+    mortos: list[set[str]] = []
+    monkeypatch.setattr(mod, "_matar_pids", lambda pids: mortos.append(set(pids)))
+    monkeypatch.setattr(mod, "encerrar_chromedriver_orfaos", lambda: None)
+    criar_driver_chrome()
+    assert mortos == []  # caminho de sucesso não encerra nenhum Chrome
+
+
+def test_listar_pids_chrome_windows_parseia_csv(monkeypatch):
+    _forcar_windows(monkeypatch)
+    saida = '"chrome.exe","100","Console","1","50 K"\n"chrome.exe","200","Console","1","60 K"\n'
+    monkeypatch.setattr(
+        mod.subprocess, "run", lambda *_a, **_k: type("R", (), {"stdout": saida})()
+    )
+    assert mod._listar_pids_chrome() == {"100", "200"}
+
+
+def test_listar_pids_chrome_sem_processos(monkeypatch):
+    _forcar_windows(monkeypatch)
+    saida = "INFO: No tasks are running which match the specified criteria.\n"
+    monkeypatch.setattr(
+        mod.subprocess, "run", lambda *_a, **_k: type("R", (), {"stdout": saida})()
+    )
+    assert mod._listar_pids_chrome() == set()
+
+
+def test_listar_pids_chrome_posix(monkeypatch):
+    _forcar_posix(monkeypatch)
+    monkeypatch.setattr(
+        mod.subprocess, "run", lambda *_a, **_k: type("R", (), {"stdout": "100\n200\n"})()
+    )
+    assert mod._listar_pids_chrome() == {"100", "200"}

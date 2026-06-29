@@ -21,7 +21,7 @@ import logging
 import subprocess
 import sys
 import time
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
@@ -47,6 +47,49 @@ def _matar_processos(nomes: Sequence[str]) -> None:
             ["taskkill", "/F", "/IM", f"{nome}.exe"]
             if windows
             else ["pkill", "-x", nome]
+        )
+        try:
+            subprocess.run(cmd, capture_output=True, text=True, check=False)
+        except FileNotFoundError:
+            _log.debug("Comando '%s' indisponível nesta plataforma", cmd[0])
+
+
+def _listar_pids_chrome() -> set[str]:
+    """Lista os PIDs dos processos ``chrome.exe`` (Windows) / ``chrome`` (POSIX).
+
+    Tolerante: devolve um conjunto vazio se o comando falhar ou não houver Chrome.
+    """
+    windows = sys.platform.startswith("win")
+    cmd = (
+        ["tasklist", "/FI", "IMAGENAME eq chrome.exe", "/NH", "/FO", "CSV"]
+        if windows
+        else ["pgrep", "-x", "chrome"]
+    )
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    except FileNotFoundError:
+        return set()
+    pids: set[str] = set()
+    for linha in (res.stdout or "").splitlines():
+        linha = linha.strip()
+        if not linha:
+            continue
+        if windows:
+            # CSV: "chrome.exe","12345","Console",...  → o PID é o 2º campo.
+            partes = [c.strip().strip('"') for c in linha.split(",")]
+            if len(partes) >= 2 and partes[1].isdigit():
+                pids.add(partes[1])
+        elif linha.isdigit():
+            pids.add(linha)
+    return pids
+
+
+def _matar_pids(pids: Iterable[str]) -> None:
+    """Encerra à força processos por PID (tolerante)."""
+    windows = sys.platform.startswith("win")
+    for pid in pids:
+        cmd = (
+            ["taskkill", "/F", "/PID", pid] if windows else ["kill", "-9", pid]
         )
         try:
             subprocess.run(cmd, capture_output=True, text=True, check=False)
@@ -98,7 +141,10 @@ def criar_driver_chrome(
     *"Chrome instance exited"* — uma falha transitória (antivírus/EDR escaneando
     o binário no primeiro launch, primeira execução do Chrome). Por isso esta
     função **tenta de novo** algumas vezes, encerrando ``chromedriver`` presos
-    antes de cada tentativa (a tentativa que falhou pode deixar um órfão).
+    antes de cada tentativa. Além disso, se uma tentativa falha mas deixou um
+    ``chrome.exe`` órfão (uma janela vazia), só **esse** processo é encerrado —
+    identificado por comparação de PIDs antes/depois — sem tocar nas janelas de
+    Chrome pessoal já abertas.
 
     Args:
         headless: se ``True``, roda sem janela visível (``--headless=new``).
@@ -135,6 +181,7 @@ def criar_driver_chrome(
             encerrar_chrome()
         elif limpar_chromedriver:
             encerrar_chromedriver_orfaos()
+        pids_antes = _listar_pids_chrome()
         try:
             _log.info(
                 "Abrindo o Chrome (tentativa %d/%d)", tentativa, tentativas
@@ -148,6 +195,16 @@ def criar_driver_chrome(
                 tentativas,
                 str(exc).splitlines()[0],
             )
+            # A falha de cold start pode deixar um chrome.exe órfão (janela
+            # vazia). Encerra SÓ os PIDs que ESTA tentativa abriu — nunca o
+            # Chrome pessoal que já estava aberto (está em ``pids_antes``).
+            orfaos = _listar_pids_chrome() - pids_antes
+            if orfaos:
+                _log.info(
+                    "Encerrando %d processo(s) Chrome órfão(s) da tentativa falha",
+                    len(orfaos),
+                )
+                _matar_pids(orfaos)
             if tentativa < tentativas:
                 time.sleep(intervalo)
 
