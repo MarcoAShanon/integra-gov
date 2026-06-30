@@ -72,6 +72,32 @@ fechar_tela_aviso(driver)
 
 Mais exemplos em [`examples/`](examples/).
 
+### Criar um processo
+
+`IniciarProcesso.iniciar()` devolve o **número (NUP)** do processo criado:
+
+```python
+from integra.sei import IniciarProcesso
+
+numero = IniciarProcesso(
+    driver,
+    tipo="Pessoal: Aposentadoria - Requerimento",   # tipo EXATO do seu SEI
+    especificacao="Requerimento de aposentadoria",
+    nivel_acesso="publico",                         # ou "restrito" (+ hipotese_legal)
+).iniciar()
+print(numero)   # ex.: "19975.018906/2026-39"
+```
+
+Para acesso restrito, a hipótese legal é obrigatória (texto exato do dropdown):
+
+```python
+IniciarProcesso(
+    driver, tipo="...",
+    nivel_acesso="restrito",
+    hipotese_legal="Informação Pessoal (Art. 31 da Lei nº 12.527/2011)",
+).iniciar()
+```
+
 ### SIAPE (terminal 3270)
 
 O acesso ao SIAPE passa pelo portal SIAPENet (web, com certificado digital) e por
@@ -109,6 +135,8 @@ conexao.acessar_transacao("GRCOSITPRO", confirmacao="GRCOSITPRO")     # >transa�
 | `integra.sei.selecao_unidade` | Troca a unidade de trabalho | ✅ |
 | `integra.sei.tela_aviso` | Fecha o aviso pós-login que bloqueia a tela | ✅ |
 | `integra.sei.login` | Autenticação no SEI | ✅ |
+| `integra.sei.iniciar_processo` | Criação de um novo processo (devolve o NUP) | ✅ |
+| `integra.sei.nivel_acesso` | Nível de acesso (público/restrito) — reutilizável | ✅ |
 | `integra.sei.exceptions` | Exceções tipadas | ✅ |
 
 ### SIAPE 3270 — Windows, extra `[siape]`

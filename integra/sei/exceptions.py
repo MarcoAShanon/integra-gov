@@ -20,6 +20,17 @@ class ProcessoNaoEncontrado(SeiError):
     divergente do esperado."""
 
 
+class IniciarProcessoError(SeiError):
+    """Falha ao iniciar (criar) um novo processo: um campo/botão do formulário
+    não foi encontrado ou o SEI não aceitou o processo."""
+
+
+class NivelAcessoError(SeiError):
+    """Falha ao configurar o nível de acesso (Público/Restrito + hipótese legal)
+    de um processo ou documento — radio/dropdown não encontrado ou hipótese
+    legal ausente no dropdown."""
+
+
 class SeiLoginError(SeiError):
     """Falha no login do SEI (formulário não carregou ou login não confirmado)."""
 

@@ -6,6 +6,19 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não publicado]
 
 ### Adicionado
+- `integra.sei.iniciar_processo`: criação de um novo processo
+  (`IniciarProcesso.iniciar()`), **verificado ao vivo** no SEI 4.1.5
+  (público e restrito + hipótese legal). **Devolve o número (NUP)** do processo
+  criado, lido do título da aba — que também confirma a criação. Generaliza o
+  que era específico de órgão: `tipo` obrigatório (sem default), nível de acesso
+  e hipótese legal são parâmetros; especificação/assunto/interessado/observação
+  opcionais. Retornos `bool` viraram exceção tipada `IniciarProcessoError`;
+  detecta o alerta de validação do SEI (ex.: "Informe o nível de acesso") em vez
+  de mentir "salvo".
+- `integra.sei.nivel_acesso`: componente **reutilizável** para o nível de acesso
+  (Público/Restrito + hipótese legal), usado pelo `iniciar_processo` e pelos
+  futuros módulos de documento — o nível é parâmetro e a hipótese é obrigatória
+  no restrito (`configurar_nivel_acesso()`, exceção `NivelAcessoError`).
 - **Subpacote `integra.siape`** — automação do SIAPE pelo **terminal 3270**
   (emulador IBM HOD), como extra opcional Windows-only (`pip install
   integra-gov[siape]`, instala `pywinauto`); o `pywinauto` é importado de forma
