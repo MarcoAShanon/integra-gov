@@ -34,6 +34,24 @@ _log = logging.getLogger(__name__)
 # Ajustes exigidos por ambientes gerenciados/gov para o Chrome subir.
 _ARGS_GOV = ("--no-sandbox", "--disable-dev-shm-usage")
 
+# Viewport largo usado no modo headless (onde --start-maximized não tem efeito).
+# O SEI é responsivo: em janela estreita ele colapsa a barra de ícones e alguns
+# elementos somem do DOM, quebrando a automação.
+_TAMANHO_HEADLESS = "--window-size=1920,1080"
+
+
+def _maximizar(driver) -> None:
+    """Maximiza a janela do Chrome (tolerante).
+
+    Reforça o ``--start-maximized`` no modo visível: alguns ambientes ignoram o
+    argumento, mas aceitam o comando via DevTools. Se o comando falhar (raro),
+    apenas registra — o argumento já cobre o caso comum.
+    """
+    try:
+        driver.maximize_window()
+    except WebDriverException as exc:
+        _log.debug("maximize_window() falhou: %s", str(exc).splitlines()[0])
+
 
 def _matar_processos(nomes: Sequence[str]) -> None:
     """Encerra à força os processos cujos nomes lógicos são dados.
@@ -126,6 +144,7 @@ def encerrar_chrome() -> None:
 def criar_driver_chrome(
     *,
     headless: bool = False,
+    maximizar: bool = True,
     limpar_chromedriver: bool = True,
     encerrar_todo_chrome: bool = False,
     tentativas: int = 3,
@@ -148,6 +167,12 @@ def criar_driver_chrome(
 
     Args:
         headless: se ``True``, roda sem janela visível (``--headless=new``).
+        maximizar: abre a janela maximizada (padrão ``True``). **Recomendado
+            para o SEI**, que é responsivo — em janela estreita ele colapsa a
+            barra de ícones e alguns elementos somem do DOM, quebrando a
+            automação. No modo visível usa ``--start-maximized`` + reforço via
+            ``maximize_window()``; no headless usa uma viewport larga
+            (``--window-size=1920,1080``).
         limpar_chromedriver: encerra ``chromedriver`` órfãos antes de cada
             tentativa (seguro; ver :func:`encerrar_chromedriver_orfaos`). Padrão
             ``True``.
@@ -172,6 +197,11 @@ def criar_driver_chrome(
         options.add_argument(arg)
     if headless:
         options.add_argument("--headless=new")
+    if maximizar:
+        # No headless, --start-maximized é ignorado; força a viewport larga.
+        options.add_argument(
+            _TAMANHO_HEADLESS if headless else "--start-maximized"
+        )
     for arg in args_extra or ():
         options.add_argument(arg)
 
@@ -186,7 +216,12 @@ def criar_driver_chrome(
             _log.info(
                 "Abrindo o Chrome (tentativa %d/%d)", tentativa, tentativas
             )
-            return webdriver.Chrome(options=options)
+            driver = webdriver.Chrome(options=options)
+            # Reforça a maximização no modo visível (garante que a barra do SEI
+            # não fique colapsada mesmo se --start-maximized for ignorado).
+            if maximizar and not headless:
+                _maximizar(driver)
+            return driver
         except WebDriverException as exc:
             ultimo_erro = exc
             _log.warning(

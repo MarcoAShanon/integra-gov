@@ -42,7 +42,10 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   pessoais); há a opção destrutiva opt-in `encerrar_chrome()` /
   `encerrar_todo_chrome=True`. Esgotadas as tentativas, levanta `NavegadorError`
   (encadeando a causa do Selenium). A lib continua headless: passar o seu próprio
-  `driver` segue funcionando.
+  `driver` segue funcionando. Abre a janela **maximizada por padrão**
+  (`maximizar=True`) — o SEI é responsivo e, em janela estreita, colapsa a barra
+  de ícones e alguns elementos somem do DOM, quebrando a automação; no headless
+  usa uma viewport larga (`--window-size=1920,1080`) pelo mesmo motivo.
 - Guia de uso passo a passo: `docs/uso-basico.md` (sequência navegador → login →
   tela de aviso → unidade → processo e o porquê de cada passo).
 - `integra.sei.selecao_unidade`: `SelecaoUnidade.selecionar(sigla)` troca a
