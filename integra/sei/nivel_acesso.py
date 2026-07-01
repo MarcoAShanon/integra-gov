@@ -16,7 +16,11 @@ from __future__ import annotations
 import logging
 import time
 
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    StaleElementReferenceException,
+    TimeoutException,
+)
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import Select
@@ -35,10 +39,15 @@ XPATH_OPT_PUBLICO = '//*[@id="divOptPublico"]/div/label'
 XPATH_OPT_RESTRITO = '//*[@id="divOptRestrito"]/div/label'
 ID_HIPOTESE_LEGAL = "selHipoteseLegal"
 
-# O dropdown de hipótese legal é populado via AJAX após marcar "restrito";
-# as opções podem não estar prontas na 1ª tentativa.
-TENTATIVAS_HIPOTESE = 3
+# O dropdown de hipótese legal é populado via AJAX após marcar "restrito"; as
+# opções podem demorar a chegar. Reconsulta o <select> até esgotar o timeout.
 INTERVALO_HIPOTESE = 0.5
+
+
+def _normalizar(texto: str) -> str:
+    """Colapsa espaços (inclui NBSP) para comparar textos tolerando diferenças
+    de espaçamento entre o valor informado e a opção do dropdown."""
+    return " ".join((texto or "").replace("\xa0", " ").split())
 
 
 def validar_nivel_acesso(nivel: str, hipotese_legal: str | None) -> str:
@@ -125,7 +134,7 @@ def _selecionar_hipotese_legal(
     driver, hipotese_legal: str, timeout: float
 ) -> None:
     try:
-        dropdown = WebDriverWait(driver, timeout).until(
+        WebDriverWait(driver, timeout).until(
             EC.presence_of_element_located((By.ID, ID_HIPOTESE_LEGAL))
         )
     except TimeoutException as exc:
@@ -133,16 +142,52 @@ def _selecionar_hipotese_legal(
             "dropdown de hipótese legal não encontrado"
         ) from exc
 
-    # A presença do <select> não garante que as <option> (AJAX) já chegaram.
-    ultimo_erro: NoSuchElementException | None = None
-    for _ in range(TENTATIVAS_HIPOTESE):
+    # A presença do <select> não garante que as <option> (AJAX) já chegaram, e
+    # o SEI pode re-renderizá-lo ao popular. Reconsulta o elemento a cada
+    # tentativa, até esgotar o `timeout`.
+    deadline = time.monotonic() + timeout
+    ultimo_erro: Exception | None = None
+    opcoes: list[str] = []
+    while True:
         try:
-            Select(dropdown).select_by_visible_text(hipotese_legal)
-            _log.info("Hipótese legal: %r", hipotese_legal)
-            return
-        except NoSuchElementException as exc:
-            ultimo_erro = exc
-            time.sleep(INTERVALO_HIPOTESE)
+            select = Select(driver.find_element(By.ID, ID_HIPOTESE_LEGAL))
+            opcoes = [o.text for o in select.options]
+            if _tentar_selecionar(select, hipotese_legal, opcoes):
+                _log.info("Hipótese legal: %r", hipotese_legal)
+                return
+        except (NoSuchElementException, StaleElementReferenceException) as exc:
+            ultimo_erro = exc  # elemento sumiu/re-renderizou; tenta de novo
+        if time.monotonic() >= deadline:
+            break
+        time.sleep(INTERVALO_HIPOTESE)
+
+    disponiveis = [o.strip() for o in opcoes if o and o.strip()]
+    dica = (
+        "; opções disponíveis: " + ", ".join(repr(o) for o in disponiveis)
+        if disponiveis
+        else " (dropdown ainda vazio — pode não ter carregado)"
+    )
     raise NivelAcessoError(
-        f"hipótese legal {hipotese_legal!r} não encontrada no dropdown"
+        f"hipótese legal {hipotese_legal!r} não encontrada no dropdown{dica}"
     ) from ultimo_erro
+
+
+def _tentar_selecionar(select: Select, alvo: str, opcoes: list[str]) -> bool:
+    """Seleciona a opção de texto ``alvo``, tolerando diferenças de espaçamento.
+
+    Tenta o casamento exato do Selenium; se falhar, compara normalizando espaços
+    (inclui NBSP), o que cobre opções do SEI com espaços/entidades diferentes do
+    valor informado. Retorna ``True`` se selecionou, ``False`` caso a opção ainda
+    não esteja presente (deixa o chamador tentar de novo enquanto há tempo).
+    """
+    try:
+        select.select_by_visible_text(alvo)
+        return True
+    except NoSuchElementException:
+        pass
+    alvo_norm = _normalizar(alvo)
+    for i, texto in enumerate(opcoes):
+        if _normalizar(texto) == alvo_norm:
+            select.select_by_index(i)
+            return True
+    return False

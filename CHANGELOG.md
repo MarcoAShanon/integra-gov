@@ -18,7 +18,10 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - `integra.sei.nivel_acesso`: componente **reutilizável** para o nível de acesso
   (Público/Restrito + hipótese legal), usado pelo `iniciar_processo` e pelos
   futuros módulos de documento — o nível é parâmetro e a hipótese é obrigatória
-  no restrito (`configurar_nivel_acesso()`, exceção `NivelAcessoError`).
+  no restrito (`configurar_nivel_acesso()`, exceção `NivelAcessoError`). A
+  seleção da hipótese legal espera o dropdown (populado via AJAX) até o `timeout`,
+  reconsultando o `<select>` a cada tentativa, tolera diferença de espaçamento/NBSP
+  no texto e, se falhar, **lista as opções disponíveis** na mensagem de erro.
 - **Subpacote `integra.siape`** — automação do SIAPE pelo **terminal 3270**
   (emulador IBM HOD), como extra opcional Windows-only (`pip install
   integra-gov[siape]`, instala `pywinauto`); o `pywinauto` é importado de forma
