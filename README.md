@@ -122,6 +122,32 @@ print(nome)   # "Ofício 123 - Resposta"
 Versão atual: formato **nato-digital** (o mais comum). "Digitalizado nesta
 unidade" (com tipo de conferência) virá depois.
 
+### Incluir um documento interno (Despacho, Nota Técnica, …)
+
+Gera um documento do próprio SEI num processo **já aberto**, opcionalmente a
+partir de um **documento modelo** (o protocolo de um documento base, cujo
+conteúdo é clonado — útil para instruções processuais padronizadas em escala).
+Após salvar, o SEI abre o editor numa janela nova; o módulo a fecha e devolve o
+**rótulo do documento na árvore**:
+
+```python
+from integra.sei import IncluirDocumentoInterno, ProcessoSei
+
+ProcessoSei(driver, "19975.018906/2026-39").acessar()   # abre o processo
+
+rotulo = IncluirDocumentoInterno(
+    driver,
+    tipo_documento="Despacho",       # tipo EXATO da lista do seu SEI
+    documento_modelo="12345678",     # opcional: protocolo do documento base (modelo)
+    nome_arvore="- Encaminhamento",  # opcional: nome extra na árvore
+    nivel_acesso="publico",          # ou "restrito" (+ hipotese_legal)
+).incluir()
+print(rotulo)   # ex.: "Despacho 12345678"
+```
+
+Versão atual: texto inicial **"Documento Modelo"** ou nenhum. "Texto Padrão"
+virá depois; a edição do conteúdo será um módulo próprio.
+
 ### SIAPE (terminal 3270)
 
 O acesso ao SIAPE passa pelo portal SIAPENet (web, com certificado digital) e por
@@ -161,8 +187,10 @@ conexao.acessar_transacao("GRCOSITPRO", confirmacao="GRCOSITPRO")     # >transa�
 | `integra.sei.login` | Autenticação no SEI | ✅ |
 | `integra.sei.iniciar_processo` | Criação de um novo processo (devolve o NUP) | ✅ |
 | `integra.sei.inserir_documento_externo` | Inclui um documento externo (upload de arquivo) | ✅ |
+| `integra.sei.incluir_documento_interno` | Inclui um documento interno (Despacho, Nota Técnica…) | ✅ |
 | `integra.sei.nivel_acesso` | Nível de acesso (público/restrito) — reutilizável | ✅ |
 | `integra.sei.barra_icones` | Clique em ícones da barra do documento — reutilizável | ✅ |
+| `integra.sei.gerar_documento` | Tela "Gerar Documento" (escolha do tipo) — reutilizável | ✅ |
 | `integra.sei.exceptions` | Exceções tipadas | ✅ |
 
 ### SIAPE 3270 — Windows, extra `[siape]`

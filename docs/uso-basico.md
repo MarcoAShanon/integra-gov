@@ -264,6 +264,35 @@ except DocumentoExternoError as exc:
 Escopo atual: formato **nato-digital**. O nível de acesso reusa o mesmo
 componente do `iniciar_processo` (restrito exige `hipotese_legal`).
 
+### Incluir um documento interno (Despacho, Nota Técnica, …)
+
+Gera um documento do próprio SEI num processo **já aberto**, opcionalmente a
+partir de um **documento modelo** — o protocolo de um documento base cujo
+conteúdo é clonado (útil para instruções processuais padronizadas em escala).
+Após salvar, o SEI abre o editor de conteúdo numa **janela nova**: o módulo
+confirma a criação por essa janela, **fecha-a** e devolve o driver à janela
+principal, retornando o **rótulo do documento na árvore**:
+
+```python
+from integra.sei import IncluirDocumentoInterno
+from integra.sei.exceptions import DocumentoInternoError
+
+try:
+    rotulo = IncluirDocumentoInterno(
+        driver,
+        tipo_documento="Despacho",       # tipo EXATO da lista do seu SEI
+        documento_modelo="12345678",     # opcional: protocolo do doc base (modelo)
+        nome_arvore="- Encaminhamento",  # opcional: nome extra na árvore
+        nivel_acesso="publico",          # ou "restrito" (+ hipotese_legal)
+    ).incluir()
+    print(rotulo)                        # ex.: "Despacho 12345678"
+except DocumentoInternoError as exc:
+    ...  # tela/campo não encontrado, SEI recusou, ou editor não abriu
+```
+
+Escopo atual: texto inicial **"Documento Modelo"** ou nenhum ("Texto Padrão"
+virá depois). A edição do conteúdo do documento será um módulo próprio.
+
 ---
 
 ## Exemplo completo (do zero ao processo aberto)

@@ -6,6 +6,24 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não publicado]
 
 ### Adicionado
+- `integra.sei.incluir_documento_interno`: inclui um **documento interno**
+  (Despacho, Nota Técnica, …) num processo aberto
+  (`IncluirDocumentoInterno.incluir()`, **devolve o rótulo na árvore**, ex.:
+  `"Despacho 12345678"`). Suporta o texto inicial **"Documento Modelo"**
+  (`documento_modelo=` protocolo do documento base — os modelos pré-definidos)
+  ou nenhum; `nome_arvore` opcional; nível de acesso e hipótese legal reusam
+  `nivel_acesso`. Após salvar, **confirma a criação pela abertura do editor**
+  (janela nova), fecha-o e devolve o driver à janela principal — a edição de
+  conteúdo será um módulo próprio. **Verificado ao vivo** no SEI 4.1.5 (MGI) —
+  o que também valida o `gerar_documento` extraído (mesmo caminho de código).
+- `integra.sei.gerar_documento`: componente **reutilizável** com o preâmbulo da
+  tela "Gerar Documento" (`abrir_gerar_documento(driver, tipo)`) — aciona
+  "Incluir Documento", espera a tela carregar e seleciona o tipo pelo texto
+  exato, com as robustezes verificadas ao vivo (reentrada no iframe na corrida
+  do AJAX; reclique do ícone que não navega). **Extraído do
+  `inserir_documento_externo`** (que agora o consome, sem mudança de
+  comportamento) e usado também pelo `incluir_documento_interno`. Em caso de
+  tipo não encontrado, a mensagem de erro **lista os tipos visíveis**.
 - `integra.sei.inserir_documento_externo`: inclui um **documento externo**
   (upload de arquivo) num processo aberto (`InserirDocumentoExterno.inserir()`,
   **devolve o `nome_arvore`** confirmado). O upload vai direto ao

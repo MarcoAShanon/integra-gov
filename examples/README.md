@@ -13,5 +13,6 @@ Scripts de exemplo de uso da biblioteca. Cada exemplo deve:
 | [`exemplo_abrir_processo.py`](exemplo_abrir_processo.py) | Abrir um processo e posicionar na raiz da árvore |
 | [`exemplo_iniciar_processo.py`](exemplo_iniciar_processo.py) | Criar um novo processo (devolve o NUP) |
 | [`exemplo_incluir_documento_externo.py`](exemplo_incluir_documento_externo.py) | Incluir um documento externo (upload de arquivo) |
+| [`exemplo_incluir_documento_interno.py`](exemplo_incluir_documento_interno.py) | Incluir um documento interno (Despacho, Nota Técnica…) |
 
 > Mais exemplos à medida que os módulos forem disponibilizados.

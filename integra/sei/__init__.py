@@ -14,12 +14,15 @@ documentados):
   - ``nivel_acesso``      : nível de acesso (público/restrito) — compartilhado ✅
   - ``barra_icones``      : clique em ícones da barra do documento — compartilhado ✅
   - ``inserir_documento_externo`` : inclui um documento externo (upload)  ✅
+  - ``gerar_documento``   : tela "Gerar Documento" (escolha do tipo) — compartilhado ✅
+  - ``incluir_documento_interno`` : inclui um documento interno (Despacho…) ✅
 """
 
 from .barra_icones import clicar_icone_barra
 from .exceptions import (
     CredenciaisInvalidas,
     DocumentoExternoError,
+    DocumentoInternoError,
     IniciarProcessoError,
     NavegadorError,
     NivelAcessoError,
@@ -29,7 +32,9 @@ from .exceptions import (
     SeiNavegacaoError,
     UnidadeNaoEncontrada,
 )
+from .gerar_documento import abrir_gerar_documento
 from .iframes import IframesSei, switch_to_iframe_visualizacao
+from .incluir_documento_interno import IncluirDocumentoInterno
 from .iniciar_processo import IniciarProcesso
 from .inserir_documento_externo import InserirDocumentoExterno
 from .login import LoginSei, montar_url_login
@@ -46,7 +51,9 @@ from .tela_aviso import fechar_tela_aviso
 __all__ = [
     "CredenciaisInvalidas",
     "DocumentoExternoError",
+    "DocumentoInternoError",
     "IframesSei",
+    "IncluirDocumentoInterno",
     "IniciarProcesso",
     "IniciarProcessoError",
     "InserirDocumentoExterno",
@@ -61,6 +68,7 @@ __all__ = [
     "SelecaoUnidade",
     "Unidade",
     "UnidadeNaoEncontrada",
+    "abrir_gerar_documento",
     "clicar_icone_barra",
     "configurar_nivel_acesso",
     "criar_driver_chrome",

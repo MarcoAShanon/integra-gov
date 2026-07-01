@@ -24,12 +24,10 @@ from __future__ import annotations
 
 import logging
 import os
-import time
 from datetime import datetime
 
 from selenium.common.exceptions import (
     NoSuchElementException,
-    StaleElementReferenceException,
     TimeoutException,
     UnexpectedTagNameException,
 )
@@ -39,9 +37,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.ui import WebDriverWait
 
-from .barra_icones import clicar_icone_barra
-from .exceptions import DocumentoExternoError
-from .iframes import IframesSei
+from .exceptions import DocumentoExternoError, SeiNavegacaoError
+from .gerar_documento import abrir_gerar_documento
 from .nivel_acesso import configurar_nivel_acesso, validar_nivel_acesso
 
 _log = logging.getLogger(__name__)
@@ -78,15 +75,9 @@ class InserirDocumentoExterno:
         FileNotFoundError: se ``arquivo`` não existir.
     """
 
-    ICONE_INCLUIR = "Incluir Documento"
-
-    ID_FILTRO = "txtFiltro"
+    # Tipo escolhido na tela "Gerar Documento" (o preâmbulo compartilhado —
+    # ícone, espera da tela e seleção do tipo — vive em `gerar_documento`).
     TIPO_EXTERNO = "Externo"
-    # Na lista "Escolha o Tipo do Documento", cada tipo é um link; clica-se o de
-    # texto exato "Externo" (dentro de tblSeries; com fallback fora dele). Mais
-    # robusto que a posição da linha, que muda conforme o filtro/favoritos.
-    XPATH_TIPO_EXTERNO = '//*[@id="tblSeries"]//a[normalize-space()="Externo"]'
-    XPATH_TIPO_EXTERNO_FALLBACK = '//a[normalize-space()="Externo"]'
     ID_SERIE = "selSerie"
     ID_DATA = "txtDataElaboracao"
     ID_NOME_ARVORE = "txtNomeArvore"
@@ -97,16 +88,6 @@ class InserirDocumentoExterno:
     CLASSE_NOME_ARQUIVO = "infraSpanNomeArquivo"
     ID_SALVAR = "btnSalvar"
 
-    # A tabela de tipos filtra via AJAX ao digitar; espera curta antes de clicar.
-    INTERVALO_FILTRO = 1.0
-    # A tela "Gerar Documento" carrega via AJAX após o clique no ícone; intervalo
-    # entre tentativas de reentrar no iframe e localizar o campo de filtro.
-    INTERVALO_FORM = 0.5
-    # Orçamento total (s) para a tela de inclusão aparecer (o SEI às vezes demora).
-    TIMEOUT_FORM = 12
-    # O clique no ícone às vezes não "pega" (o ícone fica pressionado e não
-    # navega); nesse caso reclicamos o ícone e tentamos abrir a tela de novo.
-    TENTATIVAS_INCLUIR = 2
     # Espera máxima pela confirmação do upload (arquivos maiores demoram).
     TIMEOUT_UPLOAD = 60
     # Após "Salvar", o SEI sinaliza campos faltando com um alerta JS; espera
@@ -165,8 +146,13 @@ class InserirDocumentoExterno:
                 encontrado, upload não confirmado) ou se o SEI recusar o
                 documento (alerta de validação).
         """
-        filtro = self._incluir_documento_e_abrir_form()
-        self._selecionar_tipo_externo(filtro)
+        try:
+            abrir_gerar_documento(
+                self.driver, self.TIPO_EXTERNO, timeout=self.timeout
+            )
+        except SeiNavegacaoError as exc:
+            # Preserva o contrato do módulo: todo o fluxo fala DocumentoExternoError.
+            raise DocumentoExternoError(str(exc)) from exc
         self._selecionar_serie()
         self._preencher_data()
         self._preencher_nome_arvore()
@@ -187,78 +173,6 @@ class InserirDocumentoExterno:
         return self.nome_arvore
 
     # ----- passos -----
-
-    def _incluir_documento_e_abrir_form(self):
-        """Clica em "Incluir Documento" e devolve o campo de filtro da tela.
-
-        Reclica o ícone se a tela não abrir na 1ª vez (o clique nem sempre
-        navega — o ícone pode ficar "pressionado" sem efeito).
-        """
-        ultimo_erro: DocumentoExternoError | None = None
-        for tentativa in range(1, self.TENTATIVAS_INCLUIR + 1):
-            clicar_icone_barra(
-                self.driver, self.ICONE_INCLUIR, timeout=self.timeout
-            )
-            try:
-                return self._abrir_formulario_e_esperar_filtro()
-            except DocumentoExternoError as exc:
-                ultimo_erro = exc
-                _log.warning(
-                    "Tela de inclusão não abriu (tentativa %d/%d); reclicando "
-                    "o ícone",
-                    tentativa,
-                    self.TENTATIVAS_INCLUIR,
-                )
-        raise ultimo_erro
-
-    def _abrir_formulario_e_esperar_filtro(self):
-        """Espera a tela "Gerar Documento" carregar e devolve o campo de filtro.
-
-        Clicar no ícone recarrega o iframe de visualização (AJAX) com a tela de
-        seleção de tipo. A troca de conteúdo pode deixar o contexto do driver
-        obsoleto, então **reentra no iframe** e procura o ``txtFiltro`` a cada
-        tentativa, até o campo aparecer ou esgotar :attr:`TIMEOUT_FORM`.
-        """
-        deadline = time.monotonic() + self.TIMEOUT_FORM
-        ultimo_erro: Exception | None = None
-        while True:
-            try:
-                self.driver.switch_to.default_content()
-                IframesSei(self.driver, IframesSei.VISUALIZACAO, timeout=3).navegar()
-                return WebDriverWait(self.driver, 2).until(
-                    EC.presence_of_element_located((By.ID, self.ID_FILTRO))
-                )
-            except (TimeoutException, StaleElementReferenceException) as exc:
-                ultimo_erro = exc  # iframe ainda não trocou / contexto obsoleto
-            if time.monotonic() >= deadline:
-                break
-            time.sleep(self.INTERVALO_FORM)
-        raise DocumentoExternoError(
-            "tela de inclusão de documento não carregou (campo de filtro ausente "
-            "após 'Incluir Documento' — o ícone pode não ter navegado)"
-        ) from ultimo_erro
-
-    def _selecionar_tipo_externo(self, filtro) -> None:
-        filtro.clear()
-        filtro.send_keys(self.TIPO_EXTERNO)
-        time.sleep(self.INTERVALO_FILTRO)  # deixa a lista filtrar (AJAX)
-        self._clicar_tipo_externo()
-        _log.info('Tipo "Externo" selecionado')
-
-    def _clicar_tipo_externo(self) -> None:
-        # Tenta o link "Externo" dentro da tabela de tipos e, se não achar (o
-        # container pode variar por versão), o mesmo link em qualquer lugar.
-        for xpath in (self.XPATH_TIPO_EXTERNO, self.XPATH_TIPO_EXTERNO_FALLBACK):
-            try:
-                WebDriverWait(self.driver, self.timeout).until(
-                    EC.element_to_be_clickable((By.XPATH, xpath))
-                ).click()
-                return
-            except TimeoutException:
-                continue
-        raise DocumentoExternoError(
-            'tipo "Externo" não apareceu na lista de tipos após o filtro'
-        )
 
     def _selecionar_serie(self) -> None:
         try:

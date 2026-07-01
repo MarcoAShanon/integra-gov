@@ -37,6 +37,12 @@ class DocumentoExternoError(SeiError):
     aceitou o documento."""
 
 
+class DocumentoInternoError(SeiError):
+    """Falha ao incluir um documento interno (Despacho, Nota Técnica, …): um
+    campo/botão do formulário não foi encontrado, o SEI não aceitou o documento,
+    ou a criação não pôde ser confirmada (editor não abriu / rótulo ilegível)."""
+
+
 class SeiLoginError(SeiError):
     """Falha no login do SEI (formulário não carregou ou login não confirmado)."""
 
