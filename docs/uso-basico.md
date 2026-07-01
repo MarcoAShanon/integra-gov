@@ -2,7 +2,8 @@
 
 Este guia mostra a **sequência inicial correta** para automatizar o SEI com a
 biblioteca: abrir o navegador, fazer login, fechar o aviso pós-login, escolher a
-unidade e abrir um processo.
+unidade e abrir um processo — e, por fim, as **operações sobre o processo**
+(criar um processo, incluir um documento externo).
 
 > A biblioteca é **headless**: ela fornece **dados** (ex.: `listar_unidades()`) e
 > **ações** (ex.: `selecionar(sigla)`). Ela não desenha telas — qualquer
@@ -44,6 +45,11 @@ exited"* / navegador que não abre:
 
 Se as tentativas se esgotarem, levanta `NavegadorError` (encadeando a causa
 original do Selenium para diagnóstico).
+
+Por padrão a janela abre **maximizada** (`maximizar=True`). Isso é importante no
+SEI: ele é **responsivo** e, em janela estreita, colapsa a barra de ícones e
+alguns elementos somem do DOM, quebrando a automação. No headless usa uma
+viewport larga (`--window-size=1920,1080`) pelo mesmo motivo.
 
 ```python
 from integra.sei import criar_driver_chrome
@@ -188,6 +194,75 @@ except ProcessoNaoEncontrado:
 processo.ir_para_raiz()
 IframesSei(driver, IframesSei.VISUALIZACAO).navegar()
 ```
+
+---
+
+## 5. Operações sobre o processo
+
+Com a sessão autenticada e na unidade certa (seções 1–3), a biblioteca oferece
+ações que **agem sobre um processo**. Nada de valor de órgão é embutido: tipo,
+série, nível de acesso e hipótese legal são **parâmetros** que casam com o texto
+**exato** do seu SEI.
+
+### Criar um novo processo
+
+`IniciarProcesso.iniciar()` cria o processo e **devolve o número (NUP)**:
+
+```python
+from integra.sei import IniciarProcesso
+from integra.sei.exceptions import IniciarProcessoError
+
+try:
+    numero = IniciarProcesso(
+        driver,
+        tipo="Tipo Exato do seu SEI",   # obrigatório; sem default (varia por órgão)
+        especificacao="...",            # opcional
+        interessado="...",              # opcional
+        nivel_acesso="publico",         # ou "restrito" (+ hipotese_legal)
+    ).iniciar()
+    print(numero)                       # ex.: "00000.000000/0000-00"
+except IniciarProcessoError as exc:
+    ...  # menu/campo não encontrado, ou o SEI recusou (ex.: "Informe o nível de acesso")
+```
+
+Para acesso **restrito**, a hipótese legal é obrigatória (texto exato do dropdown):
+
+```python
+IniciarProcesso(
+    driver, tipo="...",
+    nivel_acesso="restrito",
+    hipotese_legal="Informação Pessoal (Art. 31 da Lei nº 12.527/2011)",
+).iniciar()
+```
+
+### Incluir um documento externo (upload de arquivo)
+
+Anexa um arquivo pronto (PDF etc.) a um processo **já aberto** (acesse-o antes com
+`ProcessoSei(...).acessar()`). O upload vai direto ao `<input type=file>` do SEI —
+**sem** janela nativa nem `pywinauto`. `tipo_serie` é a opção do dropdown
+**"Tipo do Documento"** e `nome_arvore` é o **rótulo na árvore**:
+
+```python
+from integra.sei import ProcessoSei, InserirDocumentoExterno
+from integra.sei.exceptions import DocumentoExternoError
+
+ProcessoSei(driver, "00000.000000/0000-00").acessar()   # abre o processo
+
+try:
+    nome = InserirDocumentoExterno(
+        driver,
+        tipo_serie="Ofício",                  # opção EXATA do "Tipo do Documento"
+        nome_arvore="Ofício 123 - Resposta",  # rótulo na árvore
+        arquivo="caminho/para/arquivo.pdf",   # caminho do arquivo (deve existir)
+        nivel_acesso="publico",               # ou "restrito" (+ hipotese_legal)
+    ).inserir()
+    print(nome)                               # o nome_arvore confirmado
+except DocumentoExternoError as exc:
+    ...  # campo/botão não encontrado, upload não confirmado, ou o SEI recusou
+```
+
+Escopo atual: formato **nato-digital**. O nível de acesso reusa o mesmo
+componente do `iniciar_processo` (restrito exige `hipotese_legal`).
 
 ---
 
