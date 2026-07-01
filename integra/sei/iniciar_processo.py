@@ -10,9 +10,8 @@ obrigatório (não há padrão embutido — varia por órgão), e o nível de ac
 (``"publico"``/``"restrito"``) com a hipótese legal são configuráveis. Nenhum
 valor real (interessado, número, assunto) é embutido: tudo vem de quem chama.
 
-.. note::
-   Este módulo espelha os seletores da versão em produção, mas o fluxo de
-   criação **ainda não foi verificado ao vivo** neste pacote. Use com cautela.
+:meth:`IniciarProcesso.iniciar` devolve o número (NUP) do processo criado.
+Verificado ao vivo no SEI 4.1.5 (acesso público e restrito + hipótese legal).
 """
 
 from __future__ import annotations
@@ -258,11 +257,13 @@ class IniciarProcesso:
         campo.send_keys(Keys.ENTER)
         # Ao adicionar, o SEI pode abrir um alerta de confirmação.
         self._aceitar_alerta_se_houver()
-        # Seleciona o interessado recém-incluído na lista, se ela existir.
+        # Seleciona o interessado recém-incluído na lista, se ela existir. O
+        # interessado já foi adicionado pelo ENTER acima; a lista é opcional, daí
+        # a ausência ser tolerada (apenas registrada em debug).
         try:
             self.driver.find_element(By.ID, self.ID_LISTA_INTERESSADOS).click()
         except NoSuchElementException:
-            pass
+            _log.debug("Lista de interessados ausente; interessado já incluído")
         _log.info("Interessado adicionado")
 
     def _aceitar_alerta_se_houver(self) -> None:

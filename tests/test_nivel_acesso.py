@@ -80,6 +80,11 @@ def test_validar_restrito_sem_hipotese_levanta():
         validar_nivel_acesso("restrito", None)
 
 
+def test_validar_restrito_hipotese_so_espacos_levanta():
+    with pytest.raises(ValueError):
+        validar_nivel_acesso("restrito", "   ")
+
+
 def test_validar_nivel_invalido_levanta():
     with pytest.raises(ValueError):
         validar_nivel_acesso("sigiloso", None)
@@ -133,6 +138,11 @@ def test_hipotese_inexistente_no_dropdown_levanta(selenium):
     )
     with pytest.raises(NivelAcessoError):
         configurar_nivel_acesso(driver, "restrito", hipotese_legal="Inexistente")
+    # Esgotou o retry do AJAX antes de desistir.
+    assert (
+        mod.Select.return_value.select_by_visible_text.call_count
+        == mod.TENTATIVAS_HIPOTESE
+    )
 
 
 def test_restrito_sem_hipotese_levanta_valueerror(selenium):

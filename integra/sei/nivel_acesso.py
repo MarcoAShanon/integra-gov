@@ -52,7 +52,8 @@ def validar_nivel_acesso(nivel: str, hipotese_legal: str | None) -> str:
         O nível normalizado em minúsculas.
 
     Raises:
-        ValueError: nível inválido, ou restrito sem hipótese legal.
+        ValueError: nível não-string ou inválido, ou restrito sem hipótese legal
+            (incluindo hipótese só com espaços).
     """
     if not isinstance(nivel, str):
         raise ValueError("nivel_acesso deve ser uma string")
@@ -62,6 +63,10 @@ def validar_nivel_acesso(nivel: str, hipotese_legal: str | None) -> str:
             f"nivel_acesso inválido: {nivel!r} "
             f"(use {NIVEL_PUBLICO!r} ou {NIVEL_RESTRITO!r})"
         )
+    # Hipótese só com espaços é tão inválida quanto vazia — rejeita cedo
+    # (senão falharia tarde no dropdown como NivelAcessoError).
+    if isinstance(hipotese_legal, str):
+        hipotese_legal = hipotese_legal.strip()
     if nivel == NIVEL_RESTRITO and not hipotese_legal:
         raise ValueError(
             "hipotese_legal é obrigatória quando nivel_acesso='restrito'"
