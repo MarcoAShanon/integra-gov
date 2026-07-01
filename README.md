@@ -98,6 +98,30 @@ IniciarProcesso(
 ).iniciar()
 ```
 
+### Incluir um documento externo (upload de arquivo)
+
+Anexa um arquivo pronto (PDF etc.) como documento externo a um processo **já
+aberto**. O upload vai direto ao `<input type=file>` do SEI (sem janela nativa,
+sem `pywinauto`). `nome_arvore` é o rótulo do documento **na árvore** do processo:
+
+```python
+from integra.sei import InserirDocumentoExterno, ProcessoSei
+
+ProcessoSei(driver, "19975.018906/2026-39").acessar()   # abre o processo
+
+nome = InserirDocumentoExterno(
+    driver,
+    tipo_serie="Ofício",                    # série EXATA do seu SEI
+    nome_arvore="Ofício 123 - Resposta",    # rótulo na árvore
+    arquivo="C:/docs/oficio.pdf",           # caminho do arquivo
+    nivel_acesso="publico",                 # ou "restrito" (+ hipotese_legal)
+).inserir()
+print(nome)   # "Ofício 123 - Resposta"
+```
+
+Versão atual: formato **nato-digital** (o mais comum). "Digitalizado nesta
+unidade" (com tipo de conferência) virá depois.
+
 ### SIAPE (terminal 3270)
 
 O acesso ao SIAPE passa pelo portal SIAPENet (web, com certificado digital) e por
@@ -136,7 +160,9 @@ conexao.acessar_transacao("GRCOSITPRO", confirmacao="GRCOSITPRO")     # >transa�
 | `integra.sei.tela_aviso` | Fecha o aviso pós-login que bloqueia a tela | ✅ |
 | `integra.sei.login` | Autenticação no SEI | ✅ |
 | `integra.sei.iniciar_processo` | Criação de um novo processo (devolve o NUP) | ✅ |
+| `integra.sei.inserir_documento_externo` | Inclui um documento externo (upload de arquivo) | ✅ |
 | `integra.sei.nivel_acesso` | Nível de acesso (público/restrito) — reutilizável | ✅ |
+| `integra.sei.barra_icones` | Clique em ícones da barra do documento — reutilizável | ✅ |
 | `integra.sei.exceptions` | Exceções tipadas | ✅ |
 
 ### SIAPE 3270 — Windows, extra `[siape]`

@@ -31,6 +31,12 @@ class NivelAcessoError(SeiError):
     legal ausente no dropdown."""
 
 
+class DocumentoExternoError(SeiError):
+    """Falha ao incluir um documento externo: um campo/botão do formulário não
+    foi encontrado, o arquivo não pôde ser anexado/confirmado, ou o SEI não
+    aceitou o documento."""
+
+
 class SeiLoginError(SeiError):
     """Falha no login do SEI (formulário não carregou ou login não confirmado)."""
 

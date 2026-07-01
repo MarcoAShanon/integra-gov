@@ -12,10 +12,14 @@ documentados):
   - ``exceptions``        : exceções tipadas do pacote                   ✅
   - ``iniciar_processo``  : criação de um novo processo                  ✅
   - ``nivel_acesso``      : nível de acesso (público/restrito) — compartilhado ✅
+  - ``barra_icones``      : clique em ícones da barra do documento — compartilhado ✅
+  - ``inserir_documento_externo`` : inclui um documento externo (upload)  ✅
 """
 
+from .barra_icones import clicar_icone_barra
 from .exceptions import (
     CredenciaisInvalidas,
+    DocumentoExternoError,
     IniciarProcessoError,
     NavegadorError,
     NivelAcessoError,
@@ -27,6 +31,7 @@ from .exceptions import (
 )
 from .iframes import IframesSei, switch_to_iframe_visualizacao
 from .iniciar_processo import IniciarProcesso
+from .inserir_documento_externo import InserirDocumentoExterno
 from .login import LoginSei, montar_url_login
 from .navegador import (
     criar_driver_chrome,
@@ -40,9 +45,11 @@ from .tela_aviso import fechar_tela_aviso
 
 __all__ = [
     "CredenciaisInvalidas",
+    "DocumentoExternoError",
     "IframesSei",
     "IniciarProcesso",
     "IniciarProcessoError",
+    "InserirDocumentoExterno",
     "LoginSei",
     "NavegadorError",
     "NivelAcessoError",
@@ -54,6 +61,7 @@ __all__ = [
     "SelecaoUnidade",
     "Unidade",
     "UnidadeNaoEncontrada",
+    "clicar_icone_barra",
     "configurar_nivel_acesso",
     "criar_driver_chrome",
     "encerrar_chrome",

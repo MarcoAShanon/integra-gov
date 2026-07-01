@@ -6,6 +6,22 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não publicado]
 
 ### Adicionado
+- `integra.sei.inserir_documento_externo`: inclui um **documento externo**
+  (upload de arquivo) num processo aberto (`InserirDocumentoExterno.inserir()`,
+  **devolve o `nome_arvore`** confirmado). O upload vai direto ao
+  `<input type=file>` via Selenium — **sem `pywinauto`/janela nativa**, mantendo
+  o subpacote SEI livre de dependências de desktop. Generaliza o módulo original:
+  `tipo_serie` e `nome_arvore` obrigatórios (sem default), nível de acesso e
+  hipótese legal reusam `nivel_acesso`; sem valores de órgão embutidos. Escopo
+  atual: formato **nato-digital**. **Verificado ao vivo** no SEI 4.1.5 (MGI):
+  série "Ficha", restrito + hipótese "Informação Pessoal", upload de PDF e save
+  confirmados. Robusto à corrida do AJAX após "Incluir Documento" (reentra no
+  iframe até a tela abrir) e ao clique que não navega (reclica o ícone).
+- `integra.sei.barra_icones`: componente **reutilizável** para clicar em ícones
+  da barra do documento (`clicar_icone_barra(driver, titulo)`) — seleciona o nó
+  na árvore, entra no iframe de visualização e clica no ícone pelo `title`.
+  Usado pelo `inserir_documento_externo` e pelos futuros módulos de documento
+  (Editar Conteúdo, Enviar Processo…). **Verificado ao vivo** no SEI 4.1.5.
 - `integra.sei.iniciar_processo`: criação de um novo processo
   (`IniciarProcesso.iniciar()`), **verificado ao vivo** no SEI 4.1.5
   (público e restrito + hipótese legal). **Devolve o número (NUP)** do processo
