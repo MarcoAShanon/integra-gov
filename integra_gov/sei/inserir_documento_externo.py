@@ -10,7 +10,7 @@ O que é específico de órgão/política é **parâmetro**: a ``tipo_serie`` (s
 documento) e o ``nome_arvore`` (rótulo que o documento recebe na árvore) são
 obrigatórios, sem default; o nível de acesso (``"publico"``/``"restrito"`` +
 hipótese legal) é configurável e reusa o componente compartilhado
-:mod:`~integra.sei.nivel_acesso`. Nenhum valor real é embutido.
+:mod:`~integra_gov.sei.nivel_acesso`. Nenhum valor real é embutido.
 
 O upload é feito pelo Selenium, enviando o caminho do arquivo direto ao
 ``<input type="file">`` — **sem** dirigir a janela nativa do Windows (nada de
@@ -52,7 +52,7 @@ class InserirDocumentoExterno:
 
     Args:
         driver: WebDriver com o SEI autenticado e o **processo já aberto** (ver
-            :class:`~integra.sei.processo.ProcessoSei`).
+            :class:`~integra_gov.sei.processo.ProcessoSei`).
         tipo_serie: série/tipo do documento externo, **exatamente** como no SEI
             (ex.: ``"Ofício"``, ``"Certidão"``). Obrigatório, sem default.
         nome_arvore: rótulo que o documento recebe **na árvore** do processo
@@ -292,7 +292,7 @@ class InserirDocumentoExterno:
 
         Se houver alerta, o documento **não** foi incluído — levanta com o texto
         do SEI. Ausência de alerta = documento salvo (mesmo padrão do
-        :mod:`~integra.sei.iniciar_processo`).
+        :mod:`~integra_gov.sei.iniciar_processo`).
         """
         try:
             alerta = WebDriverWait(self.driver, self.TIMEOUT_ALERTA).until(

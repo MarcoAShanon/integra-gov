@@ -11,8 +11,8 @@ import logging
 
 from selenium import webdriver
 
-from integra.sei import IframesSei, ProcessoSei, fechar_tela_aviso
-from integra.sei.exceptions import ProcessoNaoEncontrado
+from integra_gov.sei import IframesSei, ProcessoSei, fechar_tela_aviso
+from integra_gov.sei.exceptions import ProcessoNaoEncontrado
 
 logging.basicConfig(level=logging.INFO)
 

@@ -1,4 +1,4 @@
-"""Testes de ``integra.siape.controle`` — sem pywinauto/terminal real.
+"""Testes de ``integra_gov.siape.controle`` — sem pywinauto/terminal real.
 
 O ``pywinauto`` não está instalado na CI (Linux). Os testes substituem
 ``_dependencias.Application`` e ``_dependencias.clipboard`` por fakes, então o
@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import pytest
 
-from integra.siape import _dependencias as dep
-from integra.siape import controle as mod
-from integra.siape.controle import ControleTerminal3270
-from integra.siape.exceptions import (
+from integra_gov.siape import _dependencias as dep
+from integra_gov.siape import controle as mod
+from integra_gov.siape.controle import ControleTerminal3270
+from integra_gov.siape.exceptions import (
     PywinautoIndisponivel,
     SessaoSiapePerdida,
     TerminalError,

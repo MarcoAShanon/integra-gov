@@ -1,4 +1,4 @@
-"""Testes de ``integra.siape.habilitacao`` — controle de terminal mockado."""
+"""Testes de ``integra_gov.siape.habilitacao`` — controle de terminal mockado."""
 
 from __future__ import annotations
 
@@ -6,11 +6,11 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
-from integra.siape import _menu
-from integra.siape import habilitacao as mod
-from integra.siape.controle import ControleTerminal3270
-from integra.siape.exceptions import HabilitacaoNaoEncontrada, TerminalError
-from integra.siape.habilitacao import TrocaHabilitacao
+from integra_gov.siape import _menu
+from integra_gov.siape import habilitacao as mod
+from integra_gov.siape.controle import ControleTerminal3270
+from integra_gov.siape.exceptions import HabilitacaoNaoEncontrada, TerminalError
+from integra_gov.siape.habilitacao import TrocaHabilitacao
 
 LARGURA = TrocaHabilitacao.CARACTERES_POR_LINHA
 

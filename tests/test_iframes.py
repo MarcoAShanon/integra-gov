@@ -1,4 +1,4 @@
-"""Testes de ``integra.sei.iframes`` — sem navegador real (Selenium mockado).
+"""Testes de ``integra_gov.sei.iframes`` — sem navegador real (Selenium mockado).
 
 Estratégia: ``EC.frame_to_be_available_and_switch_to_it`` é substituído para
 devolver a própria tupla locator ``(By, nome)``, e ``WebDriverWait`` por um
@@ -15,8 +15,8 @@ from selenium.common.exceptions import (
     TimeoutException,
 )
 
-from integra.sei import iframes
-from integra.sei.iframes import IframesSei
+from integra_gov.sei import iframes
+from integra_gov.sei.iframes import IframesSei
 
 
 def _fake_wait_factory(frames_disponiveis):

@@ -15,8 +15,8 @@ import logging
 
 from selenium import webdriver
 
-from integra.sei import IniciarProcesso, fechar_tela_aviso
-from integra.sei.exceptions import IniciarProcessoError
+from integra_gov.sei import IniciarProcesso, fechar_tela_aviso
+from integra_gov.sei.exceptions import IniciarProcessoError
 
 logging.basicConfig(level=logging.INFO)
 

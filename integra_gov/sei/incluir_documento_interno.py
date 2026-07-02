@@ -2,7 +2,7 @@
 
 Aciona **"Incluir Documento"**, escolhe o tipo interno (``"Despacho"``,
 ``"Nota Técnica"``, …) na tela "Gerar Documento" — preâmbulo compartilhado em
-:mod:`~integra.sei.gerar_documento` — e preenche o formulário: **texto inicial**
+:mod:`~integra_gov.sei.gerar_documento` — e preenche o formulário: **texto inicial**
 ("Documento Modelo", com o protocolo de um documento base, ou nenhum), **nome na
 árvore** e nível de acesso, salvando ao fim. Requer uma sessão autenticada, na
 unidade correta, com o **processo aberto**.
@@ -15,7 +15,7 @@ abertura do editor, e o retorno é o **rótulo do documento na árvore** (ex.:
 O que é específico de órgão/política é **parâmetro**: ``tipo_documento`` é
 obrigatório (texto exato, varia por órgão); o ``documento_modelo`` (protocolo do
 documento cujo conteúdo serve de base — os *modelos pré-definidos*) é opcional;
-nível de acesso e hipótese legal reusam :mod:`~integra.sei.nivel_acesso`.
+nível de acesso e hipótese legal reusam :mod:`~integra_gov.sei.nivel_acesso`.
 Nenhum valor real é embutido.
 
 Escopo desta versão: texto inicial "Documento Modelo" ou nenhum. "Texto Padrão"
@@ -44,11 +44,11 @@ class IncluirDocumentoInterno:
 
     Args:
         driver: WebDriver com o SEI autenticado e o **processo já aberto** (ver
-            :class:`~integra.sei.processo.ProcessoSei`).
+            :class:`~integra_gov.sei.processo.ProcessoSei`).
         tipo_documento: tipo do documento, **exatamente** como na lista do SEI
             (ex.: ``"Despacho"``, ``"Nota Técnica"``). Obrigatório, sem default.
             Para documento **externo** (upload de arquivo), use
-            :class:`~integra.sei.inserir_documento_externo.InserirDocumentoExterno`.
+            :class:`~integra_gov.sei.inserir_documento_externo.InserirDocumentoExterno`.
         nome_arvore: rótulo extra do documento **na árvore** (campo "Nome na
             Árvore"); opcional — o SEI compõe ``tipo + nome``.
         documento_modelo: protocolo SEI do documento cujo conteúdo serve de
@@ -219,7 +219,7 @@ class IncluirDocumentoInterno:
         """Após "Salvar", o SEI sinaliza campos faltando com um alerta JS.
 
         Se houver alerta, o documento **não** foi criado — levanta com o texto
-        do SEI (mesmo padrão do :mod:`~integra.sei.iniciar_processo`).
+        do SEI (mesmo padrão do :mod:`~integra_gov.sei.iniciar_processo`).
         """
         try:
             alerta = WebDriverWait(self.driver, self.TIMEOUT_ALERTA).until(

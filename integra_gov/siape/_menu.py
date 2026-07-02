@@ -1,7 +1,7 @@
 """Menu principal / linha de comando do SIAPE 3270 (lógica compartilhada).
 
-Tanto a troca de habilitação (:mod:`integra.siape.habilitacao`) quanto o acesso a
-transações (:meth:`integra.siape.conexao.ConexaoTerminal3270.acessar_transacao`)
+Tanto a troca de habilitação (:mod:`integra_gov.siape.habilitacao`) quanto o acesso a
+transações (:meth:`integra_gov.siape.conexao.ConexaoTerminal3270.acessar_transacao`)
 precisam garantir que o terminal está no **menu principal** — com a linha de
 comando ``COMANDO.....`` disponível — antes de digitar. Esta lógica vive aqui
 para ser reutilizada pelos dois (sem duplicação).

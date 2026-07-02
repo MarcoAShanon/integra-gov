@@ -3,10 +3,11 @@ requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-# Nome de DISTRIBUIÇÃO. O repositório no GitHub será "integra-gov".
-# "integra" provavelmente está ocupado no PyPI; ao publicar lá, troque para
-# "integra-gov" — isso NÃO muda os imports, que continuam `import integra`.
-name = "integra"
+# Nome de DISTRIBUIÇÃO (PyPI) e de IMPORTAÇÃO alinhados: instala-se com
+# `pip install integra-gov` e importa-se com `import integra_gov`. O namespace
+# `integra_gov` evita colisão com o pacote interno `integra` (privado), o que
+# permite este pacote ser consumido como dependência dele.
+name = "integra-gov"
 version = "0.0.1"
 description = "Automação de sistemas do governo federal brasileiro (a começar pelo SEI), para ajudar servidores públicos."
 readme = "README.md"
@@ -45,10 +46,10 @@ Homepage = "https://github.com/MarcoAShanon/integra-gov"
 Issues = "https://github.com/MarcoAShanon/integra-gov/issues"
 
 [tool.setuptools.packages.find]
-include = ["integra*"]
+include = ["integra_gov*"]
 
 [tool.setuptools.package-data]
-integra = ["py.typed"]
+integra_gov = ["py.typed"]
 
 [tool.ruff]
 line-length = 100

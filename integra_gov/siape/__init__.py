@@ -1,4 +1,4 @@
-"""integra.siape — automação do SIAPE via terminal 3270 (emulador IBM HOD).
+"""integra_gov.siape — automação do SIAPE via terminal 3270 (emulador IBM HOD).
 
 ⚠️ **Subpacote opcional, Windows-only.** Requer o extra ``siape``::
 

@@ -1,4 +1,4 @@
-"""integra.sei — automação do SEI (Sistema Eletrônico de Informações).
+"""integra_gov.sei — automação do SEI (Sistema Eletrônico de Informações).
 
 Módulos, portados de forma incremental (já generalizados, testados e
 documentados):

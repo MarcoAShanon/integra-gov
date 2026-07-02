@@ -1,6 +1,6 @@
 """Lançamento do módulo HOD do SIAPE (abre o emulador de Terminal 3270).
 
-Depois do acesso web (:class:`~integra.siape.acesso_web.AcessoSiapeWeb`), o
+Depois do acesso web (:class:`~integra_gov.siape.acesso_web.AcessoSiapeWeb`), o
 navegador baixa um arquivo ``hodcivws*.jsp`` que, ao ser executado, abre o
 emulador (via Java Web Start). Este módulo localiza esse arquivo, o executa,
 conduz o **Painel de controle** do HOD e aguarda a janela do **Terminal 3270**.

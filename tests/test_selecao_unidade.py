@@ -1,4 +1,4 @@
-"""Testes de ``integra.sei.selecao_unidade`` — sem navegador real.
+"""Testes de ``integra_gov.sei.selecao_unidade`` — sem navegador real.
 
 ``WebDriverWait`` é trocado por um fake que consome uma fila de eventos
 (``("ret", v)`` retorna ``v``; ``("raise", exc)`` levanta ``exc``). As chamadas
@@ -10,9 +10,9 @@ from unittest.mock import MagicMock
 import pytest
 from selenium.common.exceptions import TimeoutException
 
-from integra.sei import selecao_unidade as mod
-from integra.sei.exceptions import SeiNavegacaoError, UnidadeNaoEncontrada
-from integra.sei.selecao_unidade import SelecaoUnidade
+from integra_gov.sei import selecao_unidade as mod
+from integra_gov.sei.exceptions import SeiNavegacaoError, UnidadeNaoEncontrada
+from integra_gov.sei.selecao_unidade import SelecaoUnidade
 
 
 @pytest.fixture

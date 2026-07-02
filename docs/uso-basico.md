@@ -1,4 +1,4 @@
-# Guia de uso básico — `integra.sei`
+# Guia de uso básico — `integra_gov.sei`
 
 Este guia mostra a **sequência inicial correta** para automatizar o SEI com a
 biblioteca: abrir o navegador, fazer login, fechar o aviso pós-login, escolher a
@@ -52,7 +52,7 @@ alguns elementos somem do DOM, quebrando a automação. No headless usa uma
 viewport larga (`--window-size=1920,1080`) pelo mesmo motivo.
 
 ```python
-from integra.sei import criar_driver_chrome
+from integra_gov.sei import criar_driver_chrome
 
 driver = criar_driver_chrome()
 try:
@@ -82,7 +82,7 @@ driver = criar_driver_chrome(encerrar_todo_chrome=True)   # ⚠️ fecha tudo
 Ou chame as funções de limpeza diretamente, sem abrir nada:
 
 ```python
-from integra.sei import encerrar_chromedriver_orfaos, encerrar_chrome
+from integra_gov.sei import encerrar_chromedriver_orfaos, encerrar_chrome
 
 encerrar_chromedriver_orfaos()   # seguro
 encerrar_chrome()                # ⚠️ destrutivo: fecha todas as janelas
@@ -104,7 +104,7 @@ for fechada, **bloqueia a interação com os demais campos**. A ordem importa.
 
 ```python
 from getpass import getpass
-from integra.sei import LoginSei
+from integra_gov.sei import LoginSei
 
 LoginSei(
     driver,
@@ -121,7 +121,7 @@ exemplo, se você mesmo fez o login na sessão do navegador e só reaproveita o
 `driver`:
 
 ```python
-from integra.sei import fechar_tela_aviso
+from integra_gov.sei import fechar_tela_aviso
 
 # ... você fez login manualmente nesta sessão ...
 fechar_tela_aviso(driver)   # idempotente: retorna 0 se não houver aviso
@@ -138,7 +138,7 @@ erro (retorna `0`). Logo, na dúvida, chamá-lo de novo é inofensivo.
 | `SeiLoginError` | o formulário não carregou ou o login não pôde ser confirmado (URL/instância errada, seletor diferente) |
 
 ```python
-from integra.sei.exceptions import CredenciaisInvalidas, SeiLoginError
+from integra_gov.sei.exceptions import CredenciaisInvalidas, SeiLoginError
 
 try:
     LoginSei(driver, base_url, orgao, usuario, senha).logar()
@@ -159,8 +159,8 @@ O SEI trabalha "dentro de uma unidade". Antes de abrir/instruir um processo,
 garanta a unidade certa pela **sigla**:
 
 ```python
-from integra.sei import SelecaoUnidade
-from integra.sei.exceptions import UnidadeNaoEncontrada
+from integra_gov.sei import SelecaoUnidade
+from integra_gov.sei.exceptions import UnidadeNaoEncontrada
 
 sel = SelecaoUnidade(driver)
 try:
@@ -181,8 +181,8 @@ for u in sel.listar_unidades():
 ## 4. Abrir um processo existente
 
 ```python
-from integra.sei import ProcessoSei, IframesSei
-from integra.sei.exceptions import ProcessoNaoEncontrado
+from integra_gov.sei import ProcessoSei, IframesSei
+from integra_gov.sei.exceptions import ProcessoNaoEncontrado
 
 try:
     processo = ProcessoSei(driver, "00000.000000/0000-00")  # número fictício
@@ -209,8 +209,8 @@ série, nível de acesso e hipótese legal são **parâmetros** que casam com o 
 `IniciarProcesso.iniciar()` cria o processo e **devolve o número (NUP)**:
 
 ```python
-from integra.sei import IniciarProcesso
-from integra.sei.exceptions import IniciarProcessoError
+from integra_gov.sei import IniciarProcesso
+from integra_gov.sei.exceptions import IniciarProcessoError
 
 try:
     numero = IniciarProcesso(
@@ -243,8 +243,8 @@ Anexa um arquivo pronto (PDF etc.) a um processo **já aberto** (acesse-o antes 
 **"Tipo do Documento"** e `nome_arvore` é o **rótulo na árvore**:
 
 ```python
-from integra.sei import ProcessoSei, InserirDocumentoExterno
-from integra.sei.exceptions import DocumentoExternoError
+from integra_gov.sei import ProcessoSei, InserirDocumentoExterno
+from integra_gov.sei.exceptions import DocumentoExternoError
 
 ProcessoSei(driver, "00000.000000/0000-00").acessar()   # abre o processo
 
@@ -274,8 +274,8 @@ confirma a criação por essa janela, **fecha-a** e devolve o driver à janela
 principal, retornando o **rótulo do documento na árvore**:
 
 ```python
-from integra.sei import IncluirDocumentoInterno
-from integra.sei.exceptions import DocumentoInternoError
+from integra_gov.sei import IncluirDocumentoInterno
+from integra_gov.sei.exceptions import DocumentoInternoError
 
 try:
     rotulo = IncluirDocumentoInterno(
@@ -331,10 +331,10 @@ API do editor (CKEditor), sem simular teclado e sem "localizar/substituir" na
 tela:
 
 ```python
-from integra.sei import (
+from integra_gov.sei import (
     IncluirDocumentoInterno, EditarConteudo, data_por_extenso,
 )
-from integra.sei.exceptions import DocumentoInternoError, EditarConteudoError
+from integra_gov.sei.exceptions import DocumentoInternoError, EditarConteudoError
 
 try:
     IncluirDocumentoInterno(
@@ -381,7 +381,7 @@ documento **já existente**, aponte-o com `DocumentosArvore` — que também lê
 árvore como dados:
 
 ```python
-from integra.sei import DocumentosArvore
+from integra_gov.sei import DocumentosArvore
 
 arvore = DocumentosArvore(driver)
 
@@ -408,8 +408,8 @@ Assina o documento **selecionado** com a **senha do próprio servidor** — a se
 
 ```python
 from getpass import getpass
-from integra.sei import AssinarDocumento
-from integra.sei.exceptions import AssinaturaError
+from integra_gov.sei import AssinarDocumento
+from integra_gov.sei.exceptions import AssinaturaError
 
 try:
     AssinarDocumento(driver, senha=getpass("Senha do SEI: ")).assinar()
@@ -433,7 +433,7 @@ levanta `AssinaturaError`.
 ```python
 from getpass import getpass
 
-from integra.sei import (
+from integra_gov.sei import (
     criar_driver_chrome,
     LoginSei,
     SelecaoUnidade,

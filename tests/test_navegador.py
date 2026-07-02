@@ -1,4 +1,4 @@
-"""Testes de ``integra.sei.navegador`` — sem Chrome real.
+"""Testes de ``integra_gov.sei.navegador`` — sem Chrome real.
 
 ``subprocess.run`` e ``webdriver.Chrome`` são trocados por fakes; a plataforma
 (``sys.platform``) é forçada para exercitar tanto Windows quanto POSIX.
@@ -9,9 +9,9 @@ from __future__ import annotations
 import pytest
 from selenium.common.exceptions import SessionNotCreatedException
 
-from integra.sei import navegador as mod
-from integra.sei.exceptions import NavegadorError
-from integra.sei.navegador import (
+from integra_gov.sei import navegador as mod
+from integra_gov.sei.exceptions import NavegadorError
+from integra_gov.sei.navegador import (
     criar_driver_chrome,
     encerrar_chrome,
     encerrar_chromedriver_orfaos,

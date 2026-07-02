@@ -49,7 +49,10 @@ def _maximizar(driver) -> None:
     """
     try:
         driver.maximize_window()
-    except WebDriverException as exc:
+    except (WebDriverException, AttributeError) as exc:
+        # WebDriverException: o ambiente recusou o comando. AttributeError: o
+        # driver não implementa maximize_window (wrappers exóticos). Em ambos os
+        # casos é apenas best-effort — não deve quebrar a criação do driver.
         _log.debug("maximize_window() falhou: %s", str(exc).splitlines()[0])
 
 

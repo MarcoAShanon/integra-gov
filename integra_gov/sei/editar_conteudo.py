@@ -14,7 +14,7 @@ as substituições em **todas as instâncias editáveis** — onde quer que o
 placeholder esteja — e ignora as somente-leitura.
 
 Fluxo pensado para os **modelos pré-definidos**: crie o documento com
-:class:`~integra.sei.incluir_documento_interno.IncluirDocumentoInterno` usando
+:class:`~integra_gov.sei.incluir_documento_interno.IncluirDocumentoInterno` usando
 ``documento_modelo=`` (clona um documento base com placeholders, ex.:
 ``{{NOME}}``), depois aplique :class:`EditarConteudo` com o dicionário de
 ``substituicoes``. Rede de segurança: se algum placeholder pedido **não** for

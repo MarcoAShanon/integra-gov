@@ -1,4 +1,4 @@
-"""integra — automação de sistemas do governo federal brasileiro.
+"""integra_gov — automação de sistemas do governo federal brasileiro.
 
 Biblioteca para ajudar servidores públicos a automatizar tarefas em sistemas
 como o SEI (Sistema Eletrônico de Informações). Projeto aberto, publicado de

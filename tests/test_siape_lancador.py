@@ -1,4 +1,4 @@
-"""Testes de ``integra.siape.lancador`` — sem HOD/pywinauto real.
+"""Testes de ``integra_gov.siape.lancador`` — sem HOD/pywinauto real.
 
 Substitui ``glob``, ``os.startfile``, ``os.path.getctime`` e
 ``_dependencias.Application`` por fakes.
@@ -10,10 +10,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from integra.siape import _dependencias as dep
-from integra.siape import lancador as mod
-from integra.siape.exceptions import LancamentoHodError, PywinautoIndisponivel
-from integra.siape.lancador import LancadorHod
+from integra_gov.siape import _dependencias as dep
+from integra_gov.siape import lancador as mod
+from integra_gov.siape.exceptions import LancamentoHodError, PywinautoIndisponivel
+from integra_gov.siape.lancador import LancadorHod
 
 
 @pytest.fixture(autouse=True)

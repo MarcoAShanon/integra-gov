@@ -21,13 +21,13 @@ from getpass import getpass
 
 from selenium import webdriver
 
-from integra.sei import (
+from integra_gov.sei import (
     AssinarDocumento,
     DocumentosArvore,
     ProcessoSei,
     fechar_tela_aviso,
 )
-from integra.sei.exceptions import (
+from integra_gov.sei.exceptions import (
     AssinaturaError,
     ProcessoNaoEncontrado,
     SelecaoDocumentoError,

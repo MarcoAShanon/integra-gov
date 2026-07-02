@@ -7,10 +7,10 @@ download do módulo HOD) e **captura o código OTP** exibido na página, que pre
 ser informado ao Terminal 3270 (tela ``COD. SEGURANCA``).
 
 Esta camada é **só Selenium** (não usa pywinauto). Use com um driver criado por
-:func:`integra.sei.criar_driver_chrome` ou o seu próprio::
+:func:`integra_gov.sei.criar_driver_chrome` ou o seu próprio::
 
-    from integra.sei import criar_driver_chrome
-    from integra.siape import AcessoSiapeWeb, ConexaoTerminal3270
+    from integra_gov.sei import criar_driver_chrome
+    from integra_gov.siape import AcessoSiapeWeb, ConexaoTerminal3270
 
     driver = criar_driver_chrome()
     otp = AcessoSiapeWeb(driver).executar()        # você autentica; devolve o OTP

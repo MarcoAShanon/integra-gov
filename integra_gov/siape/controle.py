@@ -2,8 +2,8 @@
 
 Esta é a **camada base**: atacha-se a uma janela de emulador de terminal 3270
 **já aberta**, lê a tela (via área de transferência) e envia teclas/comandos por
-coordenadas. As camadas de acesso (:mod:`integra.siape.conexao`) e de troca de
-habilitação (:mod:`integra.siape.habilitacao`) usam esta classe para toda a
+coordenadas. As camadas de acesso (:mod:`integra_gov.siape.conexao`) e de troca de
+habilitação (:mod:`integra_gov.siape.habilitacao`) usam esta classe para toda a
 interação com o terminal.
 
 Requisitos:

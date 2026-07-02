@@ -1,4 +1,4 @@
-"""Exceções tipadas do subpacote ``integra.siape`` (terminal 3270)."""
+"""Exceções tipadas do subpacote ``integra_gov.siape`` (terminal 3270)."""
 
 
 class SiapeError(Exception):

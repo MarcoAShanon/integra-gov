@@ -161,7 +161,7 @@ class ConexaoTerminal3270:
         ``confirmacao`` for dada, verifica que a tela resultante a contém.
 
         Pré-requisito: estar na **habilitação** (ÓRGÃO/UPAG) correta — use
-        :class:`~integra.siape.habilitacao.TrocaHabilitacao` antes, se preciso.
+        :class:`~integra_gov.siape.habilitacao.TrocaHabilitacao` antes, se preciso.
 
         Args:
             comando: nome da transação (ex.: ``"GRCOSITPRO"``); o ``>`` é

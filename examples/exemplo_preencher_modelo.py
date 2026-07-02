@@ -21,14 +21,14 @@ import logging
 
 from selenium import webdriver
 
-from integra.sei import (
+from integra_gov.sei import (
     EditarConteudo,
     IncluirDocumentoInterno,
     ProcessoSei,
     data_por_extenso,
     fechar_tela_aviso,
 )
-from integra.sei.exceptions import (
+from integra_gov.sei.exceptions import (
     DocumentoInternoError,
     EditarConteudoError,
     ProcessoNaoEncontrado,

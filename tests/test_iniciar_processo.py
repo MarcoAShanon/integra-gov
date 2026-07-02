@@ -1,4 +1,4 @@
-"""Testes de ``integra.sei.iniciar_processo`` — sem navegador real.
+"""Testes de ``integra_gov.sei.iniciar_processo`` — sem navegador real.
 
 ``WebDriverWait`` vira um fake cujo ``.until(cond)`` chama ``cond(driver)``;
 ``EC.element_to_be_clickable`` / ``EC.presence_of_element_located`` viram
@@ -17,9 +17,9 @@ from selenium.common.exceptions import (
 )
 from selenium.webdriver.common.keys import Keys
 
-from integra.sei import iniciar_processo as mod
-from integra.sei.exceptions import IniciarProcessoError, NivelAcessoError
-from integra.sei.iniciar_processo import IniciarProcesso
+from integra_gov.sei import iniciar_processo as mod
+from integra_gov.sei.exceptions import IniciarProcessoError, NivelAcessoError
+from integra_gov.sei.iniciar_processo import IniciarProcesso
 
 
 class _FakeWait:

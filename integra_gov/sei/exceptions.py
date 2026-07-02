@@ -1,4 +1,4 @@
-"""Exceções tipadas do pacote ``integra.sei``."""
+"""Exceções tipadas do pacote ``integra_gov.sei``."""
 
 
 class SeiError(Exception):

@@ -17,8 +17,8 @@ import logging
 
 from selenium import webdriver
 
-from integra.sei import IncluirDocumentoInterno, ProcessoSei, fechar_tela_aviso
-from integra.sei.exceptions import DocumentoInternoError, ProcessoNaoEncontrado
+from integra_gov.sei import IncluirDocumentoInterno, ProcessoSei, fechar_tela_aviso
+from integra_gov.sei.exceptions import DocumentoInternoError, ProcessoNaoEncontrado
 
 logging.basicConfig(level=logging.INFO)
 

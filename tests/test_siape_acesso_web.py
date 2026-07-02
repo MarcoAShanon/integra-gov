@@ -1,4 +1,4 @@
-"""Testes de ``integra.siape.acesso_web`` — sem navegador real (Selenium mockado).
+"""Testes de ``integra_gov.siape.acesso_web`` — sem navegador real (Selenium mockado).
 
 ``WebDriverWait`` vira um fake cujo ``.until(cond)`` chama ``cond(driver)``; os
 ``EC.*`` viram condições que fazem ``driver.find_element(*locator)`` (ou um
@@ -16,9 +16,9 @@ from selenium.common.exceptions import (
     WebDriverException,
 )
 
-from integra.siape import acesso_web as mod
-from integra.siape.acesso_web import AcessoSiapeWeb
-from integra.siape.exceptions import AcessoSiapeError, TokenOtpError
+from integra_gov.siape import acesso_web as mod
+from integra_gov.siape.acesso_web import AcessoSiapeWeb
+from integra_gov.siape.exceptions import AcessoSiapeError, TokenOtpError
 
 
 class _FakeWait:

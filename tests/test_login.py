@@ -1,4 +1,4 @@
-"""Testes de ``integra.sei.login`` — sem navegador real.
+"""Testes de ``integra_gov.sei.login`` — sem navegador real.
 
 ``WebDriverWait`` é trocado por um fake que, a cada ``.until(...)``, consome o
 próximo evento de uma fila configurada pelo teste: ``("ret", valor)`` retorna
@@ -12,9 +12,9 @@ from unittest.mock import MagicMock
 import pytest
 from selenium.common.exceptions import TimeoutException
 
-from integra.sei import login as mod
-from integra.sei.exceptions import CredenciaisInvalidas, SeiLoginError
-from integra.sei.login import LoginSei
+from integra_gov.sei import login as mod
+from integra_gov.sei.exceptions import CredenciaisInvalidas, SeiLoginError
+from integra_gov.sei.login import LoginSei
 
 
 @pytest.fixture

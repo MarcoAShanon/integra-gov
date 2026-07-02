@@ -1,4 +1,4 @@
-"""Testes de ``integra.sei.processo`` — sem navegador real (Selenium mockado).
+"""Testes de ``integra_gov.sei.processo`` — sem navegador real (Selenium mockado).
 
 ``WebDriverWait`` é trocado por um fake cujo ``.until(cond)`` chama
 ``cond(driver)``: resultado *truthy* é sucesso; *falsy* ou ``NoSuchElement``
@@ -11,9 +11,9 @@ from unittest.mock import MagicMock
 import pytest
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
-from integra.sei import processo as mod
-from integra.sei.exceptions import ProcessoNaoEncontrado, SeiNavegacaoError
-from integra.sei.processo import ProcessoSei
+from integra_gov.sei import processo as mod
+from integra_gov.sei.exceptions import ProcessoNaoEncontrado, SeiNavegacaoError
+from integra_gov.sei.processo import ProcessoSei
 
 
 class _FakeWait:

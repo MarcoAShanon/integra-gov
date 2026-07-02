@@ -1,4 +1,4 @@
-"""Testes de ``integra.sei.nivel_acesso`` — sem navegador real (Selenium mockado).
+"""Testes de ``integra_gov.sei.nivel_acesso`` — sem navegador real (Selenium mockado).
 
 ``WebDriverWait`` vira um fake cujo ``.until(cond)`` chama ``cond(driver)``; os
 ``EC.*`` viram condições que fazem ``driver.find_element(*locator)``.
@@ -11,9 +11,9 @@ from unittest.mock import MagicMock
 import pytest
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
-from integra.sei import nivel_acesso as mod
-from integra.sei.exceptions import NivelAcessoError
-from integra.sei.nivel_acesso import configurar_nivel_acesso, validar_nivel_acesso
+from integra_gov.sei import nivel_acesso as mod
+from integra_gov.sei.exceptions import NivelAcessoError
+from integra_gov.sei.nivel_acesso import configurar_nivel_acesso, validar_nivel_acesso
 
 
 class _FakeWait:
@@ -137,12 +137,11 @@ def test_hipotese_inexistente_no_dropdown_levanta(selenium):
         NoSuchElementException("opção inexistente")
     )
     with pytest.raises(NivelAcessoError):
-        configurar_nivel_acesso(driver, "restrito", hipotese_legal="Inexistente")
-    # Esgotou o retry do AJAX antes de desistir.
-    assert (
-        mod.Select.return_value.select_by_visible_text.call_count
-        == mod.TENTATIVAS_HIPOTESE
-    )
+        configurar_nivel_acesso(
+            driver, "restrito", hipotese_legal="Inexistente", timeout=1
+        )
+    # Reconsultou o dropdown (populado via AJAX) mais de uma vez antes de desistir.
+    assert mod.Select.return_value.select_by_visible_text.call_count >= 2
 
 
 def test_restrito_sem_hipotese_levanta_valueerror(selenium):

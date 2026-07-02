@@ -1,4 +1,4 @@
-"""Testes de ``integra.siape.conexao`` — controle de terminal mockado.
+"""Testes de ``integra_gov.siape.conexao`` — controle de terminal mockado.
 
 O ``ControleTerminal3270`` é substituído por um ``MagicMock`` (com ``spec``), de
 modo que os testes verificam o fluxo de acesso/OTP/UORG sem pywinauto.
@@ -10,11 +10,11 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
-from integra.siape import _menu
-from integra.siape import conexao as mod
-from integra.siape.conexao import ConexaoTerminal3270
-from integra.siape.controle import ControleTerminal3270
-from integra.siape.exceptions import (
+from integra_gov.siape import _menu
+from integra_gov.siape import conexao as mod
+from integra_gov.siape.conexao import ConexaoTerminal3270
+from integra_gov.siape.controle import ControleTerminal3270
+from integra_gov.siape.exceptions import (
     CodigoSegurancaError,
     TerminalError,
     TransacaoError,
@@ -160,7 +160,7 @@ def test_acessar_transacao_sem_menu_levanta_terminal_error():
 
 def test_uorg_coordenadas_reais_disparam_f3(monkeypatch):
     # Usa o extrair_texto REAL sobre uma tela montada, ancorando POSICAO_UORG.
-    from integra.siape.controle import ControleTerminal3270
+    from integra_gov.siape.controle import ControleTerminal3270
 
     largura = ControleTerminal3270.CARACTERES_POR_LINHA
     mensagem = "UORG DO CORREIO DO USUARIO NAO CADASTRADA"

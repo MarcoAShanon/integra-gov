@@ -1,4 +1,4 @@
-"""Testes de ``integra.sei.tela_aviso`` — sem navegador real.
+"""Testes de ``integra_gov.sei.tela_aviso`` — sem navegador real.
 
 ``WebDriverWait`` é trocado por um fake que consome uma fila de eventos
 (``("ret", botao)`` retorna o botão; ``("raise", exc)`` levanta ``exc``).
@@ -12,8 +12,8 @@ from selenium.common.exceptions import (
     TimeoutException,
 )
 
-from integra.sei import tela_aviso as mod
-from integra.sei.tela_aviso import fechar_tela_aviso
+from integra_gov.sei import tela_aviso as mod
+from integra_gov.sei.tela_aviso import fechar_tela_aviso
 
 
 @pytest.fixture
