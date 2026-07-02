@@ -148,6 +148,35 @@ print(rotulo)   # ex.: "Despacho 12345678"
 Versão atual: texto inicial **"Documento Modelo"** ou nenhum. "Texto Padrão"
 virá depois; a edição do conteúdo será um módulo próprio.
 
+### Editar o conteúdo (preencher um modelo com placeholders)
+
+O padrão para instrução processual **em escala**: a equipe mantém um documento
+**modelo** no próprio SEI (com placeholders no texto, ex.: `{{NOME}}`), a
+automação **clona** o modelo (`documento_modelo=`) e preenche os campos. A
+substituição é injetada direto na API do CKEditor (`getData`/`setData`) — sem
+simular teclado, sem "localizar e substituir" na tela, e **sem nenhuma
+habilitação institucional** (usa a mesma sessão logada de sempre):
+
+```python
+from integra.sei import EditarConteudo, IncluirDocumentoInterno, data_por_extenso
+
+IncluirDocumentoInterno(
+    driver, "Despacho",
+    documento_modelo="12345678",       # protocolo do modelo com placeholders
+).incluir()
+
+contagens = EditarConteudo(driver, {
+    "{{NOME}}": "MARIA DA SILVA",
+    "{{CPF}}": "111.111.111-11",
+    "{{DATA}}": data_por_extenso(),    # "2 de julho de 2026"
+}).editar()
+```
+
+Rede de segurança: se algum placeholder não for encontrado no documento, o
+módulo **fecha o editor sem salvar** e falha listando o que faltou — nada é
+gravado pela metade. Os valores são escapados por padrão (texto literal);
+`escapar_html=False` permite injetar HTML.
+
 ### SIAPE (terminal 3270)
 
 O acesso ao SIAPE passa pelo portal SIAPENet (web, com certificado digital) e por
@@ -188,6 +217,7 @@ conexao.acessar_transacao("GRCOSITPRO", confirmacao="GRCOSITPRO")     # >transa�
 | `integra.sei.iniciar_processo` | Criação de um novo processo (devolve o NUP) | ✅ |
 | `integra.sei.inserir_documento_externo` | Inclui um documento externo (upload de arquivo) | ✅ |
 | `integra.sei.incluir_documento_interno` | Inclui um documento interno (Despacho, Nota Técnica…) | ✅ |
+| `integra.sei.editar_conteudo` | Substitui placeholders no editor (injeção CKEditor) | ✅ |
 | `integra.sei.nivel_acesso` | Nível de acesso (público/restrito) — reutilizável | ✅ |
 | `integra.sei.barra_icones` | Clique em ícones da barra do documento — reutilizável | ✅ |
 | `integra.sei.gerar_documento` | Tela "Gerar Documento" (escolha do tipo) — reutilizável | ✅ |

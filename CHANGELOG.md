@@ -6,6 +6,24 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não publicado]
 
 ### Adicionado
+- `integra.sei.editar_conteudo`: substitui **placeholders** no conteúdo de um
+  documento (`EditarConteudo(driver, {"{{NOME}}": ...}).editar()`, devolve
+  `placeholder → nº de ocorrências`). Injeta direto na **API do CKEditor**
+  (`getData`/`setData` em todas as instâncias editáveis — cabeçalho, corpo,
+  rodapé) em vez de simular teclado/"localizar e substituir" na tela:
+  determinístico, rápido e **sem exigir habilitação institucional** (só a
+  sessão logada). Par natural do `documento_modelo=` do
+  `incluir_documento_interno` (clona o modelo → preenche os campos). Rede de
+  segurança: placeholder não encontrado → **fecha o editor sem salvar** e
+  falha listando os faltantes; valores escapados por padrão
+  (`escapar_html=False` para HTML cru); confirmação do save pela
+  desabilitação do botão Salvar (comportamento real do editor). Inclui o
+  helper `data_por_extenso()` (data pt-BR sem depender de locale).
+  **Verificado ao vivo** no SEI 4.1.5 (MGI): clone de modelo (`documento_modelo`)
+  + substituição de `{{PROCESSO}}`/`{{NOME}}`/`{{CPF}}`/`{{DATA}}`/`{{SERVIDOR}}`/
+  `{{CARGO}}` gravada como nova versão. Ao **reabrir** um documento já salvo, o
+  editor nasce "limpo" e o Salvar desabilitado; o módulo dispara o evento
+  `change` do CKEditor para o SEI reconhecer a alteração e habilitar o Salvar.
 - `integra.sei.incluir_documento_interno`: inclui um **documento interno**
   (Despacho, Nota Técnica, …) num processo aberto
   (`IncluirDocumentoInterno.incluir()`, **devolve o rótulo na árvore**, ex.:

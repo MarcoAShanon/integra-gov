@@ -16,13 +16,16 @@ documentados):
   - ``inserir_documento_externo`` : inclui um documento externo (upload)  ✅
   - ``gerar_documento``   : tela "Gerar Documento" (escolha do tipo) — compartilhado ✅
   - ``incluir_documento_interno`` : inclui um documento interno (Despacho…) ✅
+  - ``editar_conteudo``   : substitui placeholders no editor (CKEditor)    ✅
 """
 
 from .barra_icones import clicar_icone_barra
+from .editar_conteudo import EditarConteudo, data_por_extenso
 from .exceptions import (
     CredenciaisInvalidas,
     DocumentoExternoError,
     DocumentoInternoError,
+    EditarConteudoError,
     IniciarProcessoError,
     NavegadorError,
     NivelAcessoError,
@@ -52,6 +55,8 @@ __all__ = [
     "CredenciaisInvalidas",
     "DocumentoExternoError",
     "DocumentoInternoError",
+    "EditarConteudo",
+    "EditarConteudoError",
     "IframesSei",
     "IncluirDocumentoInterno",
     "IniciarProcesso",
@@ -72,6 +77,7 @@ __all__ = [
     "clicar_icone_barra",
     "configurar_nivel_acesso",
     "criar_driver_chrome",
+    "data_por_extenso",
     "encerrar_chrome",
     "encerrar_chromedriver_orfaos",
     "fechar_tela_aviso",

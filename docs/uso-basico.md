@@ -291,7 +291,86 @@ except DocumentoInternoError as exc:
 ```
 
 Escopo atual: texto inicial **"Documento Modelo"** ou nenhum ("Texto Padrão"
-virá depois). A edição do conteúdo do documento será um módulo próprio.
+virá depois). Para **preencher** o documento clonado, veja a seção seguinte.
+
+### Preencher um modelo com dados (o fluxo de escala)
+
+Esta é a combinação que faz sentido para gerar **muitos** documentos com uma
+instrução padrão (dezenas, centenas, milhares): um **documento modelo** com
+*placeholders*, clonado e preenchido a cada execução.
+
+**1. Crie o modelo no próprio SEI (uma vez).** Num processo de referência da sua
+unidade, escreva — pelo editor do SEI — um documento por tipo (um "Despacho
+modelo", uma "Nota Técnica modelo") com marcadores no texto:
+
+```
+Processo nº {{PROCESSO}}
+
+Solicito atender a demanda do interessado sr(a). nome: {{NOME}}; cpf: {{CPF}}
+
+Brasília, {{DATA}}.
+
+{{SERVIDOR}}
+{{CARGO}}
+```
+
+Anote o **protocolo** do modelo (o número na árvore). O conteúdo do modelo (e
+seus placeholders) fica **no SEI**, mantido pela área de negócio — a biblioteca
+não embute nenhum template.
+
+> **Regra de ouro dos placeholders:** digite cada marcador **inteiro e de uma
+> vez** (`{{NOME}}`), sem formatar só um pedaço dentro das chaves. O editor
+> guarda o texto como HTML; formatar parcialmente (ou corrigir uma letra no
+> meio) pode **fragmentar** o marcador em nós separados, e a substituição por
+> texto não o encontra mais. Formatar o marcador **inteiro** (negrito em todo o
+> `{{SERVIDOR}}`) é seguro — o valor herda o estilo.
+
+**2. Clone e preencha na automação.** `IncluirDocumentoInterno` com
+`documento_modelo=` clona o modelo; `EditarConteudo` injeta os valores direto na
+API do editor (CKEditor), sem simular teclado e sem "localizar/substituir" na
+tela:
+
+```python
+from integra.sei import (
+    IncluirDocumentoInterno, EditarConteudo, data_por_extenso,
+)
+from integra.sei.exceptions import DocumentoInternoError, EditarConteudoError
+
+try:
+    IncluirDocumentoInterno(
+        driver, "Despacho", documento_modelo="12345678",
+    ).incluir()
+
+    contagens = EditarConteudo(driver, {
+        "{{PROCESSO}}": "19975.120202/2023-82",
+        "{{NOME}}": "MARIA DA SILVA",
+        "{{CPF}}": "111.111.111-11",
+        "{{DATA}}": data_por_extenso(),        # "2 de julho de 2026"
+        "{{SERVIDOR}}": "FULANO DE TAL",
+        "{{CARGO}}": "Analista",
+    }).editar()
+    print(contagens)   # {"{{NOME}}": 1, ...} — quantas ocorrências de cada
+except (DocumentoInternoError, EditarConteudoError) as exc:
+    ...  # criação ou edição falhou (veja a mensagem)
+```
+
+Pontos que valem saber:
+
+- **Data é responsabilidade sua**, não do modelo (o clone traz a data de quando
+  o modelo foi escrito). Use o helper `data_por_extenso()` — data pt-BR por
+  extenso, sem depender do locale `pt_BR` estar instalado na máquina.
+- **Assinatura fica de fora do corpo.** O "Documento assinado eletronicamente /
+  NOME / Cargo" é o carimbo que o SEI gera **na assinatura** — não faça dele um
+  placeholder (a não ser que, no seu órgão, nome/cargo também sejam digitados no
+  corpo, como no exemplo acima).
+- **Rede de segurança:** se um placeholder do dicionário **não** existir no
+  documento, `EditarConteudo` **fecha o editor sem salvar** e levanta
+  `EditarConteudoError` listando os faltantes — nada é gravado pela metade (pega
+  tanto erro de digitação no dicionário quanto marcador fragmentado no modelo).
+- **Escape:** os valores são inseridos como **texto literal** por padrão
+  (caracteres como `&`, `<`, `>` são escapados). Para injetar HTML de propósito,
+  use `EditarConteudo(..., escapar_html=False)` — aí o HTML é sua
+  responsabilidade (precisa ser válido e usar as classes CSS do SEI).
 
 ---
 

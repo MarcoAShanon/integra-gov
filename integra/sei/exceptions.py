@@ -43,6 +43,12 @@ class DocumentoInternoError(SeiError):
     ou a criação não pôde ser confirmada (editor não abriu / rótulo ilegível)."""
 
 
+class EditarConteudoError(SeiError):
+    """Falha ao editar o conteúdo de um documento no editor do SEI: o editor
+    não abriu/carregou, um placeholder pedido não foi encontrado no texto, ou o
+    salvamento não pôde ser executado."""
+
+
 class SeiLoginError(SeiError):
     """Falha no login do SEI (formulário não carregou ou login não confirmado)."""
 
