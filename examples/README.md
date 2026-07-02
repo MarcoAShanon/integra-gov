@@ -15,5 +15,6 @@ Scripts de exemplo de uso da biblioteca. Cada exemplo deve:
 | [`exemplo_incluir_documento_externo.py`](exemplo_incluir_documento_externo.py) | Incluir um documento externo (upload de arquivo) |
 | [`exemplo_incluir_documento_interno.py`](exemplo_incluir_documento_interno.py) | Incluir um documento interno (Despacho, Nota Técnica…) |
 | [`exemplo_preencher_modelo.py`](exemplo_preencher_modelo.py) | Clonar um documento modelo e preencher placeholders (fluxo de escala) |
+| [`exemplo_assinar_documento.py`](exemplo_assinar_documento.py) | Apontar um documento pelo protocolo e assiná-lo |
 
 > Mais exemplos à medida que os módulos forem disponibilizados.

@@ -372,6 +372,60 @@ Pontos que valem saber:
   use `EditarConteudo(..., escapar_html=False)` — aí o HTML é sua
   responsabilidade (precisa ser válido e usar as classes CSS do SEI).
 
+### Apontar um documento existente
+
+Os módulos que agem sobre um documento (assinar, editar) operam sobre o
+documento **selecionado** na árvore. No fluxo encadeado (criar → preencher →
+assinar) o documento recém-criado já fica selecionado. Para agir sobre um
+documento **já existente**, aponte-o com `DocumentosArvore` — que também lê a
+árvore como dados:
+
+```python
+from integra.sei import DocumentosArvore
+
+arvore = DocumentosArvore(driver)
+
+for d in arvore.listar():            # árvore como dados (expande as pastas)
+    print(d.numero, d.tipo.name, d.texto)
+
+arvore.selecionar("44414392")        # clica o documento pelo protocolo
+# agora AssinarDocumento / EditarConteudo agem sobre ELE
+```
+
+Dois pontos:
+
+- **Pastas colapsadas:** o SEI agrupa os documentos em pastas quando passam de
+  ~20. `DocumentosArvore` **expande tudo automaticamente** antes de ler/apontar
+  (`expandir=False` desliga), então nenhum documento fica invisível.
+- **Ambiguidade:** casar pelo **número do protocolo** (único) é o mais seguro. Se
+  o texto casar com vários nós, `selecionar()` **aborta** com
+  `SelecaoDocumentoError` — passe `indice=` para desambiguar.
+
+### Assinar um documento
+
+Assina o documento **selecionado** com a **senha do próprio servidor** — a senha
+é parâmetro (via `getpass`/cofre), **nunca embutida nem registrada em log**:
+
+```python
+from getpass import getpass
+from integra.sei import AssinarDocumento
+from integra.sei.exceptions import AssinaturaError
+
+try:
+    AssinarDocumento(driver, senha=getpass("Senha do SEI: ")).assinar()
+except AssinaturaError as exc:
+    ...  # senha recusada, ou a assinatura não pôde ser confirmada
+```
+
+`assinar()` **confirma pela verdade**: só conclui quando o documento passa a
+exibir os marcadores reais de assinatura do SEI ("assinado eletronicamente
+por…", código CRC) — nunca reporta "assinado" por suposição; senha recusada
+levanta `AssinaturaError`.
+
+> ⚠️ **Governança:** assinar em lote é assinar **sem revisar** cada documento. A
+> conferência antes da assinatura é responsabilidade da aplicação que monta o
+> fluxo — a biblioteca fornece o mecanismo, não o controle editorial.
+
 ---
 
 ## Exemplo completo (do zero ao processo aberto)
