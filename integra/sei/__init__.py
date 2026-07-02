@@ -17,11 +17,16 @@ documentados):
   - ``gerar_documento``   : tela "Gerar Documento" (escolha do tipo) — compartilhado ✅
   - ``incluir_documento_interno`` : inclui um documento interno (Despacho…) ✅
   - ``editar_conteudo``   : substitui placeholders no editor (CKEditor)    ✅
+  - ``assinar_documento`` : assinatura eletrônica (senha do servidor)      ✅
+  - ``documentos_arvore`` : consulta/seleção de documentos na árvore        ✅
 """
 
+from .assinar_documento import AssinarDocumento
 from .barra_icones import clicar_icone_barra
+from .documentos_arvore import DocumentoNo, DocumentosArvore, TipoDocumento
 from .editar_conteudo import EditarConteudo, data_por_extenso
 from .exceptions import (
+    AssinaturaError,
     CredenciaisInvalidas,
     DocumentoExternoError,
     DocumentoInternoError,
@@ -33,6 +38,7 @@ from .exceptions import (
     SeiError,
     SeiLoginError,
     SeiNavegacaoError,
+    SelecaoDocumentoError,
     UnidadeNaoEncontrada,
 )
 from .gerar_documento import abrir_gerar_documento
@@ -52,9 +58,13 @@ from .selecao_unidade import SelecaoUnidade, Unidade
 from .tela_aviso import fechar_tela_aviso
 
 __all__ = [
+    "AssinarDocumento",
+    "AssinaturaError",
     "CredenciaisInvalidas",
     "DocumentoExternoError",
     "DocumentoInternoError",
+    "DocumentoNo",
+    "DocumentosArvore",
     "EditarConteudo",
     "EditarConteudoError",
     "IframesSei",
@@ -70,7 +80,9 @@ __all__ = [
     "SeiError",
     "SeiLoginError",
     "SeiNavegacaoError",
+    "SelecaoDocumentoError",
     "SelecaoUnidade",
+    "TipoDocumento",
     "Unidade",
     "UnidadeNaoEncontrada",
     "abrir_gerar_documento",

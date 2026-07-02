@@ -6,6 +6,37 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não publicado]
 
 ### Adicionado
+- `integra.sei.documentos_arvore`: consulta e **seleção** de documentos na
+  árvore do processo. `DocumentosArvore.selecionar(texto)` clica o nó do
+  documento (aponta um documento existente para `assinar`/`editar_conteudo`, que
+  agem sobre o selecionado); `listar()/contar()/existe()` devolvem a árvore como
+  **dados** — cada item é um `DocumentoNo` (`texto`, `numero`, `tipo`, `id`) com
+  o tipo (`TipoDocumento`: PDF/interno) identificado pelo ícone e o protocolo
+  extraído do rótulo. **Expande as pastas automaticamente** (`expandir()`, via
+  "Abrir todas as Pastas") antes de ler/selecionar — o SEI agrupa os documentos
+  em pastas colapsadas quando passam de ~20, e sem expandir eles não entram no
+  DOM; use `expandir=False` para desligar. Seleção com **desambiguação segura**:
+  vários nós casando sem `indice` → `SelecaoDocumentoError` (não escolhe em
+  silêncio). Portado dos módulos `documentos_arvore` + `expandir_pastas` do
+  pacote privado, generalizado (logging, exceções tipadas, sem simulação de
+  tempo). **Verificado ao vivo** no SEI 4.1.5 (MGI): a expansão revelou uma
+  pasta colapsada (23 → 42 documentos), com tipo/número corretos e seleção pelo
+  protocolo.
+- `integra.sei.assinar_documento`: **assinatura eletrônica** do documento
+  selecionado (`AssinarDocumento(driver, senha).assinar()`) — aciona "Assinar
+  Documento", preenche a senha no modal e confirma. A senha é **parâmetro** do
+  chamador (via `getpass`/cofre), **nunca embutida, nunca registrada em log**
+  nem persistida (mesmo princípio do SIAPE: você é quem autoriza). **Não reporta
+  "assinado" por suposição**: confirma pela verdade — o documento passar a
+  exibir os marcadores reais de assinatura do SEI ("assinado eletronicamente
+  por"/"código CRC"/"código verificador"), impossíveis num documento não
+  assinado; senha recusada (alerta ou mensagem no modal) levanta
+  `AssinaturaError`. Doc traz o caveat de governança (assinar em lote = assinar
+  sem revisar; a conferência é da aplicação). **Verificado ao vivo** no SEI 4.1.5
+  (MGI): despacho clonado de modelo, preenchido e assinado (nova versão com o
+  bloco de assinatura oficial). A confirmação via documento foi necessária
+  porque o SEI mantém o iframe do modal no DOM após assinar (checar o modal dava
+  falso negativo).
 - `integra.sei.editar_conteudo`: substitui **placeholders** no conteúdo de um
   documento (`EditarConteudo(driver, {"{{NOME}}": ...}).editar()`, devolve
   `placeholder → nº de ocorrências`). Injeta direto na **API do CKEditor**

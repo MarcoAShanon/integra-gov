@@ -49,6 +49,17 @@ class EditarConteudoError(SeiError):
     salvamento não pôde ser executado."""
 
 
+class AssinaturaError(SeiError):
+    """Falha ao assinar um documento no SEI: o modal de assinatura não abriu, a
+    senha foi recusada, ou a assinatura não pôde ser **confirmada** (o módulo
+    nunca reporta "assinado" sem confirmação)."""
+
+
+class SelecaoDocumentoError(SeiError):
+    """Falha ao selecionar um documento na árvore: nenhum nó casou com o texto,
+    ou vários casaram sem um ``indice`` para desambiguar."""
+
+
 class SeiLoginError(SeiError):
     """Falha no login do SEI (formulário não carregou ou login não confirmado)."""
 
