@@ -16,6 +16,7 @@ um *fallback* defensivo (lá mora o conteúdo do documento, não os ícones).
 from __future__ import annotations
 
 import logging
+import time
 
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
@@ -40,6 +41,7 @@ def clicar_icone_barra(
     *,
     timeout: float = 10,
     selecionar_no: bool = True,
+    estabilizar_apos_no: float = 0.0,
 ) -> None:
     """Clica num ícone da barra de ferramentas do documento no SEI.
 
@@ -51,12 +53,20 @@ def clicar_icone_barra(
         selecionar_no: se ``True`` (padrão), seleciona o nó atual da árvore
             antes de procurar a barra. Passe ``False`` se o nó já estiver
             selecionado e você quiser evitar o clique extra.
+        estabilizar_apos_no: segundos a aguardar APÓS (re)selecionar o nó, antes
+            de procurar/clicar o ícone. Re-clicar um nó já selecionado dispara um
+            reload AJAX da área de visualização; sem essa pausa o clique no ícone
+            pode correr contra o reload e ser "engolido" (o ícone fica pressionado
+            sem navegar). Padrão ``0.0`` (sem pausa), para não afetar chamadas que
+            não sofrem a corrida. Só tem efeito quando ``selecionar_no`` é True.
 
     Raises:
         SeiNavegacaoError: se a árvore, o nó ou o ícone não forem encontrados.
     """
     if selecionar_no:
         _selecionar_no_arvore(driver, timeout)
+        if estabilizar_apos_no:
+            time.sleep(estabilizar_apos_no)
     _ir_para_visualizacao(driver, timeout)
     _clicar_icone(driver, titulo, timeout)
 

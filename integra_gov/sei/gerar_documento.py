@@ -21,11 +21,7 @@ from __future__ import annotations
 import logging
 import time
 
-from selenium.common.exceptions import (
-    StaleElementReferenceException,
-    TimeoutException,
-    WebDriverException,
-)
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -38,6 +34,9 @@ _log = logging.getLogger(__name__)
 
 ICONE_INCLUIR = "Incluir Documento"
 ID_FILTRO = "txtFiltro"
+# SEI 4.0: a tela "Gerar Documento" cai no ifrVisualizacao ANINHADO (dentro do
+# wrapper ifrConteudoVisualizacao), não no wrapper — descemos até ele.
+NOME_IFRAME_CONTEUDO = "ifrVisualizacao"
 # Na lista "Escolha o Tipo do Documento", cada tipo é um link; clica-se o de
 # texto EXATO (dentro de tblSeries; com fallback fora dele — o container pode
 # variar por versão). Mais robusto que a posição da linha, que muda conforme o
@@ -51,8 +50,18 @@ INTERVALO_FILTRO = 1.0
 # A tela "Gerar Documento" carrega via AJAX após o clique no ícone; intervalo
 # entre tentativas de reentrar no iframe e localizar o campo de filtro.
 INTERVALO_FORM = 0.5
-# Orçamento total (s) para a tela aparecer (o SEI às vezes demora).
+# Orçamento total (s) para a tela aparecer na ÚLTIMA tentativa (o SEI às vezes
+# demora) — a rede de segurança usa o budget cheio.
 TIMEOUT_FORM = 12
+# Orçamento (s) nas tentativas NÃO-finais: curto de propósito. Se a 1ª tentativa
+# perder a corrida com o reload, caímos rápido na retentativa (que reclica o
+# ícone SEM re-selecionar o nó, já na visualização estável), em vez de gastar os
+# 12s à toa.
+TIMEOUT_FORM_TENTATIVA = 4
+# Pausa (s) após (re)selecionar o nó na 1ª tentativa, para o reload AJAX da
+# visualização assentar antes do clique no ícone — evita que o clique seja
+# "engolido" pelo reload (ícone pressionado sem navegar). Ver clicar_icone_barra.
+SETTLE_APOS_NO = 1.2
 # O clique no ícone às vezes não "pega" (fica pressionado e não navega); nesse
 # caso reclica-se o ícone e tenta-se abrir a tela de novo.
 TENTATIVAS_INCLUIR = 2
@@ -83,49 +92,111 @@ def _incluir_documento_e_abrir_form(driver, timeout: float):
 
     Reclica o ícone se a tela não abrir na 1ª vez (o clique nem sempre navega —
     o ícone pode ficar "pressionado" sem efeito).
+
+    Na 1ª tentativa, :func:`clicar_icone_barra` **seleciona o nó** da árvore
+    antes de clicar no ícone. Re-clicar um nó já selecionado dispara um reload
+    AJAX da área de visualização; quando o chamador acabou de navegar (ex.:
+    ``ir_para_raiz_processo`` antes de criar a Nota Técnica), esse reload ocorre
+    logo antes do clique no ícone e o "engole" — o ícone fica pressionado e não
+    navega. Por isso, nas **retentativas** NÃO re-selecionamos o nó
+    (``selecionar_no=False``): a essa altura o nó já está selecionado e a
+    visualização estável, então apenas reclicar o ícone navega de forma
+    confiável. (Antes, a retentativa re-selecionava o nó e recriava a mesma
+    corrida — a tela nunca chegava a abrir.)
     """
     ultimo_erro: SeiNavegacaoError | None = None
     for tentativa in range(1, TENTATIVAS_INCLUIR + 1):
-        clicar_icone_barra(driver, ICONE_INCLUIR, timeout=timeout)
+        primeira = tentativa == 1
+        # Numa RETENTATIVA, a tela pode já ter aberto (o clique anterior navegou,
+        # porém devagar): o campo de filtro já existe e a barra de ícones não —
+        # nesse caso NÃO reclicamos (o ícone não existe mais), só devolvemos o
+        # campo. Não checamos na 1ª tentativa (ainda não clicamos nada).
+        if not primeira:
+            campo = _localizar_filtro(driver)
+            if campo is not None:
+                return campo
+        clicar_icone_barra(
+            driver,
+            ICONE_INCLUIR,
+            timeout=timeout,
+            selecionar_no=primeira,
+            # Só a 1ª tentativa re-seleciona o nó (e sofre a corrida com o
+            # reload); damos a ela a pausa de estabilização.
+            estabilizar_apos_no=SETTLE_APOS_NO if primeira else 0.0,
+        )
+        # Orçamento curto nas tentativas iniciais; cheio só na última.
+        orcamento = (
+            TIMEOUT_FORM
+            if tentativa == TENTATIVAS_INCLUIR
+            else TIMEOUT_FORM_TENTATIVA
+        )
         try:
-            return _abrir_formulario_e_esperar_filtro(driver)
+            return _abrir_formulario_e_esperar_filtro(driver, orcamento)
         except SeiNavegacaoError as exc:
             ultimo_erro = exc
             _log.warning(
                 "Tela de inclusão não abriu (tentativa %d/%d); reclicando o "
-                "ícone",
+                "ícone (sem re-selecionar o nó)",
                 tentativa,
                 TENTATIVAS_INCLUIR,
             )
     raise ultimo_erro
 
 
-def _abrir_formulario_e_esperar_filtro(driver):
+def _abrir_formulario_e_esperar_filtro(driver, timeout_form: float = TIMEOUT_FORM):
     """Espera a tela "Gerar Documento" carregar e devolve o campo de filtro.
 
-    Clicar no ícone recarrega o iframe de visualização (AJAX) com a tela de
-    seleção de tipo. A troca de conteúdo pode deixar o contexto do driver
-    obsoleto, então **reentra no iframe** e procura o ``txtFiltro`` a cada
-    tentativa, até o campo aparecer ou esgotar :data:`TIMEOUT_FORM`.
+    Clicar no ícone recarrega a área de visualização (AJAX) com a tela de
+    seleção de tipo. Conforme a versão do SEI, o formulário cai em frames
+    diferentes — direto no topo (SEI < 4.0), no wrapper de visualização, ou no
+    ``ifrVisualizacao`` **aninhado** dentro do wrapper (SEI 4.0). Por isso o
+    ``txtFiltro`` é procurado nos três a cada tentativa, até aparecer ou esgotar
+    ``timeout_form`` (padrão :data:`TIMEOUT_FORM`).
     """
-    deadline = time.monotonic() + TIMEOUT_FORM
-    ultimo_erro: Exception | None = None
+    deadline = time.monotonic() + timeout_form
     while True:
-        try:
-            driver.switch_to.default_content()
-            IframesSei(driver, IframesSei.VISUALIZACAO, timeout=3).navegar()
-            return WebDriverWait(driver, 2).until(
-                EC.presence_of_element_located((By.ID, ID_FILTRO))
-            )
-        except (TimeoutException, StaleElementReferenceException) as exc:
-            ultimo_erro = exc  # iframe ainda não trocou / contexto obsoleto
+        campo = _localizar_filtro(driver)
+        if campo is not None:
+            return campo
         if time.monotonic() >= deadline:
             break
         time.sleep(INTERVALO_FORM)
     raise SeiNavegacaoError(
         "tela de inclusão de documento não carregou (campo de filtro ausente "
         "após 'Incluir Documento' — o ícone pode não ter navegado)"
-    ) from ultimo_erro
+    )
+
+
+def _localizar_filtro(driver):
+    """Procura o ``txtFiltro`` nos frames onde a tela pode carregar; devolve o
+    elemento ou ``None`` (sem levantar — o chamador reitera até o deadline).
+
+    Ordem: topo → wrapper de visualização → ``ifrVisualizacao`` aninhado.
+    """
+    # 1. Direto no topo (SEI < 4.0, ou formulário fora de iframe).
+    try:
+        driver.switch_to.default_content()
+        achado = driver.find_elements(By.ID, ID_FILTRO)
+        if achado:
+            return achado[0]
+    except WebDriverException:
+        pass
+    # 2. No wrapper de visualização (ifrConteudoVisualizacao no SEI 4.0).
+    try:
+        driver.switch_to.default_content()
+        IframesSei(driver, IframesSei.VISUALIZACAO, timeout=2).navegar()
+    except (TimeoutException, WebDriverException):
+        return None
+    achado = driver.find_elements(By.ID, ID_FILTRO)
+    if achado:
+        return achado[0]
+    # 3. No ifrVisualizacao ANINHADO dentro do wrapper (SEI 4.0).
+    try:
+        driver.switch_to.frame(NOME_IFRAME_CONTEUDO)
+    except WebDriverException:
+        return None
+    achado = driver.find_elements(By.ID, ID_FILTRO)
+    return achado[0] if achado else None
 
 
 def _selecionar_tipo(driver, filtro, tipo: str, timeout: float) -> None:
