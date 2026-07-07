@@ -175,7 +175,32 @@ contagens = EditarConteudo(driver, {
 Rede de segurança: se algum placeholder não for encontrado no documento, o
 módulo **fecha o editor sem salvar** e falha listando o que faltou — nada é
 gravado pela metade. Os valores são escapados por padrão (texto literal);
-`escapar_html=False` permite injetar HTML.
+`escapar_html=False` injeta todos como HTML cru, ou `chaves_html={...}` injeta
+HTML cru **só** nos placeholders escolhidos (veja a seguir).
+
+### Referenciar outro documento (link nativo do SEI)
+
+Um link para outro documento no editor do SEI não é um `<a href>` comum: é uma
+**âncora nativa** (`montar_link_documento`) que o SEI resolve na visualização. O
+texto visível é o **protocolo** (número visível), mas o link é composto pelo
+**`id_documento`** (id **interno**, um número diferente) — capturado pelo
+`DocumentosArvore` no campo `DocumentoNo.id_documento`. Injete a âncora como HTML
+cru num placeholder, listando-o em `chaves_html`:
+
+```python
+from integra_gov.sei import DocumentosArvore, EditarConteudo, montar_link_documento
+
+alvo = DocumentosArvore(driver).listar(contendo="44414392")[0]
+link = montar_link_documento(alvo.id_documento, alvo.numero)   # âncora ancora_sei
+
+EditarConteudo(driver, {
+    "{{NOME}}": "MARIA DA SILVA",   # texto normal (escapado)
+    "{{DOC_REF}}": link,             # HTML cru (o link)
+}, chaves_html={"{{DOC_REF}}"}).editar()
+```
+
+Só os placeholders em `chaves_html` entram sem escape; o resto continua escapado
+(texto literal), tudo numa **única** passada.
 
 ### Assinar um documento
 
@@ -219,9 +244,12 @@ doc = arvore.selecionar("44414392")       # clica (seleciona) pelo protocolo
 # agora AssinarDocumento(driver, senha).assinar() age sobre ELE
 ```
 
-Cada item é um `DocumentoNo` (`texto`, `numero`, `tipo`, `id`). Segurança:
-`selecionar()` **aborta** se o texto casar com vários nós e você não passar
-`indice=` — casar pelo número do protocolo (único) evita a ambiguidade.
+Cada item é um `DocumentoNo` (`texto`, `numero`, `tipo`, `id`, `id_documento`).
+Segurança: `selecionar()` **aborta** se o texto casar com vários nós e você não
+passar `indice=` — casar pelo número do protocolo (único) evita a ambiguidade.
+(O `id_documento` — id **interno**, distinto do protocolo visível — é o que
+compõe um link para o documento; veja
+[Referenciar outro documento](#referenciar-outro-documento-link-nativo-do-sei).)
 
 Quando o processo tem muitos documentos, o SEI os agrupa em **pastas
 colapsadas** (a partir de ~20). `DocumentosArvore` **expande todas as pastas

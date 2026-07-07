@@ -15,6 +15,19 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   **consumir este como dependência** em vez de manter cópias divergentes.
 
 ### Adicionado
+- **Link entre documentos** no editor: `montar_link_documento(id_documento,
+  protocolo)` monta a **âncora nativa** do SEI (classe `ancora_sei`, id
+  `lnkSei<id_documento>`, sem `href` — o SEI a resolve na visualização), e o novo
+  parâmetro `chaves_html` de `EditarConteudo` injeta esse HTML **cru** apenas em
+  placeholders escolhidos (sem escape), junto dos campos de texto escapados, numa
+  **única** passada. Para isso, `documentos_arvore` passou a capturar o
+  `id_documento` (id **interno**, distinto do protocolo visível): `DocumentoNo`
+  ganhou o campo `id_documento`, extraído do `href` do nó (`&id_documento=…`).
+  **Verificado ao vivo** no SEI 4.1.5 (MGI): a âncora gerada saiu **idêntica** à
+  que o SEI grava para um link feito à mão, e o round-trip (injetar → salvar →
+  reabrir) preservou o link funcional **sem sanitização** do CKEditor; a tripla
+  `href id_documento == lnkSei id == anchor id` foi confirmada — o protocolo (nº
+  visível) e o `id_documento` são números diferentes, e o link usa o interno.
 - `integra_gov.sei.documentos_arvore`: consulta e **seleção** de documentos na
   árvore do processo. `DocumentosArvore.selecionar(texto)` clica o nó do
   documento (aponta um documento existente para `assinar`/`editar_conteudo`, que

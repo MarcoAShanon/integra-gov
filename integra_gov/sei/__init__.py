@@ -24,7 +24,7 @@ documentados):
 from .assinar_documento import AssinarDocumento
 from .barra_icones import clicar_icone_barra
 from .documentos_arvore import DocumentoNo, DocumentosArvore, TipoDocumento
-from .editar_conteudo import EditarConteudo, data_por_extenso
+from .editar_conteudo import EditarConteudo, data_por_extenso, montar_link_documento
 from .exceptions import (
     AssinaturaError,
     CredenciaisInvalidas,
@@ -93,6 +93,7 @@ __all__ = [
     "encerrar_chrome",
     "encerrar_chromedriver_orfaos",
     "fechar_tela_aviso",
+    "montar_link_documento",
     "montar_url_login",
     "switch_to_iframe_visualizacao",
 ]

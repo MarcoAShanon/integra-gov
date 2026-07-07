@@ -53,13 +53,19 @@ class DocumentoNo:
         texto: rótulo do nó (ex.: ``"Despacho - CGPAG (44414392)"``).
         numero: número (protocolo) extraído do rótulo, ou ``None``.
         tipo: :class:`TipoDocumento` (PDF, interno ou desconhecido).
-        id: id do elemento no HTML (quando presente).
+        id: id do elemento no HTML (quando presente; nos documentos é
+            ``anchor<id_documento>``).
+        id_documento: id **interno** do documento, extraído do ``href`` do nó
+            (``...&id_documento=XXXX``), ou ``None`` para nós sem documento
+            (raiz/pastas). É o id que compõe a âncora de link do SEI —
+            ver :func:`~integra_gov.sei.editar_conteudo.montar_link_documento`.
     """
 
     texto: str
     numero: str | None
     tipo: TipoDocumento
     id: str | None
+    id_documento: str | None
 
 
 class DocumentosArvore:
@@ -73,6 +79,9 @@ class DocumentosArvore:
     CLASSE_NO = "infraArvoreNo"
     # Protocolo no fim do rótulo: "(1234567)" ou "1234567".
     PADRAO_NUMERO = re.compile(r"(?:\((\d+)\)|(\d+))\s*$")
+    # id_documento (id interno) no href do nó: "...&id_documento=1234567&...".
+    # A raiz do processo traz só id_procedimento; pastas têm href "javascript:".
+    PADRAO_ID_DOCUMENTO = re.compile(r"[?&]id_documento=(\d+)")
     # O SEI agrupa os documentos em pastas colapsadas quando passam de ~20; este
     # botão da barra da árvore abre todas de uma vez (senão os documentos dentro
     # das pastas nem entram no DOM e passam despercebidos).
@@ -227,11 +236,16 @@ class DocumentosArvore:
             eid = el.get_attribute("id")
         except WebDriverException:
             eid = None
+        try:
+            href = el.get_attribute("href") or ""
+        except WebDriverException:
+            href = ""
         return DocumentoNo(
             texto=texto,
             numero=self._numero(texto),
             tipo=self._tipo(el, eid),
             id=eid,
+            id_documento=self._id_documento(href),
         )
 
     def _numero(self, texto: str) -> str | None:
@@ -239,6 +253,10 @@ class DocumentosArvore:
         if not m:
             return None
         return m.group(1) or m.group(2)
+
+    def _id_documento(self, href: str) -> str | None:
+        m = self.PADRAO_ID_DOCUMENTO.search(href or "")
+        return m.group(1) if m else None
 
     def _tipo(self, el, eid: str | None) -> TipoDocumento:
         """Identifica o tipo pelo ``src`` do ícone do nó (melhor esforço)."""

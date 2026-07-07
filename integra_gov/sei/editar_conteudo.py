@@ -33,6 +33,7 @@ import json
 import logging
 import re
 import time
+from collections.abc import Iterable
 from datetime import datetime
 
 from selenium.common.exceptions import TimeoutException, WebDriverException
@@ -64,6 +65,43 @@ def data_por_extenso(data: datetime | None = None) -> str:
     return f"{d.day} de {MESES_PT[d.month - 1]} de {d.year}"
 
 
+def montar_link_documento(id_documento: str, protocolo: str) -> str:
+    """Monta o HTML de um **link para outro documento** do SEI (âncora nativa).
+
+    No editor do SEI, um link para outro documento **não** é um ``<a href>``
+    comum: é uma âncora especial (classe ``ancora_sei``, id ``lnkSei<id>``, sem
+    ``href``) que o próprio SEI resolve em tempo de visualização. O **texto
+    visível** é o *protocolo* (número SEI) e o **id embute o `id_documento`**
+    (id interno) — dois identificadores distintos do mesmo documento.
+
+    Use o retorno como **valor de uma substituição sem escape** no
+    :class:`EditarConteudo` (liste o placeholder em ``chaves_html``); assim o
+    link entra no documento como HTML, não como texto literal.
+
+    O ``id_documento`` sai do ``href`` do nó na árvore
+    (``...&id_documento=XXXX``) — ver ``DocumentoNo.id_documento`` em
+    :mod:`~integra_gov.sei.documentos_arvore`.
+
+    Args:
+        id_documento: id interno do documento (numérico).
+        protocolo: número (protocolo) do documento — o texto visível do link.
+
+    Raises:
+        ValueError: se ``id_documento`` não for numérico ou ``protocolo`` faltar.
+    """
+    id_doc = str(id_documento).strip()
+    proto = str(protocolo).strip()
+    if not id_doc.isdigit():
+        raise ValueError(f"id_documento deve ser numérico (recebi {id_documento!r})")
+    if not proto:
+        raise ValueError("protocolo é obrigatório")
+    return (
+        '<span contenteditable="false" style="text-indent:0;">'
+        f'<a class="ancora_sei" id="lnkSei{id_doc}" style="text-indent:0;">'
+        f"{html.escape(proto, quote=False)}</a></span>"
+    )
+
+
 class EditarConteudo:
     """Substitui placeholders no conteúdo de um documento aberto no SEI.
 
@@ -86,6 +124,12 @@ class EditarConteudo:
             (``&``, ``<``, ``>``) antes de entrar no HTML — o texto aparece
             literalmente no documento. Use ``False`` para injetar HTML cru
             (por sua conta: precisa ser válido e usar as classes CSS do SEI).
+        chaves_html: subconjunto de ``substituicoes`` cujos **valores** são
+            injetados como **HTML cru** (sem escape), mesmo com
+            ``escapar_html=True`` — para inserir links/marcações prontos (ex.: a
+            âncora de :func:`montar_link_documento`) junto de campos de texto
+            escapados, numa **única** passada. Placeholders fora de
+            ``substituicoes`` levantam ``ValueError``.
         timeout: espera máxima por elemento/janela, em segundos.
 
     Raises:
@@ -151,6 +195,7 @@ class EditarConteudo:
         *,
         exigir_todas: bool = True,
         escapar_html: bool = True,
+        chaves_html: Iterable[str] | None = None,
         timeout: float = 10,
     ):
         if not substituicoes or not isinstance(substituicoes, dict):
@@ -162,11 +207,19 @@ class EditarConteudo:
                 raise ValueError(
                     f"valor de {chave!r} deve ser string (recebi {type(valor).__name__})"
                 )
+        chaves_html = set(chaves_html or ())
+        desconhecidas = chaves_html - set(substituicoes)
+        if desconhecidas:
+            raise ValueError(
+                "chaves_html tem placeholder(s) ausente(s) de substituicoes: "
+                + ", ".join(repr(c) for c in sorted(desconhecidas))
+            )
 
         self.driver = driver
         self.substituicoes = dict(substituicoes)
         self.exigir_todas = exigir_todas
         self.escapar_html = escapar_html
+        self.chaves_html = chaves_html
         self.timeout = timeout
 
     def editar(self) -> dict[str, int]:
@@ -254,7 +307,8 @@ class EditarConteudo:
                 if not ocorrencias:
                     continue
                 contagens[ph] += ocorrencias
-                texto = html.escape(valor, quote=False) if self.escapar_html else valor
+                escapar = self.escapar_html and ph not in self.chaves_html
+                texto = html.escape(valor, quote=False) if escapar else valor
                 novo = novo.replace(ph, texto)
             if novo != conteudo:
                 novos[nome] = novo
