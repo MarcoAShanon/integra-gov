@@ -19,19 +19,24 @@ documentados):
   - ``editar_conteudo``   : substitui placeholders no editor (CKEditor)    ✅
   - ``assinar_documento`` : assinatura eletrônica (senha do servidor)      ✅
   - ``documentos_arvore`` : consulta/seleção de documentos na árvore        ✅
+  - ``marcador``          : marcadores — filtrar a lista e marcar/desmarcar processo ✅
+  - ``controle_prazo``    : define/exclui o prazo (em dias) de um processo   ✅
 """
 
 from .assinar_documento import AssinarDocumento
 from .barra_icones import clicar_icone_barra
+from .controle_prazo import ControlePrazo
 from .documentos_arvore import DocumentoNo, DocumentosArvore, TipoDocumento
 from .editar_conteudo import EditarConteudo, data_por_extenso, montar_link_documento
 from .exceptions import (
     AssinaturaError,
+    ControlePrazoError,
     CredenciaisInvalidas,
     DocumentoExternoError,
     DocumentoInternoError,
     EditarConteudoError,
     IniciarProcessoError,
+    MarcadorError,
     NavegadorError,
     NivelAcessoError,
     ProcessoNaoEncontrado,
@@ -47,6 +52,7 @@ from .incluir_documento_interno import IncluirDocumentoInterno
 from .iniciar_processo import IniciarProcesso
 from .inserir_documento_externo import InserirDocumentoExterno
 from .login import LoginSei, montar_url_login
+from .marcador import Marcador, MarcadorProcesso, Marcadores
 from .navegador import (
     criar_driver_chrome,
     encerrar_chrome,
@@ -60,6 +66,8 @@ from .tela_aviso import fechar_tela_aviso
 __all__ = [
     "AssinarDocumento",
     "AssinaturaError",
+    "ControlePrazo",
+    "ControlePrazoError",
     "CredenciaisInvalidas",
     "DocumentoExternoError",
     "DocumentoInternoError",
@@ -73,6 +81,10 @@ __all__ = [
     "IniciarProcessoError",
     "InserirDocumentoExterno",
     "LoginSei",
+    "Marcador",
+    "MarcadorError",
+    "MarcadorProcesso",
+    "Marcadores",
     "NavegadorError",
     "NivelAcessoError",
     "ProcessoNaoEncontrado",

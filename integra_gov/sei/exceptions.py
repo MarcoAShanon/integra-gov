@@ -70,3 +70,15 @@ class CredenciaisInvalidas(SeiLoginError):
 
 class UnidadeNaoEncontrada(SeiError):
     """A unidade pedida não está entre as que o operador pode acessar."""
+
+
+class MarcadorError(SeiError):
+    """Falha ao operar marcadores no SEI: a tela/tabela de marcadores ou o modal
+    "Gerenciar Marcador" não foi encontrado, o marcador pedido não existe (na
+    lista ou no dropdown), ou a inclusão/remoção não pôde ser confirmada."""
+
+
+class ControlePrazoError(SeiError):
+    """Falha ao definir/excluir o controle de prazo de um processo: o ícone
+    "Controle de Prazo", um campo/botão do modal, ou a confirmação da operação
+    não foi encontrado/executado."""

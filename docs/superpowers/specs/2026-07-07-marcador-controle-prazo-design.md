@@ -57,8 +57,12 @@ Pré-condição: driver na tela **Controle de Processos** (a lista). Opera no
 
 Seletores (literais da fonte `seletor_marcadores.py`/`marcador.py`):
 - Tabela de marcadores: `By.ID, "tblMarcadores"`
-- Tabela de processos filtrados: `By.ID, "tblProcessosDetalhado"`
-- Filtro ativo: `By.ID, "divFiltroMarcador"`
+- Sinal de filtro aplicado: `By.ID, "divFiltroMarcador"` — **corrigido na
+  verificação ao vivo** (SEI 4.1.5): `filtrarMarcador(id)` *navega* e a lista
+  filtrada aparece em `tblProcessosRecebidos`/`tblProcessosGerados` (não existe
+  `tblProcessosDetalhado`), então `selecionar()` espera o chip do filtro; e a
+  recuperação da visão de marcadores (quando filtrado) é via `filtrarMarcador(null)`,
+  não pelo link "Ver por marcadores".
 - Link "ver por marcadores": `By.LINK_TEXT, "Ver por marcadores"`
 - Quantidade na linha: `<a class="ancoraPadraoAzul">` (texto)
 - id no `onclick`: regex `r"filtrarMarcador\((\d+)\)"`

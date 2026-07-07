@@ -15,6 +15,30 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   **consumir este como dependência** em vez de manter cópias divergentes.
 
 ### Adicionado
+- `integra_gov.sei.marcador`: marcadores do SEI em **dois contextos** (duas
+  classes). `Marcadores` (tela Controle de Processos) lista os marcadores da
+  unidade como **dados** (`Marcador`: id/nome/quantidade/cor), filtra a lista por
+  marcador (`selecionar`, por nome exato ou id), desfaz o filtro
+  (`remover_filtro`) e lê o filtro ativo (`filtro_ativo`). `MarcadorProcesso`
+  (processo aberto, modal "Gerenciar Marcador") **inclui** (`incluir`, com
+  mensagem opcional ≤ 250), **remove** (`remover`) e **lista** (`listar`) o
+  marcador **daquele** processo. Portado de `seletor_marcadores`/`marcador`/
+  `troca_marcador` do pacote privado, generalizado: exceções tipadas
+  (`MarcadorError`), reúso de `barra_icones`/`iframes`, sem DevTools/`input()`/
+  GUI/`bs4`/`tenacity` e sem valores de órgão embutidos. **Verificado ao vivo** no
+  SEI 4.1.5 (MGI): listar (12 marcadores), filtrar + relistar com filtro ativo, e
+  incluir/remover num processo (ciclo reversível). A verificação corrigiu o sinal
+  de "filtro aplicado": `filtrarMarcador(id)` **navega** e o resultado aparece em
+  `tblProcessosRecebidos`/`tblProcessosGerados` (não há `tblProcessosDetalhado`),
+  então `selecionar` espera o chip `divFiltroMarcador` e a volta à visão de
+  marcadores é via `filtrarMarcador(null)`.
+- `integra_gov.sei.controle_prazo`: define/exclui o **prazo em dias** de um
+  processo aberto — `ControlePrazo(driver).definir(dias)` (valida `1..9999`) e
+  `.excluir()`. **Melhoria sobre a fonte:** o valor mágico `prazo="0"` (=excluir)
+  virou dois métodos distintos, sem mágica. Exceções tipadas (`ControlePrazoError`,
+  `ValueError`), reúso de `barra_icones` com a estabilização anti-corrida do clique
+  ("ícone pressionado sem navegar"). **Verificado ao vivo** no SEI 4.1.5 (MGI):
+  definir 30 dias + excluir.
 - **Link entre documentos** no editor: `montar_link_documento(id_documento,
   protocolo)` monta a **âncora nativa** do SEI (classe `ancora_sei`, id
   `lnkSei<id_documento>`, sem `href` — o SEI a resolve na visualização), e o novo

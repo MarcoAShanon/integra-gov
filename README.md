@@ -256,6 +256,46 @@ colapsadas** (a partir de ~20). `DocumentosArvore` **expande todas as pastas
 automaticamente** antes de ler/selecionar, então nenhum documento é perdido;
 passe `expandir=False` para desligar, ou chame `arvore.expandir()` à mão.
 
+### Marcadores
+
+Os marcadores do SEI (etiquetas coloridas) aparecem em **dois contextos**, por
+isso duas classes. Na tela **Controle de Processos**, `Marcadores` consulta a
+lista e filtra os processos por marcador:
+
+```python
+from integra_gov.sei import Marcadores
+
+marcadores = Marcadores(driver)
+for m in marcadores.listar():                 # todos os marcadores da unidade
+    print(m.id, m.nome, m.quantidade, m.cor)
+
+marcadores.selecionar("INTEGRA - RETORNO")    # filtra a lista por esse marcador
+marcadores.remover_filtro()                   # volta à lista completa
+```
+
+Num **processo aberto**, `MarcadorProcesso` inclui/remove um marcador **daquele**
+processo (modal "Gerenciar Marcador"):
+
+```python
+from integra_gov.sei import MarcadorProcesso
+
+mp = MarcadorProcesso(driver)
+mp.incluir("INTEGRA - RETORNO", "Aguardando retorno")  # mensagem opcional (≤ 250)
+mp.listar()                                            # ['INTEGRA - RETORNO', ...]
+mp.remover("INTEGRA - RETORNO")
+```
+
+### Controle de prazo
+
+Define ou exclui o prazo (em **dias**) de um processo aberto:
+
+```python
+from integra_gov.sei import ControlePrazo
+
+ControlePrazo(driver).definir(30)   # prazo de 30 dias (1..9999)
+ControlePrazo(driver).excluir()     # remove o prazo
+```
+
 ### SIAPE (terminal 3270)
 
 O acesso ao SIAPE passa pelo portal SIAPENet (web, com certificado digital) e por
@@ -299,6 +339,8 @@ conexao.acessar_transacao("GRCOSITPRO", confirmacao="GRCOSITPRO")     # >transa�
 | `integra_gov.sei.editar_conteudo` | Substitui placeholders no editor (injeção CKEditor) | ✅ |
 | `integra_gov.sei.assinar_documento` | Assinatura eletrônica (senha do próprio servidor) | ✅ |
 | `integra_gov.sei.documentos_arvore` | Consulta/seleção de documentos na árvore | ✅ |
+| `integra_gov.sei.marcador` | Marcadores — filtrar a lista e marcar/desmarcar processo | ✅ |
+| `integra_gov.sei.controle_prazo` | Define/exclui o prazo (em dias) de um processo | ✅ |
 | `integra_gov.sei.nivel_acesso` | Nível de acesso (público/restrito) — reutilizável | ✅ |
 | `integra_gov.sei.barra_icones` | Clique em ícones da barra do documento — reutilizável | ✅ |
 | `integra_gov.sei.gerar_documento` | Tela "Gerar Documento" (escolha do tipo) — reutilizável | ✅ |
