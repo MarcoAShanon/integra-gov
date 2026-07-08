@@ -3,7 +3,7 @@
 Este guia mostra a **sequência inicial correta** para automatizar o SEI com a
 biblioteca: abrir o navegador, fazer login, fechar o aviso pós-login, escolher a
 unidade e abrir um processo — e, por fim, as **operações sobre o processo**
-(criar um processo, incluir um documento externo).
+(criar, instruir com documentos, marcar, dar prazo e concluir).
 
 > A biblioteca é **headless**: ela fornece **dados** (ex.: `listar_unidades()`) e
 > **ações** (ex.: `selecionar(sigla)`). Ela não desenha telas — qualquer
@@ -369,8 +369,38 @@ Pontos que valem saber:
   tanto erro de digitação no dicionário quanto marcador fragmentado no modelo).
 - **Escape:** os valores são inseridos como **texto literal** por padrão
   (caracteres como `&`, `<`, `>` são escapados). Para injetar HTML de propósito,
-  use `EditarConteudo(..., escapar_html=False)` — aí o HTML é sua
-  responsabilidade (precisa ser válido e usar as classes CSS do SEI).
+  use `EditarConteudo(..., escapar_html=False)` (todos os valores como HTML cru)
+  ou `chaves_html={...}` para injetar HTML cru **só** nos placeholders escolhidos
+  — útil para pôr um link no meio de campos de texto (veja a seguir).
+
+### Referenciar outro documento (link no meio do texto)
+
+Às vezes o documento precisa **apontar para outro documento** do processo (ex.:
+"conforme a Nota Técnica X"). No editor do SEI isso **não** é um `<a href>`
+comum: é uma **âncora nativa** que o SEI resolve na hora de visualizar. A
+biblioteca monta essa âncora com `montar_link_documento(id_documento, protocolo)`
+e a injeta num placeholder como **HTML cru** — por isso você lista esse
+placeholder em `chaves_html`:
+
+```python
+from integra_gov.sei import (
+    DocumentosArvore, EditarConteudo, montar_link_documento,
+)
+
+# O id_documento (id interno, ≠ do protocolo visível) vem da árvore:
+alvo = DocumentosArvore(driver).listar(contendo="44414392")[0]
+link = montar_link_documento(alvo.id_documento, alvo.numero)
+
+EditarConteudo(driver, {
+    "{{NOME}}": "MARIA DA SILVA",   # texto normal (escapado)
+    "{{DOC_REF}}": link,             # HTML cru: o link para o documento
+}, chaves_html={"{{DOC_REF}}"}).editar()
+```
+
+Só os placeholders em `chaves_html` entram sem escape; o resto continua como
+texto literal — tudo numa passada só. O **texto visível** do link é o protocolo
+(número do documento) e o **id interno** (`id_documento`) é o que o SEI usa para
+resolver o link — dois números diferentes do mesmo documento.
 
 ### Apontar um documento existente
 
@@ -425,6 +455,77 @@ levanta `AssinaturaError`.
 > ⚠️ **Governança:** assinar em lote é assinar **sem revisar** cada documento. A
 > conferência antes da assinatura é responsabilidade da aplicação que monta o
 > fluxo — a biblioteca fornece o mecanismo, não o controle editorial.
+
+### Marcadores (etiquetas do processo)
+
+Os **marcadores** do SEI (etiquetas coloridas) aparecem em **dois contextos** —
+por isso duas classes. Na tela **Controle de Processos** (a lista), `Marcadores`
+consulta e filtra:
+
+```python
+from integra_gov.sei import Marcadores
+
+marcadores = Marcadores(driver)             # driver na tela Controle de Processos
+for m in marcadores.listar():               # marcadores da unidade, como dados
+    print(m.id, m.nome, m.quantidade, m.cor)
+
+marcadores.selecionar("INTEGRA - RETORNO")  # filtra a lista por esse marcador
+marcadores.remover_filtro()                 # volta à lista completa
+```
+
+Num **processo aberto**, `MarcadorProcesso` marca/desmarca **aquele** processo
+pelo modal "Gerenciar Marcador":
+
+```python
+from integra_gov.sei import MarcadorProcesso
+
+mp = MarcadorProcesso(driver)                          # processo aberto
+mp.incluir("INTEGRA - RETORNO", "Aguardando retorno")  # mensagem opcional (≤ 250)
+mp.listar()                                            # ['INTEGRA - RETORNO', ...]
+mp.remover("INTEGRA - RETORNO")
+```
+
+`selecionar()` casa por **nome exato** ou **id** e falha com `MarcadorError` se o
+marcador não existir. `incluir()` valida a mensagem (≤ 250 caracteres) e confirma
+a inclusão pelo ícone do marcador na árvore.
+
+### Controle de prazo
+
+Define ou remove o **prazo** (em dias) de um processo aberto — o "Controle de
+Prazo" do SEI:
+
+```python
+from integra_gov.sei import ControlePrazo
+
+ControlePrazo(driver).definir(30)   # prazo de 30 dias (valida 1..9999)
+ControlePrazo(driver).excluir()     # remove o prazo
+```
+
+`definir()` levanta `ValueError` fora da faixa `1..9999` e `ControlePrazoError`
+se a tela do prazo não abrir/responder.
+
+### Concluir (encerrar) um processo
+
+Encerra o processo aberto. O ponto importante é distinguir um **bloqueio do SEI**
+de uma **falha técnica**, feito por exceções:
+
+```python
+from integra_gov.sei import ConcluirProcesso
+from integra_gov.sei.exceptions import ConcluirProcessoError, ProcessoBloqueadoError
+
+try:
+    ConcluirProcesso(driver).concluir()
+except ProcessoBloqueadoError:
+    ...   # o SEI recusou: há documento com acesso restrito / hipótese legal pendente
+except ConcluirProcessoError:
+    ...   # falha técnica (ícone ou formulário de conclusão não encontrado)
+```
+
+`ProcessoBloqueadoError` é **subclasse** de `ConcluirProcessoError` — um
+`except ConcluirProcessoError` genérico pega os dois, mas você pode tratar o
+bloqueio à parte (útil ao concluir **em lote**: "pulei este porque está
+bloqueado" ≠ "falhou"). O módulo trata o formulário do SEI 4.x e o alert de
+confirmação do legado.
 
 ---
 
