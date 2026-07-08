@@ -15,6 +15,18 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   **consumir este como dependência** em vez de manter cópias divergentes.
 
 ### Adicionado
+- `integra_gov.sei.concluir_processo`: **conclui (encerra)** um processo aberto —
+  `ConcluirProcesso(driver).concluir()`. Trata os caminhos que o SEI apresenta: o
+  formulário "Conclusão de Processo" (SEI 4.x → botão Salvar), o *alert* de
+  confirmação legado (< 4.0), e o **bloqueio** por documento com hipótese legal
+  pendente (via *alert* ou `div.alert-danger`), que levanta a subclasse
+  `ProcessoBloqueadoError` — para quem conclui em lote distinguir "bloqueado" de
+  uma falha técnica (`ConcluirProcessoError`). Portado do `concluir_processo` do
+  pacote privado, generalizado: exceções tipadas no lugar do `dict {sucesso,
+  motivo}`, logging stdlib, reúso de `barra_icones` (com a estabilização
+  anti-corrida do clique), comentário de fluxo de órgão removido. **Verificado ao
+  vivo** no SEI 4.1.5 (MGI): processo público criado e concluído pelo formulário
+  (após Salvar, a visualização passou a "Processo não possui andamentos abertos").
 - `integra_gov.sei.marcador`: marcadores do SEI em **dois contextos** (duas
   classes). `Marcadores` (tela Controle de Processos) lista os marcadores da
   unidade como **dados** (`Marcador`: id/nome/quantidade/cor), filtra a lista por

@@ -296,6 +296,21 @@ ControlePrazo(driver).definir(30)   # prazo de 30 dias (1..9999)
 ControlePrazo(driver).excluir()     # remove o prazo
 ```
 
+### Concluir um processo
+
+Encerra o processo aberto. Distingue o **bloqueio** (documento com hipótese legal
+pendente) de uma falha técnica, por exceções:
+
+```python
+from integra_gov.sei import ConcluirProcesso
+from integra_gov.sei.exceptions import ProcessoBloqueadoError
+
+try:
+    ConcluirProcesso(driver).concluir()
+except ProcessoBloqueadoError:
+    ...   # o SEI recusou: há documento com acesso restrito / hipótese legal pendente
+```
+
 ### SIAPE (terminal 3270)
 
 O acesso ao SIAPE passa pelo portal SIAPENet (web, com certificado digital) e por
@@ -341,6 +356,7 @@ conexao.acessar_transacao("GRCOSITPRO", confirmacao="GRCOSITPRO")     # >transa�
 | `integra_gov.sei.documentos_arvore` | Consulta/seleção de documentos na árvore | ✅ |
 | `integra_gov.sei.marcador` | Marcadores — filtrar a lista e marcar/desmarcar processo | ✅ |
 | `integra_gov.sei.controle_prazo` | Define/exclui o prazo (em dias) de um processo | ✅ |
+| `integra_gov.sei.concluir_processo` | Conclui (encerra) um processo | ✅ |
 | `integra_gov.sei.nivel_acesso` | Nível de acesso (público/restrito) — reutilizável | ✅ |
 | `integra_gov.sei.barra_icones` | Clique em ícones da barra do documento — reutilizável | ✅ |
 | `integra_gov.sei.gerar_documento` | Tela "Gerar Documento" (escolha do tipo) — reutilizável | ✅ |

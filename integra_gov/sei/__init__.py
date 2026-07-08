@@ -21,15 +21,18 @@ documentados):
   - ``documentos_arvore`` : consulta/seleção de documentos na árvore        ✅
   - ``marcador``          : marcadores — filtrar a lista e marcar/desmarcar processo ✅
   - ``controle_prazo``    : define/exclui o prazo (em dias) de um processo   ✅
+  - ``concluir_processo`` : conclui (encerra) um processo                     ✅
 """
 
 from .assinar_documento import AssinarDocumento
 from .barra_icones import clicar_icone_barra
+from .concluir_processo import ConcluirProcesso
 from .controle_prazo import ControlePrazo
 from .documentos_arvore import DocumentoNo, DocumentosArvore, TipoDocumento
 from .editar_conteudo import EditarConteudo, data_por_extenso, montar_link_documento
 from .exceptions import (
     AssinaturaError,
+    ConcluirProcessoError,
     ControlePrazoError,
     CredenciaisInvalidas,
     DocumentoExternoError,
@@ -39,6 +42,7 @@ from .exceptions import (
     MarcadorError,
     NavegadorError,
     NivelAcessoError,
+    ProcessoBloqueadoError,
     ProcessoNaoEncontrado,
     SeiError,
     SeiLoginError,
@@ -66,6 +70,8 @@ from .tela_aviso import fechar_tela_aviso
 __all__ = [
     "AssinarDocumento",
     "AssinaturaError",
+    "ConcluirProcesso",
+    "ConcluirProcessoError",
     "ControlePrazo",
     "ControlePrazoError",
     "CredenciaisInvalidas",
@@ -87,6 +93,7 @@ __all__ = [
     "Marcadores",
     "NavegadorError",
     "NivelAcessoError",
+    "ProcessoBloqueadoError",
     "ProcessoNaoEncontrado",
     "ProcessoSei",
     "SeiError",

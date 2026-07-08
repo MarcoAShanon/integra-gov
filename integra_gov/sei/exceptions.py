@@ -82,3 +82,15 @@ class ControlePrazoError(SeiError):
     """Falha ao definir/excluir o controle de prazo de um processo: o ícone
     "Controle de Prazo", um campo/botão do modal, ou a confirmação da operação
     não foi encontrado/executado."""
+
+
+class ConcluirProcessoError(SeiError):
+    """Falha ao concluir (encerrar) um processo no SEI: o ícone "Concluir
+    Processo" ou o formulário/botão de conclusão não foi encontrado, ou a
+    conclusão não pôde ser executada."""
+
+
+class ProcessoBloqueadoError(ConcluirProcessoError):
+    """O SEI recusou concluir o processo porque há documento(s) com acesso
+    restrito / hipótese legal pendente. É subclasse de ``ConcluirProcessoError``
+    para o chamador distinguir "bloqueado" (estado real) de uma falha técnica."""
