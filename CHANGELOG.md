@@ -15,6 +15,21 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   **consumir este como dependência** em vez de manter cópias divergentes.
 
 ### Adicionado
+- `integra_gov.sei.enviar_processo`: **envia (tramita)** o processo aberto a outra
+  unidade — `EnviarProcesso(driver, unidade_destino, *, orgao=None,
+  manter_aberto=False).enviar()`. Preenche a unidade no autocomplete do SEI,
+  **confirma que a unidade exata entrou em `selUnidades`** antes de enviar (casa a
+  sigla distinguindo a unidade-pai de sub-unidades, para não mandar ao lugar
+  errado) e checa o alerta de erro depois; `EnviarProcessoError` em qualquer
+  falha. Portado do `enviar_processo` do pacote privado, generalizado: **removida
+  a dependência de GUI `PrimeiroPlanoNavegador`** (fere o princípio headless),
+  sleeps aleatórios e `callback_log` fora, exceções tipadas no lugar de `bool`,
+  reúso de `barra_icones`/`switch_to_iframe_visualizacao`. **Verificado ao vivo**
+  no SEI 4.1.5 (MGI): processo criado e enviado à unidade destino com
+  `manter_aberto` (após enviar, a visualização mostrou "Processo aberto nas
+  unidades: destino + origem"). Detalhes de DOM fixados na verificação: o
+  autocomplete é `div.infraAjaxAutoCompletar > … > a`, e o checkbox/Enviar são
+  clicados via JS (o SEI cobre o `<input>` com o `<label>` do infraCheckbox).
 - `integra_gov.sei.concluir_processo`: **conclui (encerra)** um processo aberto —
   `ConcluirProcesso(driver).concluir()`. Trata os caminhos que o SEI apresenta: o
   formulário "Conclusão de Processo" (SEI 4.x → botão Salvar), o *alert* de

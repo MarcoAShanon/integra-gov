@@ -527,6 +527,25 @@ bloqueio à parte (útil ao concluir **em lote**: "pulei este porque está
 bloqueado" ≠ "falhou"). O módulo trata o formulário do SEI 4.x e o alert de
 confirmação do legado.
 
+### Enviar o processo a outra unidade
+
+Tramita o processo aberto para outra unidade (pelo autocomplete do SEI):
+
+```python
+from integra_gov.sei import EnviarProcesso
+
+EnviarProcesso(driver, "MGI-SGP-DECIPEX-CGPAG").enviar()
+
+# manter aberto também na unidade atual (tramitação em paralelo):
+EnviarProcesso(driver, "MGI-SGP-DECIPEX-CGPAG", manter_aberto=True).enviar()
+```
+
+A unidade é casada **exata** (a sigla — distinguindo a unidade-pai de sub-unidades
+com sigla prefixada) e o módulo **confirma que ela entrou na lista de destinos**
+antes de enviar, para não mandar para o lugar errado. `EnviarProcessoError` se a
+unidade não puder ser selecionada ou o SEI recusar. Para envio **entre órgãos**,
+passe `orgao=` com o texto exato da opção do dropdown de órgão.
+
 ---
 
 ## Exemplo completo (do zero ao processo aberto)

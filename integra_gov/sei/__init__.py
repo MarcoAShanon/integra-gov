@@ -22,6 +22,7 @@ documentados):
   - ``marcador``          : marcadores — filtrar a lista e marcar/desmarcar processo ✅
   - ``controle_prazo``    : define/exclui o prazo (em dias) de um processo   ✅
   - ``concluir_processo`` : conclui (encerra) um processo                     ✅
+  - ``enviar_processo``   : envia o processo a outra unidade                  ✅
 """
 
 from .assinar_documento import AssinarDocumento
@@ -30,6 +31,7 @@ from .concluir_processo import ConcluirProcesso
 from .controle_prazo import ControlePrazo
 from .documentos_arvore import DocumentoNo, DocumentosArvore, TipoDocumento
 from .editar_conteudo import EditarConteudo, data_por_extenso, montar_link_documento
+from .enviar_processo import EnviarProcesso
 from .exceptions import (
     AssinaturaError,
     ConcluirProcessoError,
@@ -38,6 +40,7 @@ from .exceptions import (
     DocumentoExternoError,
     DocumentoInternoError,
     EditarConteudoError,
+    EnviarProcessoError,
     IniciarProcessoError,
     MarcadorError,
     NavegadorError,
@@ -81,6 +84,8 @@ __all__ = [
     "DocumentosArvore",
     "EditarConteudo",
     "EditarConteudoError",
+    "EnviarProcesso",
+    "EnviarProcessoError",
     "IframesSei",
     "IncluirDocumentoInterno",
     "IniciarProcesso",

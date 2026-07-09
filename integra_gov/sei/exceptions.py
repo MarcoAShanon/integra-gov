@@ -94,3 +94,9 @@ class ProcessoBloqueadoError(ConcluirProcessoError):
     """O SEI recusou concluir o processo porque há documento(s) com acesso
     restrito / hipótese legal pendente. É subclasse de ``ConcluirProcessoError``
     para o chamador distinguir "bloqueado" (estado real) de uma falha técnica."""
+
+
+class EnviarProcessoError(SeiError):
+    """Falha ao enviar um processo a outra unidade: o ícone/formulário de envio
+    não foi encontrado, a unidade destino não pôde ser selecionada (autocomplete
+    não a inseriu na lista), ou o SEI recusou o envio (alerta de erro)."""

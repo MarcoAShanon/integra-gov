@@ -311,6 +311,25 @@ except ProcessoBloqueadoError:
     ...   # o SEI recusou: há documento com acesso restrito / hipótese legal pendente
 ```
 
+### Enviar o processo a outra unidade
+
+Tramita o processo aberto para outra unidade (pelo autocomplete do SEI):
+
+```python
+from integra_gov.sei import EnviarProcesso
+
+EnviarProcesso(driver, "MGI-SGP-DECIPEX-CGPAG").enviar()
+
+# manter aberto também na unidade atual (tramitação em paralelo):
+EnviarProcesso(driver, "MGI-SGP-DECIPEX-CGPAG", manter_aberto=True).enviar()
+```
+
+Casa a unidade **exata** (a sigla, distinguindo a unidade-pai de sub-unidades) e
+**confirma que ela entrou na lista de destinos antes de enviar** — não manda para
+o lugar errado. `EnviarProcessoError` se a unidade não for selecionável ou o SEI
+recusar. Para envio **entre órgãos**, passe `orgao=` com o texto exato da opção do
+dropdown de órgão.
+
 ### SIAPE (terminal 3270)
 
 O acesso ao SIAPE passa pelo portal SIAPENet (web, com certificado digital) e por
@@ -357,6 +376,7 @@ conexao.acessar_transacao("GRCOSITPRO", confirmacao="GRCOSITPRO")     # >transa�
 | `integra_gov.sei.marcador` | Marcadores — filtrar a lista e marcar/desmarcar processo | ✅ |
 | `integra_gov.sei.controle_prazo` | Define/exclui o prazo (em dias) de um processo | ✅ |
 | `integra_gov.sei.concluir_processo` | Conclui (encerra) um processo | ✅ |
+| `integra_gov.sei.enviar_processo` | Envia (tramita) o processo a outra unidade | ✅ |
 | `integra_gov.sei.nivel_acesso` | Nível de acesso (público/restrito) — reutilizável | ✅ |
 | `integra_gov.sei.barra_icones` | Clique em ícones da barra do documento — reutilizável | ✅ |
 | `integra_gov.sei.gerar_documento` | Tela "Gerar Documento" (escolha do tipo) — reutilizável | ✅ |
