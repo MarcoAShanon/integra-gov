@@ -27,6 +27,7 @@ import logging
 import time
 
 from selenium.common.exceptions import (
+    NoSuchElementException,
     NoSuchFrameException,
     StaleElementReferenceException,
     TimeoutException,
@@ -41,6 +42,10 @@ _log = logging.getLogger(__name__)
 #: Nomes do iframe principal de visualização, em ordem de tentativa.
 #: SEI 4.0+: ``ifrConteudoVisualizacao``; SEI < 4.0: ``ifrVisualizacao``.
 NOMES_IFRAME_VISUALIZACAO = ("ifrConteudoVisualizacao", "ifrVisualizacao")
+
+#: Iframe de CONTEÚDO do documento (tabelas, andamento, ``ifrArvoreHtml``). No
+#: SEI 4.0 fica ANINHADO dentro do wrapper ``ifrConteudoVisualizacao``.
+NOME_IFRAME_CONTEUDO = "ifrVisualizacao"
 
 # Exceções que o ChromeDriver pode lançar ao trocar de iframe — captura ampla
 # porque a mensagem costuma vir vazia em algumas dessas situações.
@@ -92,6 +97,32 @@ def switch_to_iframe_visualizacao(driver, timeout: float = 10) -> str:
     raise TimeoutException(
         "Nenhum iframe de visualização encontrado. Tentativas: " + "; ".join(erros)
     )
+
+
+def descer_para_conteudo_documento(driver, timeout: float = 10) -> None:
+    """Desce até o iframe que contém o **conteúdo** do documento.
+
+    :func:`switch_to_iframe_visualizacao` para no wrapper de visualização; no SEI
+    4.0 o conteúdo do documento (o HTML renderizado e o ``ifrArvoreHtml``, cujo
+    ``src`` é a URL de download de um anexo) fica no ``ifrVisualizacao``
+    **aninhado** dentro do wrapper ``ifrConteudoVisualizacao``. Este helper entra
+    nessa camada extra. Em SEI < 4.0 (sem wrapper) já estamos no
+    ``ifrVisualizacao`` e não há o que descer — o iframe aninhado não existe e a
+    operação é um **no-op**.
+
+    Pré-condição: o driver já deve estar posicionado no iframe de visualização
+    (via :func:`switch_to_iframe_visualizacao`).
+
+    Args:
+        driver: instância do Selenium WebDriver.
+        timeout: mantido por simetria da API; a busca do frame aninhado é
+            imediata (não espera).
+    """
+    try:
+        aninhado = driver.find_element(By.NAME, NOME_IFRAME_CONTEUDO)
+    except NoSuchElementException:
+        return  # SEI < 4.0: já estamos no ifrVisualizacao
+    driver.switch_to.frame(aninhado)
 
 
 def _retry_iframe(max_tentativas: int = 3, intervalo: float = 1.0):
@@ -180,6 +211,7 @@ class IframesSei:
         if self.destino == self.DOCUMENTO_HTML:
             self.driver.switch_to.default_content()
             switch_to_iframe_visualizacao(self.driver, self.timeout)
+            descer_para_conteudo_documento(self.driver, self.timeout)
             WebDriverWait(self.driver, self.timeout).until(
                 EC.frame_to_be_available_and_switch_to_it((By.ID, "ifrArvoreHtml"))
             )

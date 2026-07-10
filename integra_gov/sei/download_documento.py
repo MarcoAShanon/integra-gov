@@ -21,7 +21,6 @@ from pathlib import Path
 
 from selenium.common.exceptions import (
     JavascriptException,
-    NoSuchElementException,
     WebDriverException,
 )
 from selenium.webdriver.common.by import By
@@ -29,15 +28,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from .exceptions import DownloadDocumentoError, SeiNavegacaoError
-from .iframes import switch_to_iframe_visualizacao
+from .iframes import descer_para_conteudo_documento, switch_to_iframe_visualizacao
 
 _log = logging.getLogger(__name__)
 
 #: Iframe (aninhado na visualização) cujo ``src`` é a URL de download.
 ID_IFRAME_HTML = "ifrArvoreHtml"
-#: No SEI 4.0 o ``ifrArvoreHtml`` fica dentro deste iframe de conteúdo, que por
-#: sua vez está dentro do wrapper ``ifrConteudoVisualizacao``.
-NOME_IFRAME_VISUALIZACAO = "ifrVisualizacao"
 #: Timeout (s) do ``fetch`` assíncrono (arquivos grandes).
 TIMEOUT_FETCH = 30
 
@@ -162,13 +158,14 @@ class DownloadDocumento:
 
         ``switch_to_iframe_visualizacao`` para no wrapper ``ifrConteudoVisualizacao``;
         o ``ifrArvoreHtml`` fica no ``ifrVisualizacao`` **aninhado**, então é
-        preciso descer essa camada extra antes de localizá-lo (:meth:`_descer_para_conteudo`).
+        preciso descer essa camada extra antes de localizá-lo
+        (:func:`~integra_gov.sei.iframes.descer_para_conteudo_documento`).
         Converte qualquer falha do Selenium (inclusive um iframe que ficou *stale*
         no reload) em ``DownloadDocumentoError``."""
         try:
             self.driver.switch_to.default_content()
             switch_to_iframe_visualizacao(self.driver, timeout=self.timeout)
-            self._descer_para_conteudo()
+            descer_para_conteudo_documento(self.driver, timeout=self.timeout)
             iframe = WebDriverWait(self.driver, self.timeout).until(
                 EC.presence_of_element_located((By.ID, ID_IFRAME_HTML))
             )
@@ -185,18 +182,6 @@ class DownloadDocumento:
                 f"o iframe {ID_IFRAME_HTML!r} não tem URL de download (src vazio)"
             )
         return url
-
-    def _descer_para_conteudo(self) -> None:
-        """Desce a camada extra do SEI 4.0: do wrapper ``ifrConteudoVisualizacao``
-        (onde :func:`switch_to_iframe_visualizacao` parou) para o ``ifrVisualizacao``
-        aninhado, que contém o ``ifrArvoreHtml``. Em SEI < 4.0 (sem wrapper) já
-        estamos no ``ifrVisualizacao`` e não há o que descer — o iframe aninhado
-        não existe e a operação é um no-op."""
-        try:
-            nested = self.driver.find_element(By.NAME, NOME_IFRAME_VISUALIZACAO)
-        except NoSuchElementException:
-            return
-        self.driver.switch_to.frame(nested)
 
     def _voltar_default(self) -> None:
         try:

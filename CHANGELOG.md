@@ -14,6 +14,16 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   evita a colisão com o pacote interno `integra` — permitindo que ele passe a
   **consumir este como dependência** em vez de manter cópias divergentes.
 
+### Corrigido
+- `IframesSei.DOCUMENTO_HTML` (`integra_gov.sei.iframes`) não alcançava o
+  `ifrArvoreHtml` no SEI 4.0: ele fica no `ifrVisualizacao` **aninhado** dentro do
+  wrapper `ifrConteudoVisualizacao`, e a navegação não descia essa camada (só
+  funcionava em SEI < 4.0). A descida virou o helper compartilhado
+  `descer_para_conteudo_documento`, reusado também pelo `download_documento` (que
+  já aplicava a correção inline) — DRY. Nenhum caller de produção era afetado (o
+  destino `DOCUMENTO_HTML` só era usado em teste); a mesma navegação foi
+  verificada ao vivo pelo `download_documento`.
+
 ### Adicionado
 - `integra_gov.sei.download_documento`: **baixa o documento selecionado** na
   árvore — `DownloadDocumento(driver).baixar()` → `DocumentoBaixado` (bytes +

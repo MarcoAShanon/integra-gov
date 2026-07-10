@@ -11,9 +11,11 @@ from unittest.mock import MagicMock
 
 import pytest
 from selenium.common.exceptions import (
+    NoSuchElementException,
     StaleElementReferenceException,
     TimeoutException,
 )
+from selenium.webdriver.common.by import By
 
 from integra_gov.sei import iframes
 from integra_gov.sei.iframes import IframesSei
@@ -85,6 +87,26 @@ def test_navegar_documento_html(selenium):
     selenium({"ifrConteudoVisualizacao", "ifrArvoreHtml"})
     driver = MagicMock()
     assert IframesSei(driver, IframesSei.DOCUMENTO_HTML).navegar() is True
+
+
+def test_navegar_documento_html_desce_ifrvisualizacao_aninhado(selenium):
+    """SEI 4.0: o ``ifrArvoreHtml`` fica no ``ifrVisualizacao`` ANINHADO dentro do
+    wrapper; ``DOCUMENTO_HTML`` precisa descer essa camada antes de trocar para o
+    ``ifrArvoreHtml`` (senão nunca o encontra)."""
+    selenium({"ifrConteudoVisualizacao", "ifrArvoreHtml"})
+    driver = MagicMock()
+    IframesSei(driver, IframesSei.DOCUMENTO_HTML).navegar()
+    driver.find_element.assert_called_with(By.NAME, "ifrVisualizacao")
+    driver.switch_to.frame.assert_called_once_with(driver.find_element.return_value)
+
+
+def test_descer_para_conteudo_noop_sem_ifrvisualizacao_aninhado():
+    """SEI < 4.0 (sem wrapper): já estamos no ``ifrVisualizacao`` e não há camada
+    aninhada — a descida é um no-op e não troca de frame."""
+    driver = MagicMock()
+    driver.find_element.side_effect = NoSuchElementException("sem aninhado")
+    iframes.descer_para_conteudo_documento(driver)  # não deve levantar
+    driver.switch_to.frame.assert_not_called()
 
 
 def test_navegar_destino_desconhecido_levanta_valueerror(selenium):
