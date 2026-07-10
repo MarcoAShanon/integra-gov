@@ -19,6 +19,7 @@ documentados):
   - ``editar_conteudo``   : substitui placeholders no editor (CKEditor)    ✅
   - ``assinar_documento`` : assinatura eletrônica (senha do servidor)      ✅
   - ``documentos_arvore`` : consulta/seleção de documentos na árvore        ✅
+  - ``download_documento``: baixa o documento selecionado (headless, via fetch)  ✅
   - ``marcador``          : marcadores — filtrar a lista e marcar/desmarcar processo ✅
   - ``controle_prazo``    : define/exclui o prazo (em dias) de um processo   ✅
   - ``concluir_processo`` : conclui (encerra) um processo                     ✅
@@ -30,6 +31,7 @@ from .barra_icones import clicar_icone_barra
 from .concluir_processo import ConcluirProcesso
 from .controle_prazo import ControlePrazo
 from .documentos_arvore import DocumentoNo, DocumentosArvore, TipoDocumento
+from .download_documento import DocumentoBaixado, DownloadDocumento
 from .editar_conteudo import EditarConteudo, data_por_extenso, montar_link_documento
 from .enviar_processo import EnviarProcesso
 from .exceptions import (
@@ -39,6 +41,7 @@ from .exceptions import (
     CredenciaisInvalidas,
     DocumentoExternoError,
     DocumentoInternoError,
+    DownloadDocumentoError,
     EditarConteudoError,
     EnviarProcessoError,
     IniciarProcessoError,
@@ -78,10 +81,13 @@ __all__ = [
     "ControlePrazo",
     "ControlePrazoError",
     "CredenciaisInvalidas",
+    "DocumentoBaixado",
     "DocumentoExternoError",
     "DocumentoInternoError",
     "DocumentoNo",
     "DocumentosArvore",
+    "DownloadDocumento",
+    "DownloadDocumentoError",
     "EditarConteudo",
     "EditarConteudoError",
     "EnviarProcesso",

@@ -100,3 +100,9 @@ class EnviarProcessoError(SeiError):
     """Falha ao enviar um processo a outra unidade: o ícone/formulário de envio
     não foi encontrado, a unidade destino não pôde ser selecionada (autocomplete
     não a inseriu na lista), ou o SEI recusou o envio (alerta de erro)."""
+
+
+class DownloadDocumentoError(SeiError):
+    """Falha ao baixar um documento do SEI: a URL de download não foi encontrada
+    (há um documento selecionado?), o ``fetch`` na sessão falhou, ou o conteúdo
+    não pôde ser decodificado."""

@@ -15,6 +15,23 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   **consumir este como dependência** em vez de manter cópias divergentes.
 
 ### Adicionado
+- `integra_gov.sei.download_documento`: **baixa o documento selecionado** na
+  árvore — `DownloadDocumento(driver).baixar()` → `DocumentoBaixado` (bytes +
+  `content_type` + `extensao` + `nome_sugerido`). **Headless:** busca o arquivo
+  com `fetch()` **dentro da sessão logada** (reusa cookies/SSL — o que também
+  resolve os certificados `.gov.br`), sem a janela nativa "Salvar como" nem a
+  pasta de download do Chrome; a lib devolve **dado**, não escreve em disco por
+  si (`DocumentoBaixado.salvar(pasta, nome=...)` grava quando você quiser). Vale
+  para documentos **externos/enviados**; documento interno é HTML e não tem anexo
+  para baixar. Portado do `download_documento` do pacote privado, generalizado:
+  `DownloadDocumentoError` no lugar do `None` silencioso, sem `callback_log`,
+  extração de nome/extensão do `Content-Disposition`. **Verificado ao vivo** no
+  SEI 4.1.5 (MGI): baixou um comprovante externo de 86 KB (`application/pdf`,
+  nome do `Content-Disposition`). A verificação corrigiu a navegação de iframes:
+  no SEI 4.0 o `ifrArvoreHtml` (cujo `src` é a URL `documento_download_anexo`)
+  fica no `ifrVisualizacao` **aninhado**, então `_extrair_url` desce essa camada
+  extra além do wrapper `ifrConteudoVisualizacao` (em SEI < 4.0, sem wrapper, é
+  no-op).
 - `integra_gov.sei.enviar_processo`: **envia (tramita)** o processo aberto a outra
   unidade — `EnviarProcesso(driver, unidade_destino, *, orgao=None,
   manter_aberto=False).enviar()`. Preenche a unidade no autocomplete do SEI,

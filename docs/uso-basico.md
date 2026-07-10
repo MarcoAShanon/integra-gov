@@ -431,6 +431,38 @@ Dois pontos:
   o texto casar com vários nós, `selecionar()` **aborta** com
   `SelecaoDocumentoError` — passe `indice=` para desambiguar.
 
+### Baixar um documento (download)
+
+Baixa o documento **selecionado** na árvore como **dado** — sem a janela nativa
+"Salvar como" nem a pasta de download do Chrome. `DownloadDocumento` lê a URL de
+download e busca o arquivo com `fetch()` **dentro da sessão logada** (reusa
+cookies e SSL, o que ainda resolve os certificados `.gov.br`):
+
+```python
+from integra_gov.sei import DocumentosArvore, DownloadDocumento
+from integra_gov.sei.exceptions import DownloadDocumentoError
+
+DocumentosArvore(driver).selecionar("35551895")   # aponta um documento EXTERNO
+
+try:
+    doc = DownloadDocumento(driver).baixar()
+except DownloadDocumentoError as exc:
+    ...  # URL não encontrada, fetch falhou (ex.: sessão expirada), conteúdo ilegível
+
+# doc é um DocumentoBaixado: bytes + metadados (a lib NÃO escreve em disco por si)
+print(len(doc.conteudo), doc.content_type, doc.extensao, doc.nome_sugerido)
+caminho = doc.salvar("downloads")                 # grava downloads/<nome>.<ext> → Path
+```
+
+Dois pontos:
+
+- **Externo, não interno:** o download pega o **arquivo anexado** (PDF, DOCX…) de
+  um documento **externo/enviado**. Um documento **interno** do SEI é HTML gerado
+  pelo sistema e não tem anexo para baixar (vira PDF por outro caminho).
+- **Dado, não arquivo:** `baixar()` devolve os bytes e o `nome_sugerido` (do
+  `Content-Disposition`); só `salvar(pasta, nome=...)` grava em disco — a lib
+  segue headless.
+
 ### Assinar um documento
 
 Assina o documento **selecionado** com a **senha do próprio servidor** — a senha
