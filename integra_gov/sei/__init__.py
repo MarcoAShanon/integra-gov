@@ -24,6 +24,7 @@ documentados):
   - ``controle_prazo``    : define/exclui o prazo (em dias) de um processo   ✅
   - ``concluir_processo`` : conclui (encerra) um processo                     ✅
   - ``enviar_processo``   : envia o processo a outra unidade                  ✅
+  - ``incluir_documento_bloco`` : inclui documento(s) em bloco de assinatura  ✅
 """
 
 from .assinar_documento import AssinarDocumento
@@ -36,6 +37,7 @@ from .editar_conteudo import EditarConteudo, data_por_extenso, montar_link_docum
 from .enviar_processo import EnviarProcesso
 from .exceptions import (
     AssinaturaError,
+    BlocoAssinaturaError,
     ConcluirProcessoError,
     ControlePrazoError,
     CredenciaisInvalidas,
@@ -58,6 +60,7 @@ from .exceptions import (
 )
 from .gerar_documento import abrir_gerar_documento
 from .iframes import IframesSei, switch_to_iframe_visualizacao
+from .incluir_documento_bloco import IncluirDocumentoBloco
 from .incluir_documento_interno import IncluirDocumentoInterno
 from .iniciar_processo import IniciarProcesso
 from .inserir_documento_externo import InserirDocumentoExterno
@@ -76,6 +79,7 @@ from .tela_aviso import fechar_tela_aviso
 __all__ = [
     "AssinarDocumento",
     "AssinaturaError",
+    "BlocoAssinaturaError",
     "ConcluirProcesso",
     "ConcluirProcessoError",
     "ControlePrazo",
@@ -93,6 +97,7 @@ __all__ = [
     "EnviarProcesso",
     "EnviarProcessoError",
     "IframesSei",
+    "IncluirDocumentoBloco",
     "IncluirDocumentoInterno",
     "IniciarProcesso",
     "IniciarProcessoError",

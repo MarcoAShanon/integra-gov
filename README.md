@@ -223,6 +223,31 @@ o modal de assinatura fecha sem erro; senha recusada levanta `AssinaturaError`.
 > conferência antes da assinatura é responsabilidade da aplicação que monta o
 > fluxo — a biblioteca fornece o mecanismo, não o controle editorial.
 
+### Incluir um documento em bloco de assinatura
+
+Blocos de assinatura são o mecanismo do SEI para **assinatura em lote** (inclusive
+por signatários de outra unidade). Com um processo aberto e o documento
+**selecionado na árvore**, `IncluirDocumentoBloco` o adiciona a um bloco:
+
+```python
+from integra_gov.sei import DocumentosArvore, IncluirDocumentoBloco
+from integra_gov.sei.exceptions import BlocoAssinaturaError
+
+DocumentosArvore(driver).selecionar("59028410")        # aponta o documento
+
+try:
+    # bloco: o value (id) OU o texto da opção; protocolos: só dígitos
+    IncluirDocumentoBloco(driver, "648852", ["59028410"]).incluir()
+except BlocoAssinaturaError as exc:
+    ...  # bloco inexistente (o erro lista os disponíveis), protocolo ausente, recusa
+```
+
+Estrito: se **qualquer** protocolo pedido não estiver na tela, **nada é incluído**.
+Um diálogo pós-Incluir é tratado como **recusa** (nunca confirmado às cegas).
+Confirmação verificada ao vivo (SEI 4.1.5): como a tela **não muda** no sucesso,
+o módulo confirma pela **ausência de recusa** (sem alerta e sem erro inline após
+o submit ser processado).
+
 ### Apontar um documento existente (consultar e selecionar a árvore)
 
 Os módulos de documento (assinar, editar) agem sobre o documento **selecionado**
@@ -401,6 +426,7 @@ conexao.acessar_transacao("GRCOSITPRO", confirmacao="GRCOSITPRO")     # >transa�
 | `integra_gov.sei.incluir_documento_interno` | Inclui um documento interno (Despacho, Nota Técnica…) | ✅ |
 | `integra_gov.sei.editar_conteudo` | Substitui placeholders no editor (injeção CKEditor) | ✅ |
 | `integra_gov.sei.assinar_documento` | Assinatura eletrônica (senha do próprio servidor) | ✅ |
+| `integra_gov.sei.incluir_documento_bloco` | Inclui documento em bloco de assinatura (assinatura em lote) | ✅ |
 | `integra_gov.sei.documentos_arvore` | Consulta/seleção de documentos na árvore | ✅ |
 | `integra_gov.sei.download_documento` | Baixa o documento selecionado (headless, via `fetch` na sessão) | ✅ |
 | `integra_gov.sei.marcador` | Marcadores — filtrar a lista e marcar/desmarcar processo | ✅ |

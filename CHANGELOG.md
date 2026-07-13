@@ -25,6 +25,21 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   verificada ao vivo pelo `download_documento`.
 
 ### Adicionado
+- `integra_gov.sei.incluir_documento_bloco`: **inclui documento(s) em um bloco de
+  assinatura** (mecanismo do SEI para assinatura em lote) —
+  `IncluirDocumentoBloco(driver, bloco, protocolos).incluir()`. Requer o documento
+  **selecionado na árvore**; `bloco` casa por value (id) ou texto (erro lista os
+  disponíveis); `protocolos` são numéricos (validados). Estrito: se algum
+  protocolo não estiver na tela, **nada é incluído** (tudo-ou-nada);
+  `BlocoAssinaturaError` em qualquer falha. Portado do `incluir_documento_bloco`
+  do pacote privado, generalizado: exceção tipada no lugar do `bool` silencioso,
+  sem `callback_log`, reúso de `barra_icones`/`iframes`. **Verificado ao vivo** no
+  SEI 4.1.5 (MGI): documento incluído em bloco real. A verificação corrigiu a
+  **confirmação**: ao incluir com sucesso, a tela do bloco **não muda** (sem
+  mensagem, formulário permanece) — então a confirmação é pela **ausência de
+  recusa** (o submit recarrega o iframe = ação processada; sem alerta imediato,
+  alerta tardio ou erro inline `#divInfraExcecoes` = aceito), e o diálogo
+  pós-Incluir é **dispensado** (`dismiss`), nunca aceito.
 - `integra_gov.sei.download_documento`: **baixa o documento selecionado** na
   árvore — `DownloadDocumento(driver).baixar()` → `DocumentoBaixado` (bytes +
   `content_type` + `extensao` + `nome_sugerido`). **Headless:** busca o arquivo

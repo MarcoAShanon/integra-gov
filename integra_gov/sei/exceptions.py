@@ -106,3 +106,10 @@ class DownloadDocumentoError(SeiError):
     """Falha ao baixar um documento do SEI: a URL de download não foi encontrada
     (há um documento selecionado?), o ``fetch`` na sessão falhou, ou o conteúdo
     não pôde ser decodificado."""
+
+
+class BlocoAssinaturaError(SeiError):
+    """Falha ao incluir documento(s) em um bloco de assinatura: o ícone ou o
+    formulário do bloco não foi encontrado, o bloco pedido não existe no
+    dropdown, algum protocolo não apareceu na tela (nada é incluído), o SEI
+    recusou a inclusão (alerta), ou a inclusão não pôde ser confirmada."""

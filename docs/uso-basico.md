@@ -488,6 +488,37 @@ levanta `AssinaturaError`.
 > conferência antes da assinatura é responsabilidade da aplicação que monta o
 > fluxo — a biblioteca fornece o mecanismo, não o controle editorial.
 
+### Incluir um documento em bloco de assinatura
+
+O bloco de assinatura junta documentos para serem **assinados em lote** — útil
+quando o signatário é de outra unidade, ou para assinar vários de uma vez. Com o
+documento **selecionado na árvore**, inclua-o num bloco existente:
+
+```python
+from integra_gov.sei import DocumentosArvore, IncluirDocumentoBloco
+from integra_gov.sei.exceptions import BlocoAssinaturaError
+
+DocumentosArvore(driver).selecionar("59028410")   # aponta o documento
+
+try:
+    IncluirDocumentoBloco(driver, "648852", ["59028410"]).incluir()
+except BlocoAssinaturaError as exc:
+    ...  # bloco inexistente, protocolo ausente na tela, ou recusa do SEI
+```
+
+Três pontos:
+
+- **`bloco`** casa pelo **value** (id numérico) **ou** pelo **texto** da opção; se
+  não existir, o erro **lista os blocos disponíveis** da unidade.
+- **`protocolos`** são os números dos documentos (só dígitos — não o NUP
+  formatado). Se **algum** não aparecer na tela do bloco, **nada é incluído** (a
+  operação é tudo-ou-nada).
+- **Confirmação:** verificado ao vivo (SEI 4.1.5), a tela do bloco **não muda** no
+  sucesso — não há mensagem nem o formulário some. Por isso o módulo confirma pela
+  **ausência de recusa**: após o submit ser processado, sem alerta e sem erro
+  inline = aceito. Um diálogo é sempre tratado como recusa (nunca confirmado às
+  cegas). Confira no bloco quando quiser a prova visual.
+
 ### Marcadores (etiquetas do processo)
 
 Os **marcadores** do SEI (etiquetas coloridas) aparecem em **dois contextos** —
