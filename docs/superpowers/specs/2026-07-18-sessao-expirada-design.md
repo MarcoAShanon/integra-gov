@@ -60,6 +60,16 @@ instâncias.
 Limite documentado: a função detecta "página de login presente" — não distingue
 *por que* a sessão não está autenticada (expirou / derrubada / nunca logou).
 
+O módulo também expõe o companheiro que os pontos do funil usam (DRY da
+mensagem; igualmente útil ao chamador para reclassificar falhas):
+
+```python
+def levantar_se_sessao_expirada(driver, causa: BaseException | None = None) -> None
+```
+
+Se `sessao_expirada(driver)`, levanta `SessaoExpiradaError` com a mensagem
+padrão, encadeada em `causa` (`raise ... from causa`); senão, no-op.
+
 ## Nova exceção em `integra_gov/sei/exceptions.py`
 
 ```python
