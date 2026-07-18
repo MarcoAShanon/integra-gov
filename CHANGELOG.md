@@ -37,6 +37,14 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   login) em vez de `TimeoutException`/`SeiNavegacaoError`. Quem captura
   `SeiError` não sente diferença. Motivação: orquestradores (integra-flow)
   distinguirem "sessão caiu" (recuperável: logar de novo) de falha ambígua.
+  **Verificado ao vivo** no SEI 4.1.5 (MGI): sem falso positivo com sessão
+  viva; após `delete_all_cookies()` (simulação fiel da expiração),
+  `ProcessoSei.acessar` levantou `SessaoExpiradaError` e `sessao_expirada(driver)`
+  confirmou a página de login. A verificação **corrigiu o funil**: a expiração
+  real deixa a página anterior renderizada (o campo de pesquisa ainda existe) e
+  a falha só aparece depois do round-trip ao servidor (ENTER → redirect ao
+  login), na **confirmação** do acesso — o guard entrou também no
+  `_validar_acesso`, além do caminho do campo ausente.
 - `integra_gov.sei.incluir_documento_bloco`: **inclui documento(s) em um bloco de
   assinatura** (mecanismo do SEI para assinatura em lote) —
   `IncluirDocumentoBloco(driver, bloco, protocolos).incluir()`. Requer o documento
