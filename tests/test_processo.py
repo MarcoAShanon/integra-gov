@@ -12,7 +12,11 @@ import pytest
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
 from integra_gov.sei import processo as mod
-from integra_gov.sei.exceptions import ProcessoNaoEncontrado, SeiNavegacaoError
+from integra_gov.sei.exceptions import (
+    ProcessoNaoEncontrado,
+    SeiNavegacaoError,
+    SessaoExpiradaError,
+)
 from integra_gov.sei.processo import ProcessoSei
 
 
@@ -66,6 +70,7 @@ def test_acessar_processo_nao_encontrado(selenium):
 def test_acessar_campo_pesquisa_ausente_levanta_navegacao(selenium):
     driver = MagicMock()
     driver.find_element.side_effect = NoSuchElementException("sem campo")
+    driver.find_elements.return_value = []
     p = ProcessoSei(driver, "19975.120202/2023-82")
     with pytest.raises(SeiNavegacaoError):
         p.acessar()
@@ -95,3 +100,41 @@ def test_ir_para_raiz_sucesso(selenium):
     ProcessoSei(driver, "19975.120202/2023-82").ir_para_raiz()
     no_raiz.click.assert_called_once()
     fake_iframes.return_value.navegar.assert_called_once()
+
+
+def _driver_login(ids_presentes):
+    """Driver fake com find_element falhando (campo ausente) e find_elements
+    configurado (página de login ou não)."""
+    driver = MagicMock()
+    driver.find_element.side_effect = NoSuchElementException("sem campo")
+    presentes = set(ids_presentes)
+    driver.find_elements.side_effect = (
+        lambda by, valor: ["el"] if valor in presentes else []
+    )
+    return driver
+
+
+def test_acessar_sessao_caida_levanta_sessao_expirada(selenium):
+    driver = _driver_login({"txtUsuario", "pwdSenha"})
+    with pytest.raises(SessaoExpiradaError):
+        ProcessoSei(driver, "19975.120202/2023-82").acessar()
+
+
+def test_acessar_sessao_viva_mantem_navegacao_error(selenium):
+    """Regressão: campo ausente SEM página de login segue SeiNavegacaoError."""
+    driver = _driver_login(set())
+    with pytest.raises(SeiNavegacaoError):
+        ProcessoSei(driver, "19975.120202/2023-82").acessar()
+
+
+def test_ir_para_raiz_propaga_sessao_expirada(selenium):
+    """Prova de propagação fim-a-fim: SessaoExpiradaError vinda do funil de
+    iframes ATRAVESSA o módulo (o `except TimeoutException` do ir_para_raiz não
+    a captura — ela não é TimeoutException nem SeiNavegacaoError)."""
+    driver = MagicMock()
+    fake_iframes = MagicMock()
+    fake_iframes.ARVORE = "arvore"
+    fake_iframes.return_value.navegar.side_effect = SessaoExpiradaError("caiu")
+    selenium.setattr(mod, "IframesSei", fake_iframes)
+    with pytest.raises(SessaoExpiradaError):
+        ProcessoSei(driver, "19975.120202/2023-82").ir_para_raiz()

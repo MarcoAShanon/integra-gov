@@ -18,6 +18,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from .exceptions import ProcessoNaoEncontrado, SeiNavegacaoError
 from .iframes import IframesSei
+from .sessao import levantar_se_sessao_expirada
 
 _log = logging.getLogger(__name__)
 
@@ -70,6 +71,8 @@ class ProcessoSei:
             ValueError: se nenhum número for informado.
             SeiNavegacaoError: se o campo de pesquisa não for encontrado
                 (sessão não autenticada? página inesperada?).
+            SessaoExpiradaError: se a página atual é a de login (sessão
+                caída).
             ProcessoNaoEncontrado: se o processo não for aberto (não encontrado
                 ou número divergente).
         """
@@ -83,6 +86,7 @@ class ProcessoSei:
                 EC.element_to_be_clickable((By.XPATH, self.XPATH_CAMPO_PESQUISA))
             )
         except TimeoutException as exc:
+            levantar_se_sessao_expirada(self.driver, exc)
             raise SeiNavegacaoError(
                 "campo de pesquisa rápida não encontrado — a sessão do SEI "
                 "está autenticada?"
