@@ -6,6 +6,7 @@ documentados):
   - ``navegador``         : abre o Chrome (ajustes gov) + limpa órfãos   ✅
   - ``iframes``           : navegação entre os iframes do SEI (3.x/4.x)  ✅
   - ``processo``          : acesso a um processo existente               ✅
+  - ``sessao``            : detecção de sessão caída (login no meio do fluxo) ✅
   - ``login``             : autenticação no SEI                          ✅
   - ``selecao_unidade``   : troca a unidade de trabalho                  ✅
   - ``tela_aviso``        : fecha o aviso pós-login que bloqueia a tela  ✅
@@ -56,6 +57,7 @@ from .exceptions import (
     SeiLoginError,
     SeiNavegacaoError,
     SelecaoDocumentoError,
+    SessaoExpiradaError,
     UnidadeNaoEncontrada,
 )
 from .gerar_documento import abrir_gerar_documento
@@ -74,6 +76,7 @@ from .navegador import (
 from .nivel_acesso import configurar_nivel_acesso
 from .processo import ProcessoSei
 from .selecao_unidade import SelecaoUnidade, Unidade
+from .sessao import levantar_se_sessao_expirada, sessao_expirada
 from .tela_aviso import fechar_tela_aviso
 
 __all__ = [
@@ -117,6 +120,7 @@ __all__ = [
     "SeiNavegacaoError",
     "SelecaoDocumentoError",
     "SelecaoUnidade",
+    "SessaoExpiradaError",
     "TipoDocumento",
     "Unidade",
     "UnidadeNaoEncontrada",
@@ -128,7 +132,9 @@ __all__ = [
     "encerrar_chrome",
     "encerrar_chromedriver_orfaos",
     "fechar_tela_aviso",
+    "levantar_se_sessao_expirada",
     "montar_link_documento",
     "montar_url_login",
+    "sessao_expirada",
     "switch_to_iframe_visualizacao",
 ]

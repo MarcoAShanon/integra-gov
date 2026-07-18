@@ -113,3 +113,20 @@ class BlocoAssinaturaError(SeiError):
     formulário do bloco não foi encontrado, o bloco pedido não existe no
     dropdown, algum protocolo não apareceu na tela (nada é incluído), o SEI
     recusou a inclusão (alerta), ou a inclusão não pôde ser confirmada."""
+
+
+class SessaoExpiradaError(SeiError):
+    """A página atual é a de login do SEI — a sessão não está mais autenticada
+    (expirou por inatividade, foi encerrada em outro acesso, ou não houve
+    login). A requisição que falhou foi redirecionada ao login, ou seja, **não
+    foi executada** pelo SEI.
+
+    Subclasse direta de :class:`SeiError` — deliberadamente NÃO de
+    :class:`SeiNavegacaoError`: expiração é estado de sessão, não defeito de
+    navegação, e quem captura ``SeiNavegacaoError`` para retry não deve engolir
+    uma sessão caída (retry ali é inútil).
+
+    A política de reação (relogar, pausar o lote, abortar) é do chamador.
+    Caso-limite teórico para orquestradores: uma sessão derrubada por login
+    concorrente IMEDIATAMENTE após um POST bem-sucedido pode classificar como
+    expirada uma ação que ocorreu — ao automatizar retry, avalie por operação."""
