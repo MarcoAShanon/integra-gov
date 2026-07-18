@@ -100,6 +100,7 @@ Docstring documenta:
 | `_retry_iframe` | `iframes.py` (decorator de `IframesSei.navegar`) | Dentro do `except` do loop de retry: se `sessao_expirada(driver)` → `SessaoExpiradaError` **imediatamente** (fail-fast; não queima as 3 tentativas contra uma página de login). |
 | `switch_to_iframe_visualizacao` | `iframes.py` (`except` do loop de candidatos) | Na falha de **cada candidato** (não só no raise final): se `sessao_expirada(driver)` → `SessaoExpiradaError` imediatamente — evita queimar o timeout do 2º candidato contra a página de login. Cobre módulos que chamam a função direto, fora do `IframesSei`. |
 | `ProcessoSei.acessar` | `processo.py` (campo de pesquisa não encontrado) | Onde a mensagem atual já *suspeita* ("a sessão do SEI está autenticada?"): checar de verdade; expirou → `SessaoExpiradaError`; senão → `SeiNavegacaoError` atual (mensagem preservada). |
+| `ProcessoSei._validar_acesso` | `processo.py` (confirmação do acesso) | **Adicionado pela verificação ao vivo:** a expiração real deixa a página anterior renderizada — o campo de pesquisa ainda existe e a falha só aparece DEPOIS do round-trip (ENTER → redirect ao login), na espera do título. No `except` da confirmação: sessão caiu → `SessaoExpiradaError`; senão → `ProcessoNaoEncontrado` atual. |
 
 **Guarda de propagação:** varrer os módulos por `except` largos
 (`WebDriverException`, `Exception`) que engoliriam ou re-embrulhariam

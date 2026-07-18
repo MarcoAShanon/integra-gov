@@ -132,6 +132,12 @@ class ProcessoSei:
         Espera o título da aba refletir o número do processo (o SEI muda o
         ``<title>`` para ``"SEI - <numero>"`` ao abrir um processo). Substitui o
         antigo stub que sempre retornava ``True`` sem validar nada.
+
+        A expiração real da sessão costuma aparecer AQUI, não no campo de
+        pesquisa: a página antiga segue renderizada (o campo ainda existe), o
+        ENTER faz o round-trip sem sessão e o SIP redireciona ao login — por
+        isso a confirmação também checa a sessão antes de tipificar a falha
+        como :class:`ProcessoNaoEncontrado`.
         """
         alvo = _apenas_digitos(numero)
         try:
@@ -139,6 +145,7 @@ class ProcessoSei:
                 lambda d: alvo in _apenas_digitos(d.title or "")
             )
         except TimeoutException as exc:
+            levantar_se_sessao_expirada(self.driver, exc)
             raise ProcessoNaoEncontrado(
                 f"processo {numero} não foi acessado "
                 "(não encontrado ou número divergente)"

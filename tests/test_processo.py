@@ -62,6 +62,7 @@ def test_acessar_processo_nao_encontrado(selenium):
     driver = MagicMock()
     driver.title = "SEI - Pesquisa Rápida"  # título não contém o número
     driver.find_element.return_value = MagicMock()
+    driver.find_elements.return_value = []
     p = ProcessoSei(driver, "00000.000000/0000-00")
     with pytest.raises(ProcessoNaoEncontrado):
         p.acessar()
@@ -124,6 +125,22 @@ def test_acessar_sessao_viva_mantem_navegacao_error(selenium):
     """Regressão: campo ausente SEM página de login segue SeiNavegacaoError."""
     driver = _driver_login(set())
     with pytest.raises(SeiNavegacaoError):
+        ProcessoSei(driver, "19975.120202/2023-82").acessar()
+
+
+def test_acessar_pos_enter_sessao_caida_levanta_sessao_expirada(selenium):
+    """Expiração REAL: a página antiga segue renderizada (campo de pesquisa OK),
+    o ENTER faz round-trip sem sessão e o SIP redireciona ao login — a falha
+    aparece na CONFIRMAÇÃO (título), que também precisa do guard (achado da
+    verificação ao vivo)."""
+    driver = MagicMock()
+    driver.title = "SEI - Pesquisa Rápida"  # título nunca vira o do processo
+    driver.find_element.return_value = MagicMock()  # campo AINDA existe
+    presentes = {"txtUsuario", "pwdSenha"}  # pós-ENTER: página de login
+    driver.find_elements.side_effect = (
+        lambda by, valor: ["el"] if valor in presentes else []
+    )
+    with pytest.raises(SessaoExpiradaError):
         ProcessoSei(driver, "19975.120202/2023-82").acessar()
 
 
