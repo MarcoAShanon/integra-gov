@@ -18,6 +18,7 @@ from selenium.common.exceptions import (
 from selenium.webdriver.common.by import By
 
 from integra_gov.sei import iframes
+from integra_gov.sei.exceptions import SessaoExpiradaError
 from integra_gov.sei.iframes import IframesSei
 
 
@@ -51,6 +52,24 @@ def selenium(monkeypatch):
     return _configurar
 
 
+def _driver_sessao_caida():
+    """Driver fake numa página de login: find_elements devolve elemento p/
+    txtUsuario e pwdSenha."""
+    driver = MagicMock()
+    driver.find_elements.side_effect = (
+        lambda by, valor: ["el"] if valor in {"txtUsuario", "pwdSenha"} else []
+    )
+    return driver
+
+
+def _driver_sessao_viva():
+    """Driver fake numa página do SEI: find_elements devolve lista vazia
+    (MagicMock cru devolveria um mock truthy — falso positivo de login)."""
+    driver = MagicMock()
+    driver.find_elements.return_value = []
+    return driver
+
+
 def test_switch_visualizacao_sei4_usa_wrapper(selenium):
     selenium({"ifrConteudoVisualizacao", "ifrVisualizacao"})
     driver = MagicMock()
@@ -60,13 +79,13 @@ def test_switch_visualizacao_sei4_usa_wrapper(selenium):
 
 def test_switch_visualizacao_sei3_cai_para_ifrvisualizacao(selenium):
     selenium({"ifrVisualizacao"})  # sem o wrapper do SEI 4.0
-    driver = MagicMock()
+    driver = _driver_sessao_viva()
     assert iframes.switch_to_iframe_visualizacao(driver) == "ifrVisualizacao"
 
 
 def test_switch_visualizacao_sem_nenhum_levanta_timeout(selenium):
     selenium(set())
-    driver = MagicMock()
+    driver = _driver_sessao_viva()
     with pytest.raises(TimeoutException):
         iframes.switch_to_iframe_visualizacao(driver)
 
@@ -134,6 +153,63 @@ def test_navegar_retry_em_falha_transitoria(monkeypatch):
             return True
 
     monkeypatch.setattr(iframes, "WebDriverWait", _FlakyWait)
-    driver = MagicMock()
+    driver = _driver_sessao_viva()
     assert IframesSei(driver, IframesSei.ARVORE).navegar() is True
     assert chamadas["n"] == 2  # falhou 1x, sucesso na 2ª tentativa
+
+
+def test_switch_visualizacao_sessao_caida_levanta_sessao_expirada(selenium):
+    selenium(set())  # nenhum iframe: é a página de login
+    with pytest.raises(SessaoExpiradaError):
+        iframes.switch_to_iframe_visualizacao(_driver_sessao_caida())
+
+
+def test_switch_visualizacao_fail_fast_no_primeiro_candidato(selenium):
+    """Com a sessão caída, não queima o timeout do 2º candidato: a checagem
+    dispara na falha do 1º."""
+    tentados = []
+
+    class _WaitContando:
+        def __init__(self, driver, timeout):
+            pass
+
+        def until(self, cond):
+            tentados.append(cond[1])
+            raise TimeoutException("página de login não tem iframes")
+
+    import unittest.mock
+
+    with unittest.mock.patch.object(iframes, "WebDriverWait", _WaitContando):
+        with pytest.raises(SessaoExpiradaError):
+            iframes.switch_to_iframe_visualizacao(_driver_sessao_caida())
+    assert tentados == ["ifrConteudoVisualizacao"]  # NÃO tentou o 2º
+
+
+def test_navegar_sessao_caida_fail_fast_sem_retries(monkeypatch):
+    """`_retry_iframe` não repete contra uma página de login: 1 tentativa."""
+    monkeypatch.setattr(
+        iframes.EC, "frame_to_be_available_and_switch_to_it", lambda loc: loc
+    )
+    monkeypatch.setattr(iframes.time, "sleep", lambda _s: None)
+    chamadas = {"n": 0}
+
+    class _WaitSempreFalha:
+        def __init__(self, driver, timeout):
+            pass
+
+        def until(self, cond):
+            chamadas["n"] += 1
+            raise TimeoutException("página de login")
+
+    monkeypatch.setattr(iframes, "WebDriverWait", _WaitSempreFalha)
+    with pytest.raises(SessaoExpiradaError):
+        IframesSei(_driver_sessao_caida(), IframesSei.ARVORE).navegar()
+    assert chamadas["n"] == 1  # fail-fast: sem as 3 tentativas
+
+
+def test_navegar_sessao_viva_mantem_retry_e_timeout(selenium):
+    """Regressão: com sessão viva, o comportamento atual fica intacto
+    (retry + TimeoutException no esgotamento)."""
+    selenium(set())
+    with pytest.raises(TimeoutException):
+        iframes.switch_to_iframe_visualizacao(_driver_sessao_viva())

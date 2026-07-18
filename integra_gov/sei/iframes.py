@@ -18,6 +18,9 @@ API:
       no SEI 4.0).
     - :class:`IframesSei` — navegação por destinos nomeados, com retry para
       falhas transitórias.
+    - Sessão caída: nos caminhos de falha, uma página de login detectada vira
+      :class:`~integra_gov.sei.exceptions.SessaoExpiradaError` imediatamente
+      (fail-fast — sem esgotar retries/candidatos contra a página de login).
 """
 
 from __future__ import annotations
@@ -36,6 +39,8 @@ from selenium.common.exceptions import (
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
+from .sessao import levantar_se_sessao_expirada
 
 _log = logging.getLogger(__name__)
 
@@ -77,6 +82,7 @@ def switch_to_iframe_visualizacao(driver, timeout: float = 10) -> str:
         O nome do iframe em que o driver ficou posicionado.
 
     Raises:
+        SessaoExpiradaError: se a página atual é a de login (sessão caída).
         TimeoutException: se nenhum dos candidatos for encontrado.
     """
     erros = []
@@ -94,6 +100,7 @@ def switch_to_iframe_visualizacao(driver, timeout: float = 10) -> str:
         except _EXCECOES_IFRAME as exc:
             erros.append(f"{nome}={type(exc).__name__}")
             _log.debug("iframe '%s' indisponível: %s", nome, type(exc).__name__)
+            levantar_se_sessao_expirada(driver, exc)
     raise TimeoutException(
         "Nenhum iframe de visualização encontrado. Tentativas: " + "; ".join(erros)
     )
@@ -141,6 +148,7 @@ def _retry_iframe(max_tentativas: int = 3, intervalo: float = 1.0):
                 try:
                     return func(self, *args, **kwargs)
                 except (TimeoutException, StaleElementReferenceException) as exc:
+                    levantar_se_sessao_expirada(self.driver, exc)
                     ultima_exc = exc
                     _log.debug(
                         "Tentativa %d/%d de navegação falhou: %s",
@@ -194,6 +202,7 @@ class IframesSei:
 
         Raises:
             ValueError: se ``destino`` for desconhecido.
+            SessaoExpiradaError: se a página atual é a de login (sessão caída).
             TimeoutException: se o iframe não ficar disponível a tempo.
         """
         if self.destino == self.ARVORE:
