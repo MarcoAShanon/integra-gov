@@ -207,9 +207,25 @@ def test_navegar_sessao_caida_fail_fast_sem_retries(monkeypatch):
     assert chamadas["n"] == 1  # fail-fast: sem as 3 tentativas
 
 
-def test_navegar_sessao_viva_mantem_retry_e_timeout(selenium):
-    """Regressão: com sessão viva, o comportamento atual fica intacto
-    (retry + TimeoutException no esgotamento)."""
-    selenium(set())
+def test_navegar_sessao_viva_esgota_3_tentativas_e_levanta_timeout(monkeypatch):
+    """Regressão: com sessão viva, o retry fica intacto — `navegar()` esgota as
+    3 tentativas do `_retry_iframe` (o gate de fail-fast NÃO dispara) e levanta
+    `TimeoutException` no esgotamento."""
+    monkeypatch.setattr(
+        iframes.EC, "frame_to_be_available_and_switch_to_it", lambda loc: loc
+    )
+    monkeypatch.setattr(iframes.time, "sleep", lambda _s: None)
+    chamadas = {"n": 0}
+
+    class _WaitSempreFalha:
+        def __init__(self, driver, timeout):
+            pass
+
+        def until(self, cond):
+            chamadas["n"] += 1
+            raise TimeoutException("iframe indisponível (falha persistente)")
+
+    monkeypatch.setattr(iframes, "WebDriverWait", _WaitSempreFalha)
     with pytest.raises(TimeoutException):
-        iframes.switch_to_iframe_visualizacao(_driver_sessao_viva())
+        IframesSei(_driver_sessao_viva(), IframesSei.ARVORE).navegar()
+    assert chamadas["n"] == 3  # as 3 tentativas rodaram — sem fail-fast
