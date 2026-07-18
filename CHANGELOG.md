@@ -20,7 +20,9 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   a criação SEGUINTE falhava com `IniciarProcessoError` ("menu não encontrado").
   Agora o módulo volta à tela inicial pelo ícone "Controle de Processos" da
   barra superior (sempre presente) e aciona o menu — criação única segue
-  intocada (o desvio só ocorre quando o menu não está na tela). Achado da
+  intocada (o desvio só ocorre quando o menu não está na tela). **Verificado ao
+  vivo** no SEI 4.1.5 (MGI): 7 criações em sequência num lote real do
+  orquestrador, incluindo retomadas. Achado da
   verificação ao vivo do orquestrador (integra-flow, plano 5a): itens 2–3 de um
   lote de 3 quarentenavam.
 - `IframesSei.DOCUMENTO_HTML` (`integra_gov.sei.iframes`) não alcançava o
