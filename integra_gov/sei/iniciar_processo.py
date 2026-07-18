@@ -60,6 +60,7 @@ class IniciarProcesso:
     """
 
     XPATH_MENU_INICIAR = '//span[text()="Iniciar Processo"]'
+    XPATH_IR_INICIO = "//img[@title='Controle de Processos']"
     XPATH_EXIBIR_TODOS = '//img[@title="Exibir todos os tipos"]'
     ID_FILTRO_TIPO = "txtFiltro"
     ID_ESPECIFICACAO = "txtDescricao"
@@ -154,17 +155,36 @@ class IniciarProcesso:
     # ----- passos -----
 
     def _clicar_menu_iniciar(self) -> None:
+        """Aciona o menu "Iniciar Processo". Se o menu não estiver na tela —
+        ex.: um processo aberto ocupa o painel esquerdo com a árvore, o caso
+        normal em LOTE (o SEI fica na página do processo recém-criado) — volta
+        à tela inicial pelo ícone "Controle de Processos" da barra superior
+        (sempre presente) e procura o menu uma segunda vez."""
+        self.driver.switch_to.default_content()  # o menu vive no topo, não em iframe
         try:
             elemento = WebDriverWait(self.driver, self.timeout).until(
                 EC.element_to_be_clickable((By.XPATH, self.XPATH_MENU_INICIAR))
             )
-        except TimeoutException as exc:
-            raise IniciarProcessoError(
-                'menu "Iniciar Processo" não encontrado — você está na tela '
-                "inicial do SEI (Controle de Processos)?"
-            ) from exc
+        except TimeoutException:
+            elemento = self._voltar_ao_inicio_e_reencontrar_menu()
         elemento.click()
         _log.info('Menu "Iniciar Processo" acionado')
+
+    def _voltar_ao_inicio_e_reencontrar_menu(self):
+        _log.debug('Menu ausente — voltando à tela inicial ("Controle de Processos")')
+        try:
+            WebDriverWait(self.driver, self.timeout).until(
+                EC.element_to_be_clickable((By.XPATH, self.XPATH_IR_INICIO))
+            ).click()
+            return WebDriverWait(self.driver, self.timeout).until(
+                EC.element_to_be_clickable((By.XPATH, self.XPATH_MENU_INICIAR))
+            )
+        except TimeoutException as exc:
+            raise IniciarProcessoError(
+                'menu "Iniciar Processo" não encontrado, mesmo voltando à tela '
+                'inicial pelo ícone "Controle de Processos" — a sessão está '
+                "autenticada?"
+            ) from exc
 
     def _selecionar_tipo(self) -> None:
         # Expande a lista completa de tipos, se o ícone existir.

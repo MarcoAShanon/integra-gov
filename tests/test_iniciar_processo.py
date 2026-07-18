@@ -274,3 +274,41 @@ def test_erro_de_nivel_acesso_propaga(selenium):
     mod.configurar_nivel_acesso.side_effect = NivelAcessoError("falhou")
     with pytest.raises(NivelAcessoError):
         IniciarProcesso(driver, "Tipo X").iniciar()
+
+
+# ----- menu ausente (caso de LOTE: SEI fica na página do processo anterior) -----
+
+
+def test_menu_ausente_volta_ao_inicio_e_prossegue(selenium):
+    # XPATH_MENU_INICIAR só falha na 1ª busca (o processo anterior ainda ocupa a
+    # tela); XPATH_IR_INICIO está presente → volta ao início e acha o menu.
+    driver = _make_driver(missing=(IniciarProcesso.XPATH_EXIBIR_TODOS,))
+    sumir_uma_vez = {IniciarProcesso.XPATH_MENU_INICIAR}
+    original_find = driver.find_element.side_effect
+
+    def _find(by, value):
+        if value in sumir_uma_vez:
+            sumir_uma_vez.discard(value)
+            raise NoSuchElementException(value)
+        return original_find(by, value)
+
+    driver.find_element.side_effect = _find
+
+    IniciarProcesso(driver, "Tipo X").iniciar()  # não levanta
+
+    driver.els[IniciarProcesso.XPATH_IR_INICIO].click.assert_called_once()
+
+
+def test_menu_ausente_mesmo_apos_voltar_levanta(selenium):
+    # XPATH_MENU_INICIAR sempre ausente (mesmo após voltar) → erro específico.
+    driver = _make_driver(missing=(IniciarProcesso.XPATH_MENU_INICIAR,))
+    with pytest.raises(IniciarProcessoError, match="mesmo voltando"):
+        IniciarProcesso(driver, "Tipo X").iniciar()
+
+
+def test_menu_presente_nao_toca_o_icone_de_inicio(selenium):
+    # Regressão: caso normal (menu presente direto) não deve acionar o ícone
+    # "Controle de Processos" — o desvio só ocorre quando o menu não está na tela.
+    driver = _make_driver(missing=(IniciarProcesso.XPATH_EXIBIR_TODOS,))
+    IniciarProcesso(driver, "Tipo X").iniciar()
+    assert IniciarProcesso.XPATH_IR_INICIO not in driver.els
