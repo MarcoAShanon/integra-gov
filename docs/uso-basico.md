@@ -611,6 +611,42 @@ passe `orgao=` com o texto exato da opção do dropdown de órgão.
 
 ---
 
+## 6. Sessão expirada no meio do fluxo
+
+O SEI derruba a sessão por inatividade (e também quando o mesmo usuário loga em
+outro lugar). Quando isso acontece no meio de uma automação, a página atual
+vira a de login — e a próxima operação falharia com um erro genérico. A lib
+detecta essa condição nos pontos centrais de navegação e levanta
+`SessaoExpiradaError`:
+
+```python
+from integra_gov.sei import SessaoExpiradaError
+
+try:
+    processo.acessar("00000.000000/0000-00")
+except SessaoExpiradaError:
+    # A sessão caiu. A operação NÃO foi executada pelo SEI (a requisição foi
+    # redirecionada ao login). Logue de novo e repita:
+    LoginSei(driver, BASE_URL, ORGAO, usuario, senha).logar()
+    processo.acessar("00000.000000/0000-00")
+```
+
+Pontos que detectam: a navegação de iframes (`IframesSei` /
+`switch_to_iframe_visualizacao`) e o acesso a processo (`ProcessoSei.acessar`).
+Qualquer outra falha pode ser reclassificada com os helpers públicos:
+
+```python
+from integra_gov.sei import SeiError, levantar_se_sessao_expirada
+
+try:
+    operacao(driver)
+except SeiError as exc:
+    levantar_se_sessao_expirada(driver, exc)  # vira SessaoExpiradaError se caiu
+    raise
+```
+
+---
+
 ## Exemplo completo (do zero ao processo aberto)
 
 ```python

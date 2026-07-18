@@ -25,6 +25,18 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   verificada ao vivo pelo `download_documento`.
 
 ### Adicionado
+- `integra_gov.sei.sessao`: **detecção de sessão caída** (página de login no
+  meio do fluxo) — `sessao_expirada(driver)` (a página atual é a de login?) e
+  `levantar_se_sessao_expirada(driver, causa)`; nova exceção
+  `SessaoExpiradaError` (subclasse direta de `SeiError` — deliberadamente NÃO
+  de `SeiNavegacaoError`, para atravessar os módulos sem ser embrulhada).
+  **Comportamento novo no funil de navegação:** falhas em
+  `IframesSei.navegar`/`switch_to_iframe_visualizacao` e em
+  `ProcessoSei.acessar` com a página de login presente levantam
+  `SessaoExpiradaError` (fail-fast, sem esgotar retries contra a página de
+  login) em vez de `TimeoutException`/`SeiNavegacaoError`. Quem captura
+  `SeiError` não sente diferença. Motivação: orquestradores (integra-flow)
+  distinguirem "sessão caiu" (recuperável: logar de novo) de falha ambígua.
 - `integra_gov.sei.incluir_documento_bloco`: **inclui documento(s) em um bloco de
   assinatura** (mecanismo do SEI para assinatura em lote) —
   `IncluirDocumentoBloco(driver, bloco, protocolos).incluir()`. Requer o documento

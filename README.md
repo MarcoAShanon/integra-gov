@@ -384,6 +384,28 @@ o lugar errado. `EnviarProcessoError` se a unidade não for selecionável ou o S
 recusar. Para envio **entre órgãos**, passe `orgao=` com o texto exato da opção do
 dropdown de órgão.
 
+### Sessão expirada no meio do fluxo
+
+Quando a sessão do SEI cai (expirou por inatividade ou foi derrubada por outro
+acesso), a página vira a de login e a operação seguinte falha com
+`SessaoExpiradaError` — em vez de um erro genérico de navegação. A lib só
+detecta e tipifica; relogar/pausar é decisão sua:
+
+```python
+from integra_gov.sei import SessaoExpiradaError
+
+try:
+    processo.acessar()
+except SessaoExpiradaError:
+    # a sessão caiu: logue de novo e repita a operação
+    LoginSei(driver, BASE_URL, ORGAO, usuario, senha).logar()
+    processo.acessar()
+```
+
+Para reclassificar uma falha qualquer (útil em orquestradores), o helper
+`sessao_expirada(driver)` responde se a página atual é a de login; e
+`levantar_se_sessao_expirada(driver, causa)` levanta o erro tipado se for.
+
 ### SIAPE (terminal 3270)
 
 O acesso ao SIAPE passa pelo portal SIAPENet (web, com certificado digital) e por
@@ -421,6 +443,7 @@ conexao.acessar_transacao("GRCOSITPRO", confirmacao="GRCOSITPRO")     # >transa�
 | `integra_gov.sei.selecao_unidade` | Troca a unidade de trabalho | ✅ |
 | `integra_gov.sei.tela_aviso` | Fecha o aviso pós-login que bloqueia a tela | ✅ |
 | `integra_gov.sei.login` | Autenticação no SEI | ✅ |
+| `integra_gov.sei.sessao` | Detecção de sessão caída (página de login no meio do fluxo) | ✅ |
 | `integra_gov.sei.iniciar_processo` | Criação de um novo processo (devolve o NUP) | ✅ |
 | `integra_gov.sei.inserir_documento_externo` | Inclui um documento externo (upload de arquivo) | ✅ |
 | `integra_gov.sei.incluir_documento_interno` | Inclui um documento interno (Despacho, Nota Técnica…) | ✅ |
