@@ -1,8 +1,15 @@
 """Troca de habilitação (ÓRGÃO/UPAG) no SIAPE via comando ``TROCAHAB``.
 
 Entra na tela de troca de habilitação, procura a habilitação desejada
-(ÓRGÃO + UPAG) percorrendo as páginas e a seleciona. Mantém o histórico da última
-habilitação para evitar trocas redundantes.
+percorrendo as páginas e a seleciona. Mantém o histórico da última habilitação
+para evitar trocas redundantes.
+
+Suporta os dois modelos de acesso do SIAPE:
+
+- **por UNIDADE** (clássico): habilitação ÓRGÃO + UPAG, linha com a coluna
+  UNIDADE preenchida;
+- **por ÓRGÃO** (desde 22/07/2026): a coluna UNIDADE vem vazia e o nível de
+  acesso é ``ORGAO`` — não há mais UPAG para quem migrou.
 
 Requer um terminal já conectado/autenticado — use :class:`ConexaoTerminal3270`
 para o acesso, e compartilhe o mesmo :class:`ControleTerminal3270`.
@@ -22,12 +29,16 @@ _log = logging.getLogger(__name__)
 
 
 class TrocaHabilitacao:
-    """Troca a habilitação (ÓRGÃO/UPAG) ativa no SIAPE.
+    """Troca a habilitação ativa no SIAPE (por ÓRGÃO+UPAG ou a nível de ÓRGÃO).
 
     Args:
         controle: o :class:`ControleTerminal3270` conectado ao terminal.
-        orgao: código do órgão.
-        upag: código da UPAG.
+        orgao: código do órgão. Único argumento obrigatório.
+        upag: código da UPAG (opcional). Quando informada, a busca tenta
+            primeiro a habilitação clássica ÓRGÃO+UPAG e, se não existir mais
+            (acesso migrado), cai automaticamente para a habilitação a nível
+            de ÓRGÃO. Quando omitida (ou vazia/só espaços), busca direto a
+            habilitação a nível de ÓRGÃO.
     """
 
     COMANDO_TROCAHAB = "TROCAHAB"
@@ -48,12 +59,17 @@ class TrocaHabilitacao:
     DELAY_PADRAO = 0.5
     DELAY_CURTO = 0.1
 
-    def __init__(self, controle: ControleTerminal3270, orgao: str, upag: str):
+    def __init__(
+        self,
+        controle: ControleTerminal3270,
+        orgao: str,
+        upag: str | None = None,
+    ):
         self.controle = controle
         self.orgao = str(orgao).strip()
-        self.upag = str(upag).strip()
-        if not self.orgao or not self.upag:
-            raise ValueError("orgao e upag são obrigatórios")
+        self.upag = str(upag).strip() if upag is not None else ""
+        if not self.orgao:
+            raise ValueError("orgao é obrigatório")
         self._ultimo_orgao: str | None = None
         self._ultima_upag: str | None = None
 
@@ -76,7 +92,7 @@ class TrocaHabilitacao:
 
         garantir_menu_principal(self.controle)
         self._enviar_comando_trocahab()
-        self._buscar_e_selecionar(self._texto_busca())
+        self._buscar_e_selecionar(self._candidatos_busca())
         self._ultimo_orgao, self._ultima_upag = self.orgao, self.upag
         _log.info("Habilitação trocada: ÓRGÃO=%s, UPAG=%s", self.orgao, self.upag)
 
@@ -102,29 +118,73 @@ class TrocaHabilitacao:
         self.controle.enviar_teclas("{ENTER}")
         time.sleep(self.DELAY_PADRAO)
 
-    def _texto_busca(self) -> str:
-        return f"{self.orgao} {self.upag.zfill(self.UPAG_DIGITOS)}"
+    def _candidatos_busca(self) -> list[tuple[re.Pattern[str], str]]:
+        """Monta os candidatos de busca, em ordem de preferência.
+
+        Quando ``upag`` foi informada, o candidato exato ÓRGÃO+UPAG vem
+        primeiro (comportamento clássico, acesso a nível de UNIDADE); o
+        candidato de nível ÓRGÃO (coluna UNIDADE vazia, nível de acesso
+        ``ORGAO``) vem sempre por último, como fallback para acessos migrados
+        (SIAPE, desde 22/07/2026). Sem ``upag``, só o candidato de nível ÓRGÃO
+        é tentado.
+
+        A ordem importa: se o fallback fosse tentado primeiro, quem ainda tem
+        as DUAS linhas (unidade e órgão) passaria a cair sempre na mais ampla
+        — mudança de comportamento silenciosa para quem não migrou.
+        """
+        candidatos: list[tuple[re.Pattern[str], str]] = []
+        if self.upag:
+            upag_formatada = self.upag.zfill(self.UPAG_DIGITOS)
+            # Tolera espaçamento variável entre ÓRGÃO e UPAG e zeros à
+            # esquerda na UPAG (a tela pode formatar diferente do
+            # ``orgao + upag.zfill(9)``).
+            candidatos.append(
+                (
+                    re.compile(re.escape(self.orgao) + r"\s+0*" + re.escape(self.upag)),
+                    f"ÓRGÃO+UPAG ({self.orgao} {upag_formatada})",
+                )
+            )
+        # O 'ORGAO' logo após os brancos (coluna UNIDADE vazia) é o
+        # discriminador: não casa com linhas de unidade nem com órgãos
+        # vizinhos (ex.: 40804/40806 não casam com o padrão de 40805).
+        candidatos.append(
+            (
+                re.compile(re.escape(self.orgao) + r"\s+ORGAO\b"),
+                f"nível ÓRGÃO ({self.orgao})",
+            )
+        )
+        return candidatos
+
+    @staticmethod
+    def _descricao_candidatos(candidatos: list[tuple[re.Pattern[str], str]]) -> str:
+        return " | ".join(descricao for _padrao, descricao in candidatos)
 
     # ----- busca paginada -----
 
-    def _buscar_e_selecionar(self, texto_busca: str) -> None:
+    def _buscar_e_selecionar(
+        self, candidatos: list[tuple[re.Pattern[str], str]]
+    ) -> None:
         for _pagina in range(self.MAX_PAGINAS):
             tela = self._normalizar(self.controle.copiar_tela())
-            linha = self._linha_do_texto(tela)
-            if linha is not None:
-                self._selecionar_na_linha(linha)
-                return
+            for padrao, descricao in candidatos:
+                linha = self._linha_do_texto(tela, padrao)
+                if linha is not None:
+                    _log.info(
+                        "Habilitação encontrada na linha %d (%s)", linha, descricao
+                    )
+                    self._selecionar_na_linha(linha)
+                    return
             if self._tem_proxima_pagina(tela):
                 self.controle.enviar_teclas("{F8}")
                 time.sleep(self.DELAY_PADRAO)
             else:
                 raise HabilitacaoNaoEncontrada(
-                    f"habilitação {texto_busca!r} não encontrada nas páginas "
-                    "do SIAPE"
+                    "habilitação não encontrada nas páginas do SIAPE "
+                    f"(candidatos tentados: {self._descricao_candidatos(candidatos)})"
                 )
         raise HabilitacaoNaoEncontrada(
-            f"habilitação {texto_busca!r} não encontrada após "
-            f"{self.MAX_PAGINAS} páginas"
+            f"habilitação não encontrada após {self.MAX_PAGINAS} páginas "
+            f"(candidatos tentados: {self._descricao_candidatos(candidatos)})"
         )
 
     def _selecionar_na_linha(self, linha: int) -> None:
@@ -150,19 +210,16 @@ class TrocaHabilitacao:
     def _normalizar(tela: str) -> str:
         return tela.replace("\xa0", " ")
 
-    def _padrao_busca(self) -> re.Pattern[str]:
-        # Tolera espaçamento variável entre ÓRGÃO e UPAG e zeros à esquerda na
-        # UPAG (a tela pode formatar diferente do ``orgao + upag.zfill(9)``).
-        return re.compile(re.escape(self.orgao) + r"\s+0*" + re.escape(self.upag))
-
-    def _linha_do_texto(self, tela: str) -> int | None:
-        """Linha (1-indexada) da habilitação **na área da lista**.
+    def _linha_do_texto(self, tela: str, padrao: re.Pattern[str]) -> int | None:
+        """Linha (1-indexada) do candidato ``padrao`` **na área da lista**.
 
         Considera só linhas ``>= LINHA_INICIO_LISTA``: ignora um eventual eco do
         ÓRGÃO/UPAG no cabeçalho ou na linha de comando (que daria ``num_tabs``
         negativo) e exige que o casamento esteja de fato na lista selecionável.
+        ``tela`` já deve estar normalizada (:meth:`_normalizar`) — a tela real
+        do 3270 às vezes usa NBSP em vez de espaço comum.
         """
-        for match in self._padrao_busca().finditer(tela):
+        for match in padrao.finditer(tela):
             linha = match.start() // self.CARACTERES_POR_LINHA + 1
             if linha >= self.LINHA_INICIO_LISTA:
                 return linha
