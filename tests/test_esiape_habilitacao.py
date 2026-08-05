@@ -122,6 +122,36 @@ def test_transacao_nao_abriu_levanta():
         TrocaHabilitacaoEsiape(driver, orgao="22222").trocar()
 
 
+def test_modal_confirma_ausente_levanta_e_flag_permanece(monkeypatch):
+    driver, wa1 = _driver_menu_com_cabecalho("11111 - ORIGEM")
+    driver._esiape_relogin_pendente = True
+    monkeypatch.setattr(TrocaHabilitacaoEsiape, "TIMEOUT_MODAL", 0.05)
+    troca = TrocaHabilitacaoEsiape(driver, orgao="22222")
+
+    # tela TROCAHAB: grade com cabeçalho + 2 linhas
+    linha_alvo = ElementoFake(texto="  22222  ORGAO  DESTINO")
+    grade = [ElementoFake(texto="CABECALHO"),
+             ElementoFake(texto="  11111  ORGAO  ORIGEM"), linha_alvo]
+    # linha_alvo.click NÃO revela o botão Sim — o modal "Confirma ?" não aparece
+
+    # navegar_para_transacao abre a grade (via clique no Ir)
+    ir = ElementoFake()
+    wa1.elementos[nav.SELETOR_CAMPO_TRANSACAO] = [ElementoFake()]
+    wa1.elementos[nav.SELETOR_BTN_IR] = [ir]
+
+    _click_ir = ir.click
+
+    def ir_click():
+        _click_ir()
+        wa1.elementos[TrocaHabilitacaoEsiape.SELETOR_GRADE_LINHAS] = grade
+
+    ir.click = ir_click
+
+    with pytest.raises(EsiapeError):
+        troca.trocar()
+    assert nav.relogin_pendente(driver) is True  # flag NÃO limpa em falha
+
+
 def test_cabecalho_nao_refletiu_nao_declara_sucesso(monkeypatch):
     driver, wa1 = _driver_menu_com_cabecalho("11111 - ORIGEM")
     monkeypatch.setattr(TrocaHabilitacaoEsiape, "TIMEOUT_CONFIRMACAO", 0.05)

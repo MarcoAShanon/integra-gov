@@ -60,7 +60,9 @@ class AcessoEsiape:
         if not garantir_menu(self.driver):
             raise MenuInacessivel(
                 "autenticação confirmada, mas o menu de transações não ficou "
-                "acessível (veja o log da travessia)"
+                "acessível (veja o log da travessia); se a sessão renasceu, "
+                "o PIN do certificado pode estar sendo pedido numa janela "
+                "do Windows"
             )
         # relogin de ENTRADA não é pendência: a sessão está no estado
         # padrão esperado e a primeira troca de habilitação é explícita.

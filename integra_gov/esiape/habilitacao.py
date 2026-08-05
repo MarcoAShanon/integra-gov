@@ -20,6 +20,7 @@ from .exceptions import (
     TransacaoNaoAbriu,
 )
 from .navegacao import (
+    SELETOR_HOME,
     esperar_seletor,
     limpar_flag_relogin,
     navegar_para_transacao,
@@ -41,7 +42,7 @@ class TrocaHabilitacaoEsiape:
     SELETOR_GRADE_LINHAS = "table.TEXTGRIDTable tr"
     SELETOR_ORGAO_ATIVO = '[data-testtoolid="w_menu_orgao_usu"]'
     SELETOR_BTN_SIM = '[data-testtoolid="onClickBtnSim"]'
-    SELETOR_HOME_MENU = '[data-testtoolid="onMenuClickHome"]'
+    SELETOR_HOME_MENU = SELETOR_HOME
 
     TIMEOUT_TELA = 20
     TIMEOUT_MODAL = 8
@@ -57,7 +58,7 @@ class TrocaHabilitacaoEsiape:
             raise ValueError("orgao é obrigatório")
 
     def orgao_atual(self) -> str | None:
-        """Órgão ativo lido do cabeçalho (ex.: ``"40805"``); ``None`` se
+        """Órgão ativo lido do cabeçalho (ex.: ``"00000"``); ``None`` se
         ilegível."""
         try:
             if procurar_em_frames(self.driver, self.SELETOR_ORGAO_ATIVO) is None:

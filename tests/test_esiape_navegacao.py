@@ -268,14 +268,12 @@ def test_garantir_menu_relogin_completo_seta_flag():
     pular = ElementoFake()
     lupa = ElementoFake()
 
-    estado = {"passo": 0}
     _click_avancar = avancar.click
 
     def avancar_click():
         _click_avancar()
         # clicar AVANÇAR abre o popup modal no TOPO
         raiz.elementos[nav.SELETOR_POPUP_FECHAR] = [x_popup]
-        estado["passo"] = 1
 
     avancar.click = avancar_click
 

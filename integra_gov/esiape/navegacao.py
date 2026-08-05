@@ -30,7 +30,7 @@ SELETOR_POPUP_FECHAR = "td[id^='TITLEBAR'][id$='CLOSE']"
 _PROFUNDIDADE_MAXIMA = 4
 
 
-def frames_visiveis(driver, caminho=(), saida=None, prof=0):
+def frames_visiveis(driver, caminho=(), saida=None, prof=0) -> list[tuple]:
     """Caminhos (tuplas de nomes) de todos os frames VISÍVEIS, em profundidade.
 
     Frames ocultos guardam telas ANTIGAS com dados velhos — são ignorados.
@@ -78,7 +78,7 @@ def ir_para_frame(driver, caminho) -> bool:
     return True
 
 
-def procurar_em_frames(driver, seletor_css: str):
+def procurar_em_frames(driver, seletor_css: str) -> tuple | None:
     """1º frame VISÍVEL contendo o seletor (deixa o driver NELE) ou ``None``.
 
     Sempre re-enumera do topo: uma busca anterior deixa o driver dentro de um
@@ -100,7 +100,7 @@ def procurar_em_frames(driver, seletor_css: str):
 
 
 def esperar_seletor(driver, seletor_css: str, timeout: float = 20,
-                    intervalo: float = 0.5):
+                    intervalo: float = 0.5) -> tuple | None:
     """Espera o seletor aparecer em algum frame visível; caminho ou ``None``."""
     limite = time.monotonic() + timeout
     while time.monotonic() < limite:
@@ -158,7 +158,7 @@ def limpar_overlay(driver, timeout: float = 10) -> bool:
         return False
 
 
-def fechar_janelas_extras(driver, handle_principal=None):
+def fechar_janelas_extras(driver, handle_principal=None) -> str | None:
     """Fecha toda janela além da principal e devolve o foco a ela.
 
     Janelas de impressão órfãs acumulam e quebram a sessão ("Browser window
