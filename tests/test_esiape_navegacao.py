@@ -234,3 +234,121 @@ def test_fechar_popups_cis_ignora_x_invisivel():
     raiz.elementos[nav.SELETOR_POPUP_FECHAR] = [ElementoFake(visivel=False)]
     driver = DriverFake(raiz)
     assert nav.fechar_popups_cis(driver) == 0
+
+
+def _com_elemento(seletor, *, frame="WA1"):
+    """Raiz com um único frame visível contendo o seletor."""
+    raiz = FrameFake()
+    f = FrameFake(frame, visivel=True)
+    el = ElementoFake()
+    f.elementos[seletor] = [el]
+    raiz.filhos = [f]
+    return raiz, el
+
+
+def test_garantir_menu_ja_no_menu_nao_seta_flag():
+    raiz, _ = _com_elemento(nav.SELETOR_LUPA)
+    driver = DriverFake(raiz)
+    driver.resultado_script = False
+    assert nav.garantir_menu(driver, timeout=0.5) is True
+    assert nav.relogin_pendente(driver) is False
+
+
+def test_garantir_menu_relogin_completo_seta_flag():
+    """AVANÇAR → popup UORG (fechar pelo X) → Pular → lupa."""
+    raiz = FrameFake()
+    wa1 = FrameFake("WA1", visivel=True)
+    avancar = ElementoFake()
+    wa1.elementos[nav.SELETOR_BTN_AVANCAR] = [avancar]
+    raiz.filhos = [wa1]
+    driver = DriverFake(raiz)
+    driver.resultado_script = False
+
+    x_popup = ElementoFake(atributos={"id": "TITLEBAR0_2CLOSE"})
+    pular = ElementoFake()
+    lupa = ElementoFake()
+
+    estado = {"passo": 0}
+    _click_avancar = avancar.click
+
+    def avancar_click():
+        _click_avancar()
+        # clicar AVANÇAR abre o popup modal no TOPO
+        raiz.elementos[nav.SELETOR_POPUP_FECHAR] = [x_popup]
+        estado["passo"] = 1
+
+    avancar.click = avancar_click
+
+    _click_x = x_popup.click
+
+    def x_click():
+        _click_x()
+        # fechar o popup revela a tela do Pular
+        raiz.elementos[nav.SELETOR_POPUP_FECHAR] = []
+        del wa1.elementos[nav.SELETOR_BTN_AVANCAR]
+        wa1.elementos[nav.SELETOR_BTN_PULAR] = [pular]
+
+    x_popup.click = x_click
+
+    _click_pular = pular.click
+
+    def pular_click():
+        _click_pular()
+        del wa1.elementos[nav.SELETOR_BTN_PULAR]
+        wa1.elementos[nav.SELETOR_LUPA] = [lupa]
+
+    pular.click = pular_click
+
+    assert nav.garantir_menu(driver, timeout=5) is True
+    assert avancar.cliques == 1
+    assert x_popup.cliques == 1
+    assert pular.cliques == 1
+    assert nav.relogin_pendente(driver) is True
+    nav.limpar_flag_relogin(driver)
+    assert nav.relogin_pendente(driver) is False
+
+
+def test_garantir_menu_popup_perdido_sem_avancar_nao_seta_flag():
+    raiz, lupa_el = _com_elemento(nav.SELETOR_LUPA)
+    x_popup = ElementoFake(atributos={"id": "TITLEBAR0_4CLOSE"})
+    raiz.elementos[nav.SELETOR_POPUP_FECHAR] = [x_popup]
+
+    _click_x = x_popup.click
+
+    def x_click():
+        _click_x()
+        raiz.elementos[nav.SELETOR_POPUP_FECHAR] = []
+
+    x_popup.click = x_click
+    driver = DriverFake(raiz)
+    driver.resultado_script = False
+    assert nav.garantir_menu(driver, timeout=5) is True
+    assert x_popup.cliques == 1
+    assert nav.relogin_pendente(driver) is False
+
+
+def test_garantir_menu_popup_respawn_converge():
+    """O popup reaparece 2x após fechado (visto ao vivo) — o laço converge."""
+    raiz, _lupa = _com_elemento(nav.SELETOR_LUPA)
+    x_popup = ElementoFake(atributos={"id": "TITLEBAR0_2CLOSE"})
+    raiz.elementos[nav.SELETOR_POPUP_FECHAR] = [x_popup]
+
+    _click_x = x_popup.click
+
+    def x_click():
+        _click_x()
+        if x_popup.cliques >= 3:  # respawnou 2x; na 3ª fecha de vez
+            raiz.elementos[nav.SELETOR_POPUP_FECHAR] = []
+
+    x_popup.click = x_click
+    driver = DriverFake(raiz)
+    driver.resultado_script = False
+    assert nav.garantir_menu(driver, timeout=5) is True
+    assert x_popup.cliques == 3
+    assert nav.relogin_pendente(driver) is False
+
+
+def test_garantir_menu_timeout_devolve_false():
+    driver = DriverFake(FrameFake())  # nada reconhecível
+    driver.resultado_script = False
+    assert nav.garantir_menu(driver, timeout=0.05) is False

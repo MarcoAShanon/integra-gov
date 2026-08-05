@@ -209,3 +209,56 @@ def fechar_popups_cis(driver) -> int:
         return fechados
     except Exception:
         return 0
+
+
+def relogin_pendente(driver) -> bool:
+    """True se um relogin foi atravessado e a habilitação NÃO foi refeita.
+
+    Sessão nova = habilitação de volta ao PADRÃO do usuário. Consultar outro
+    órgão nesse estado devolve "sem dados" FALSO (lacuna silenciosa). Quem
+    conhece o órgão em uso re-troca a habilitação e limpa a flag.
+    """
+    return bool(getattr(driver, "_esiape_relogin_pendente", False))
+
+
+def limpar_flag_relogin(driver) -> None:
+    """Marca a pendência de re-habilitação pós-relogin como sanada."""
+    driver._esiape_relogin_pendente = False
+
+
+def garantir_menu(driver, timeout: float = 60) -> bool:
+    """Leva a sessão até o menu (lupa acessível), atravessando o que houver.
+
+    Máquina de estados validada ao vivo: a cada passo fecha popup modal pelo
+    X, OU clica Pular, OU clica AVANÇAR (tela de relogin do SERPRO — seta a
+    flag de relogin), até a lupa reaparecer. ``False`` no timeout (se a
+    sessão renasceu, o PIN do certificado pode estar sendo pedido em janela
+    do Windows, fora do alcance do Selenium).
+    """
+    limite = time.monotonic() + timeout
+    while time.monotonic() < limite:
+        if fechar_popups_cis(driver):
+            time.sleep(1.5)
+            continue
+        if procurar_em_frames(driver, SELETOR_LUPA) is not None:
+            return True
+        try:
+            if procurar_em_frames(driver, SELETOR_BTN_PULAR) is not None:
+                driver.find_element(By.CSS_SELECTOR, SELETOR_BTN_PULAR).click()
+                _log.info("Botão 'Pular' clicado")
+                time.sleep(2)
+                continue
+            if procurar_em_frames(driver, SELETOR_BTN_AVANCAR) is not None:
+                driver.find_element(By.CSS_SELECTOR, SELETOR_BTN_AVANCAR).click()
+                driver._esiape_relogin_pendente = True
+                _log.warning("Tela de relogin atravessada (AVANÇAR) — "
+                             "habilitação PENDENTE de re-troca")
+                time.sleep(2)
+                continue
+        except Exception as exc:
+            _log.warning("Clique falhou na travessia (%s) — tentando de novo",
+                         exc)
+        time.sleep(1.5)
+    _log.error("Menu (lupa) não ficou acessível em %.0fs (PIN do certificado "
+               "pode estar sendo pedido na janela do Windows)", timeout)
+    return False
