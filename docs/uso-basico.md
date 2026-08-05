@@ -776,3 +776,116 @@ except InstituidorObrigatorio as exc:
 > `TIMEOUT_JANELA_SALVAR`, etc.) são **atributos de classe** — ajustáveis por
 > subclasse ou instância (`FichaAnualPensionista.TIMEOUT_JANELA_SALVAR = 30.0`)
 > em máquinas mais lentas, sem alterar o módulo.
+
+---
+
+## Fluxo do e-SIAPE web
+
+Diferente do SIAPE 3270 (terminal), o e-SIAPE web roda no **mesmo `driver`**
+do SEI — é a interface CIS/Software AG do SERPRO, acessada por navegador. A
+sequência básica:
+
+```
+criar_driver_chrome()                          → abre o Chrome (mesmo helper do SEI)
+AcessoEsiape(driver).executar()                 → SERPRO ID: você confirma no app
+TrocaHabilitacaoEsiape(driver, orgao=...).trocar()  → contexto do órgão certo
+navegar_para_transacao(driver, "COD", seletor)  → abre uma transação pelo atalho
+```
+
+```python
+from integra_gov.sei import criar_driver_chrome
+from integra_gov.esiape import AcessoEsiape, TrocaHabilitacaoEsiape
+
+driver = criar_driver_chrome()
+try:
+    AcessoEsiape(driver).executar()                        # você confirma no app
+    TrocaHabilitacaoEsiape(driver, orgao="00000").trocar()  # órgão fictício
+finally:
+    driver.quit()
+```
+
+`AcessoEsiape.executar()` levanta `AutenticacaoNaoConfirmada` se a confirmação
+no app SERPRO ID não chegar no `timeout_confirmacao` (padrão 180s), e
+`MenuInacessivel` se autenticar mas o menu de transações não ficar acessível.
+`TrocaHabilitacaoEsiape(...).trocar()` levanta `HabilitacaoNaoEncontrada` se o
+órgão não estiver na grade (lista os códigos vistos), ou `EsiapeError` se o
+modal de confirmação não aparecer ou o cabeçalho não refletir a troca.
+
+### As 6 mecânicas do CIS
+
+O CIS (Software AG) tem um comportamento próprio que a fundação (`navegacao.py`)
+trata de forma centralizada, validado ao vivo (03–04/08/2026):
+
+1. **Frames ocultos guardam telas velhas.** Os iframes `WA0`/`WA1`/`WA2` se
+   revezam e o CIS mantém as telas **anteriores** vivas nos frames que ficam
+   ocultos — só o frame **visível** é a tela atual. `procurar_em_frames`/
+   `frames_visiveis` sempre ignoram frames ocultos, mesmo quando eles têm o
+   mesmo seletor que você procura (senão a automação lê dados de uma tela
+   morta).
+2. **Popups modais fecham pelo X do topo.** Avisos do CIS (ex.: "UORG DO
+   CORREIO DO USUARIO DESATIVADA") bloqueiam a navegação até serem
+   **fechados de fato** — escondê-los via CSS não conta como lido. O X fica
+   na barra de título do documento do **topo** (`fechar_popups_cis`), e pode
+   reaparecer (respawn) até 2x antes de fechar de vez; a máquina de estados
+   de `garantir_menu` converge mesmo assim.
+3. **Relogin do SERPRO reseta a habilitação (flag no driver).** A tela de
+   relogin (botão AVANÇAR) significa sessão **nova**: a habilitação volta ao
+   padrão do usuário. `garantir_menu` seta uma flag no próprio `driver` ao
+   atravessá-la; veja [a semântica de `relogin_pendente`](#semântica-de-relogin_pendente)
+   abaixo.
+4. **A cortina de transição pode ficar presa.** `#OPA`/`.FLASHPageSwitch` é a
+   cortina que o CIS mostra entre telas; presa, ela intercepta **todo**
+   clique (`element click intercepted`) e derruba o lote inteiro.
+   `limpar_overlay` espera sumir sozinha e, se não sumir, esconde via JS
+   (seguro — é decorativa).
+5. **A lupa é o atalho de transação.** O cabeçalho tem um ícone de lupa
+   (`onMenuClickPesqTrans`) que abre um campo de transação + botão Ir —
+   `navegar_para_transacao` usa esse atalho (lupa → digitar o código → Ir) e
+   só declara sucesso quando o **seletor exclusivo da tela-destino** aparece
+   (nunca falso positivo).
+6. **TROCAHAB só efetiva no "Sim" + confirmação pelo cabeçalho.**
+   `TrocaHabilitacaoEsiape` seleciona a linha da grade do órgão pedido, o que
+   abre um modal "Confirma ?" num frame próprio — só o botão **Sim** efetiva
+   a troca. E mesmo depois do clique, o módulo só declara sucesso quando o
+   **cabeçalho** (`w_menu_orgao_usu`) passa a refletir o novo órgão —
+   clicar Sim não é garantia por si só.
+
+### Semântica de `relogin_pendente`
+
+`relogin_pendente(driver)` responde: *"um relogin foi atravessado e a
+habilitação ainda NÃO foi refeita?"*. Isso importa porque uma sessão que
+renasce (relogin) volta para a habilitação **padrão** do usuário — se a
+automação seguir consultando/atuando como se estivesse no órgão anterior, o
+SIAPE não erra: ele responde **"sem dados"** para o órgão errado, uma lacuna
+silenciosa que passa despercebida num lote.
+
+- `garantir_menu` seta a flag (`driver._esiape_relogin_pendente = True`)
+  sempre que atravessa a tela de relogin (AVANÇAR).
+- `navegar_para_transacao` **falha de propósito** (`False`) se detectar a
+  flag antes de seguir — não deixa a chamada prosseguir no órgão errado.
+- `TrocaHabilitacaoEsiape.trocar()` limpa a flag (`limpar_flag_relogin`) ao
+  confirmar a troca — inclusive quando o cabeçalho já mostra o órgão pedido
+  (nada a fazer, mas a flag é limpa do mesmo jeito).
+- `AcessoEsiape.executar()` limpa a flag ao final: um relogin de **entrada**
+  (o primeiro da sessão) não é pendência — é o estado padrão esperado, e a
+  primeira troca de habilitação já é explícita no fluxo.
+
+Na prática: depois de qualquer `navegar_para_transacao` que devolver `False`,
+verifique `relogin_pendente(driver)` — se `True`, refaça a
+`TrocaHabilitacaoEsiape(...).trocar()` para o órgão em uso antes de repetir a
+tentativa.
+
+```python
+from integra_gov.esiape import navegar_para_transacao, relogin_pendente
+from integra_gov.esiape import TrocaHabilitacaoEsiape
+
+if not navegar_para_transacao(driver, "COD", seletor_confirmacao):
+    if relogin_pendente(driver):
+        TrocaHabilitacaoEsiape(driver, orgao="00000").trocar()
+        navegar_para_transacao(driver, "COD", seletor_confirmacao)
+```
+
+> **PENDENTE:** verificação ao vivo do módulo público `integra_gov.esiape`.
+> As mecânicas foram validadas ao vivo num lote real do pacote **privado**
+> (14 extrações); a versão generalizada/publicada aqui ainda não teve
+> verificação própria ao vivo.

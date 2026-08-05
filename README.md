@@ -447,6 +447,28 @@ print(resultado.anos_com_dados, resultado.anos_sem_dados)
 # lista as opções da tela para você escolher)
 ```
 
+### e-SIAPE (web)
+
+O e-SIAPE web (CIS/Software AG) roda no mesmo `driver` do SEI — sem terminal
+3270, sem `pywinauto`. O acesso é por **SERPRO ID** (você confirma no app; a
+lib nunca digita PIN/senha) e a troca de habilitação usa a transação
+`TROCAHAB`:
+
+```python
+from integra_gov.sei import criar_driver_chrome
+from integra_gov.esiape import AcessoEsiape, TrocaHabilitacaoEsiape
+
+driver = criar_driver_chrome()
+try:
+    AcessoEsiape(driver).executar()                        # você confirma no app
+    TrocaHabilitacaoEsiape(driver, orgao="00000").trocar()  # órgão fictício
+finally:
+    driver.quit()
+```
+
+Detalhes das mecânicas de navegação (frames ocultos, popups modais, relogin
+do SERPRO) em [Fluxo do e-SIAPE web](docs/uso-basico.md#fluxo-do-e-siape-web).
+
 ## Módulos
 
 ### SEI — multiplataforma (núcleo)
@@ -489,7 +511,16 @@ print(resultado.anos_com_dados, resultado.anos_sem_dados)
 | `integra_gov.siape.ficha_pensionista` | Ficha financeira anual do pensionista (`>FPEMPSFICF`): um PDF por ano, resultado tipado, ano sem dados não é erro | ✅ |
 | `integra_gov.siape.exceptions` | Exceções tipadas | ✅ |
 
-| _(planejado)_ | e-SIAPE (web), demais transações, utilidades | 🔜 |
+### e-SIAPE (web) — multiplataforma
+
+| Módulo | Descrição | Status |
+|--------|-----------|--------|
+| `integra_gov.esiape.navegacao` | Navegação nas telas CIS: frames visíveis, popups modais, cortina de transição, travessia de relogin | ✅ |
+| `integra_gov.esiape.acesso` | Acesso via SERPRO ID — você confirma no app; a lib nunca digita PIN/senha | ✅ |
+| `integra_gov.esiape.habilitacao` | Troca de habilitação de ÓRGÃO (`TROCAHAB`) | ✅ |
+| `integra_gov.esiape.exceptions` | Exceções tipadas | ✅ |
+
+| _(planejado)_ | demais transações do e-SIAPE, utilidades | 🔜 |
 
 ## Como contribuir
 

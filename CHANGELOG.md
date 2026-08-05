@@ -47,6 +47,21 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   verificada ao vivo pelo `download_documento`.
 
 ### Adicionado
+- **Subpacote `integra_gov.esiape`** — automação do e-SIAPE **web**
+  (CIS/Software AG), **multiplataforma** (roda no mesmo `driver` Selenium do
+  SEI, sem `pywinauto`/extra dedicado). Camadas: `navegacao` (frames
+  visíveis, popups modais, cortina de transição, travessia de
+  relogin/máquina de estados do menu, atalho de transação pela lupa),
+  `acesso` (`AcessoEsiape` — SERPRO ID, você confirma no app, a lib nunca
+  digita PIN/senha) e `habilitacao` (`TrocaHabilitacaoEsiape` — troca de
+  ÓRGÃO via `TROCAHAB`, só efetiva no "Sim" do modal e só confirma pelo
+  cabeçalho refletindo o destino). Exceções tipadas (`EsiapeError` e
+  subclasses). A flag de relogin pendente (`relogin_pendente`/
+  `limpar_flag_relogin`) evita a lacuna silenciosa de consultar o órgão
+  errado após uma sessão renascer. **Mecânicas validadas ao vivo em lote
+  real** (14 extrações) no pacote **privado** que originou este subpacote;
+  **PENDENTE: verificação ao vivo do módulo público** (a versão generalizada
+  publicada aqui ainda não teve verificação própria ao vivo).
 - `integra_gov.siape.ficha_pensionista`: **`FichaAnualPensionista`** — ficha
   financeira anual do pensionista (`>FPEMPSFICF`), um PDF por ano com
   confirmação em disco, seleção de instituidor em pensão múltipla (nunca

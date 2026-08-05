@@ -443,3 +443,14 @@ def test_navegar_popup_perdido_recupera_e_segue():
     assert nav.navegar_para_transacao(driver, "TRANSX", SELETOR_TELA_X,
                                       timeout=1) is True
     assert nav.relogin_pendente(driver) is False
+
+
+def test_exports_do_subpacote():
+    import integra_gov.esiape as pacote
+
+    for nome in ("AcessoEsiape", "TrocaHabilitacaoEsiape", "garantir_menu",
+                 "navegar_para_transacao", "relogin_pendente",
+                 "limpar_flag_relogin", "fechar_janelas_extras",
+                 "limpar_overlay", "procurar_em_frames", "esperar_seletor"):
+        assert hasattr(pacote, nome), nome
+        assert nome in pacote.__all__
