@@ -861,8 +861,10 @@ silenciosa que passa despercebida num lote.
 
 - `garantir_menu` seta a flag (`driver._esiape_relogin_pendente = True`)
   sempre que atravessa a tela de relogin (AVANÇAR).
-- `navegar_para_transacao` **falha de propósito** (`False`) se detectar a
-  flag antes de seguir — não deixa a chamada prosseguir no órgão errado.
+- `navegar_para_transacao` falha (`False`) a tentativa **que atravessou** o
+  relogin; após um `False`, cheque `relogin_pendente(driver)` e refaça a
+  habilitação (`TrocaHabilitacaoEsiape.trocar()`) antes de repetir — um
+  *retry* cego com a lupa já visível **não** é bloqueado.
 - `TrocaHabilitacaoEsiape.trocar()` limpa a flag (`limpar_flag_relogin`) ao
   confirmar a troca — inclusive quando o cabeçalho já mostra o órgão pedido
   (nada a fazer, mas a flag é limpa do mesmo jeito).
