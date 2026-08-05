@@ -59,9 +59,14 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   subclasses). A flag de relogin pendente (`relogin_pendente`/
   `limpar_flag_relogin`) evita a lacuna silenciosa de consultar o órgão
   errado após uma sessão renascer. **Mecânicas validadas ao vivo em lote
-  real** (14 extrações) no pacote **privado** que originou este subpacote;
-  **PENDENTE: verificação ao vivo do módulo público** (a versão generalizada
-  publicada aqui ainda não teve verificação própria ao vivo).
+  real** (14 extrações) no pacote **privado** que originou este subpacote.
+  **Verificado ao vivo em 2026-08-05** (e-SIAPE real): login SERPRO ID caiu
+  na tela de relogin do SERPRO e a travessia automática (AVANÇAR → Pular)
+  funcionou; leitura do órgão ativo; troca de habilitação nos DOIS caminhos
+  (idempotente — cabeçalho já no destino — e completa, com modal "Sim" e
+  confirmação pelo cabeçalho); `navegar_para_transacao` confirmou a tela do
+  FPEMFICHAF pelo seletor exclusivo; flag de relogin limpa ao final. A
+  verificação não exigiu correções.
 - `integra_gov.siape.ficha_pensionista`: **`FichaAnualPensionista`** — ficha
   financeira anual do pensionista (`>FPEMPSFICF`), um PDF por ano com
   confirmação em disco, seleção de instituidor em pensão múltipla (nunca

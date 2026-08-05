@@ -887,7 +887,7 @@ if not navegar_para_transacao(driver, "COD", seletor_confirmacao):
         navegar_para_transacao(driver, "COD", seletor_confirmacao)
 ```
 
-> **PENDENTE:** verificação ao vivo do módulo público `integra_gov.esiape`.
+> **Verificado ao vivo em 2026-08-05:** login SERPRO ID (com travessia real da tela de relogin), troca de habilitação ida-e-volta e navegação por transação confirmada pelo seletor — sem correções necessárias.
 > As mecânicas foram validadas ao vivo num lote real do pacote **privado**
 > (14 extrações); a versão generalizada/publicada aqui ainda não teve
 > verificação própria ao vivo.
