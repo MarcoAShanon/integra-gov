@@ -187,3 +187,47 @@ def test_procurar_devolve_none_sem_seletor_visivel():
 def test_esperar_seletor_timeout_devolve_none():
     driver = DriverFake(_arvore_menu(com_lupa=False))
     assert nav.esperar_seletor(driver, nav.SELETOR_LUPA, timeout=0.05) is None
+
+
+def test_limpar_overlay_esconde_cortina_presa():
+    driver = DriverFake(FrameFake())
+    # 1ª consulta: cortina presente; após o JS de esconder: ausente
+    respostas = iter([True, True, 0, False])  # presente, presente, esconde, sumiu
+
+    def roteiro(script, *args):
+        return next(respostas)
+
+    driver.resultado_script = roteiro
+    assert nav.limpar_overlay(driver, timeout=0.05) is True
+
+
+def test_limpar_overlay_sem_cortina_retorna_imediato():
+    driver = DriverFake(FrameFake())
+    driver.resultado_script = False  # overlay_presente() -> False
+    assert nav.limpar_overlay(driver, timeout=0.05) is True
+    assert len(driver.scripts) == 1  # não tentou esconder
+
+
+def test_fechar_janelas_extras_fecha_e_volta_ao_principal():
+    driver = DriverFake(FrameFake())
+    driver.window_handles = ["principal", "popup1", "popup2"]
+    principal = nav.fechar_janelas_extras(driver, "principal")
+    assert principal == "principal"
+    assert driver.fechadas == ["popup1", "popup2"]
+    assert driver.janela_atual == "principal"
+
+
+def test_fechar_popups_cis_clica_o_x_do_topo():
+    raiz = FrameFake()
+    x = ElementoFake(atributos={"id": "TITLEBAR0_2CLOSE"})
+    raiz.elementos[nav.SELETOR_POPUP_FECHAR] = [x]
+    driver = DriverFake(raiz)
+    assert nav.fechar_popups_cis(driver) == 1
+    assert x.cliques == 1
+
+
+def test_fechar_popups_cis_ignora_x_invisivel():
+    raiz = FrameFake()
+    raiz.elementos[nav.SELETOR_POPUP_FECHAR] = [ElementoFake(visivel=False)]
+    driver = DriverFake(raiz)
+    assert nav.fechar_popups_cis(driver) == 0
