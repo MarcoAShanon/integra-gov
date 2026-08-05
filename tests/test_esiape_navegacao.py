@@ -191,14 +191,17 @@ def test_esperar_seletor_timeout_devolve_none():
 
 def test_limpar_overlay_esconde_cortina_presa():
     driver = DriverFake(FrameFake())
-    # 1ª consulta: cortina presente; após o JS de esconder: ausente
-    respostas = iter([True, True, 0, False])  # presente, presente, esconde, sumiu
+    estado = {"escondido": False}
 
     def roteiro(script, *args):
-        return next(respostas)
+        if "forEach" in script:  # script de esconder
+            estado["escondido"] = True
+            return 1
+        return not estado["escondido"]  # overlay_presente: presa até esconder
 
     driver.resultado_script = roteiro
     assert nav.limpar_overlay(driver, timeout=0.05) is True
+    assert estado["escondido"] is True  # o branch de esconder DE FATO rodou
 
 
 def test_limpar_overlay_sem_cortina_retorna_imediato():
