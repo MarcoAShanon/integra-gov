@@ -262,3 +262,44 @@ def garantir_menu(driver, timeout: float = 60) -> bool:
     _log.error("Menu (lupa) não ficou acessível em %.0fs (PIN do certificado "
                "pode estar sendo pedido na janela do Windows)", timeout)
     return False
+
+
+def navegar_para_transacao(driver, transacao: str, seletor_confirmacao: str,
+                           timeout: float = 30) -> bool:
+    """Abre uma transação pelo atalho do cabeçalho: lupa → campo → Ir.
+
+    ``True`` SOMENTE quando ``seletor_confirmacao`` (exclusivo da tela-
+    destino) apareceu num frame visível — nunca falso positivo. Sem lupa,
+    :func:`garantir_menu` atravessa popups/relogin; se um RELOGIN foi
+    atravessado, esta tentativa FALHA de propósito (a habilitação voltou ao
+    padrão; seguir consultaria o órgão errado — ver
+    :func:`relogin_pendente`).
+    """
+    try:
+        limpar_overlay(driver)
+        if procurar_em_frames(driver, SELETOR_LUPA) is None:
+            if not garantir_menu(driver):
+                _log.error("Lupa de transação não encontrada")
+                return False
+            if relogin_pendente(driver):
+                _log.warning("%s: tentativa abortada após relogin — refazer a "
+                             "habilitação antes de repetir", transacao)
+                return False
+        driver.find_element(By.CSS_SELECTOR, SELETOR_LUPA).click()
+        time.sleep(1.0)
+        campo = driver.find_element(By.CSS_SELECTOR, SELETOR_CAMPO_TRANSACAO)
+        campo.clear()
+        campo.send_keys(transacao)
+        botoes = driver.find_elements(By.CSS_SELECTOR, SELETOR_BTN_IR)
+        (botoes[0] if botoes else campo).click()
+        _log.info("Navegando para a transação %s...", transacao)
+    except Exception as exc:
+        _log.error("Falha ao navegar para %s: %s", transacao, exc)
+        return False
+
+    if esperar_seletor(driver, seletor_confirmacao, timeout=timeout) is None:
+        _log.error("%s: a tela não abriu (sem %s em %.0fs)",
+                   transacao, seletor_confirmacao, timeout)
+        return False
+    _log.info("Tela da transação %s aberta", transacao)
+    return True

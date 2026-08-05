@@ -352,3 +352,94 @@ def test_garantir_menu_timeout_devolve_false():
     driver = DriverFake(FrameFake())  # nada reconhecível
     driver.resultado_script = False
     assert nav.garantir_menu(driver, timeout=0.05) is False
+
+
+def _arvore_transacao(seletor_confirmacao):
+    """Menu completo: lupa + campo + Ir; clicar Ir abre a tela-destino."""
+    raiz = FrameFake()
+    wa1 = FrameFake("WA1", visivel=True)
+    lupa, campo, ir = ElementoFake(), ElementoFake(), ElementoFake()
+    wa1.elementos[nav.SELETOR_LUPA] = [lupa]
+    wa1.elementos[nav.SELETOR_CAMPO_TRANSACAO] = [campo]
+    wa1.elementos[nav.SELETOR_BTN_IR] = [ir]
+    raiz.filhos = [wa1]
+
+    _click_ir = ir.click
+
+    def ir_click():
+        _click_ir()
+        wa1.elementos[seletor_confirmacao] = [ElementoFake()]
+
+    ir.click = ir_click
+    return raiz, campo
+
+
+SELETOR_TELA_X = '[data-testtoolid="telaX"]'
+
+
+def test_navegar_confirma_pelo_seletor_da_tela():
+    raiz, campo = _arvore_transacao(SELETOR_TELA_X)
+    driver = DriverFake(raiz)
+    driver.resultado_script = False
+    assert nav.navegar_para_transacao(driver, "TRANSX", SELETOR_TELA_X,
+                                      timeout=1) is True
+    assert "TRANSX" in campo.teclas
+
+
+def test_navegar_tela_nao_abriu_devolve_false():
+    raiz = FrameFake()
+    wa1 = FrameFake("WA1", visivel=True)
+    wa1.elementos[nav.SELETOR_LUPA] = [ElementoFake()]
+    wa1.elementos[nav.SELETOR_CAMPO_TRANSACAO] = [ElementoFake()]
+    wa1.elementos[nav.SELETOR_BTN_IR] = [ElementoFake()]  # Ir não abre nada
+    raiz.filhos = [wa1]
+    driver = DriverFake(raiz)
+    driver.resultado_script = False
+    assert nav.navegar_para_transacao(driver, "TRANSX", SELETOR_TELA_X,
+                                      timeout=0.05) is False
+
+
+def test_navegar_apos_relogin_falha_de_proposito_com_flag():
+    """Sem lupa + tela de AVANÇAR: atravessa, mas FALHA a tentativa."""
+    raiz = FrameFake()
+    wa1 = FrameFake("WA1", visivel=True)
+    avancar = ElementoFake()
+    wa1.elementos[nav.SELETOR_BTN_AVANCAR] = [avancar]
+    raiz.filhos = [wa1]
+    driver = DriverFake(raiz)
+    driver.resultado_script = False
+
+    _click = avancar.click
+
+    def avancar_click():
+        _click()
+        del wa1.elementos[nav.SELETOR_BTN_AVANCAR]
+        wa1.elementos[nav.SELETOR_LUPA] = [ElementoFake()]
+
+    avancar.click = avancar_click
+
+    assert nav.navegar_para_transacao(driver, "TRANSX", SELETOR_TELA_X,
+                                      timeout=1) is False
+    assert nav.relogin_pendente(driver) is True  # chamador deve re-habilitar
+
+
+def test_navegar_popup_perdido_recupera_e_segue():
+    raiz, _campo = _arvore_transacao(SELETOR_TELA_X)
+    x_popup = ElementoFake(atributos={"id": "TITLEBAR0_9CLOSE"})
+    raiz.elementos[nav.SELETOR_POPUP_FECHAR] = [x_popup]
+    wa1 = raiz.filhos[0]
+    lupa_backup = wa1.elementos.pop(nav.SELETOR_LUPA)  # popup "esconde" a lupa
+
+    _click_x = x_popup.click
+
+    def x_click():
+        _click_x()
+        raiz.elementos[nav.SELETOR_POPUP_FECHAR] = []
+        wa1.elementos[nav.SELETOR_LUPA] = lupa_backup
+
+    x_popup.click = x_click
+    driver = DriverFake(raiz)
+    driver.resultado_script = False
+    assert nav.navegar_para_transacao(driver, "TRANSX", SELETOR_TELA_X,
+                                      timeout=1) is True
+    assert nav.relogin_pendente(driver) is False
