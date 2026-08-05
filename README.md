@@ -431,6 +431,22 @@ TrocaHabilitacao(controle, orgao="00000", upag="000000000").trocar()  # contexto
 conexao.acessar_transacao("GRCOSITPRO", confirmacao="GRCOSITPRO")     # >transação
 ```
 
+Com o terminal conectado e a habilitação certa, a ficha anual do pensionista
+(`>FPEMPSFICF`) sai com um PDF por ano — veja [Ficha anual do pensionista
+(SIAPE 3270)](docs/uso-basico.md#ficha-anual-do-pensionista-siape-3270) no
+guia de uso básico para pré-requisitos e exceções:
+
+```python
+from pathlib import Path
+from integra_gov.siape import FichaAnualPensionista
+
+ficha = FichaAnualPensionista(controle, pasta_saida=Path("fichas/"))
+resultado = ficha.extrair("0000000", 2008, 2026)
+print(resultado.anos_com_dados, resultado.anos_sem_dados)
+# pensão múltipla: informe matricula_instituidor= (senão InstituidorObrigatorio
+# lista as opções da tela para você escolher)
+```
+
 ## Módulos
 
 ### SEI — multiplataforma (núcleo)
@@ -470,6 +486,7 @@ conexao.acessar_transacao("GRCOSITPRO", confirmacao="GRCOSITPRO")     # >transa�
 | `integra_gov.siape.controle` | Interação base com o terminal (ler tela, enviar teclas) | ✅ |
 | `integra_gov.siape.conexao` | Acesso/login (OTP) + acessar transação (`>COMANDO`) | ✅ |
 | `integra_gov.siape.habilitacao` | Troca de habilitação (ÓRGÃO/UPAG) via `TROCAHAB` | ✅ |
+| `integra_gov.siape.ficha_pensionista` | Ficha financeira anual do pensionista (`>FPEMPSFICF`): um PDF por ano, resultado tipado, ano sem dados não é erro | ✅ |
 | `integra_gov.siape.exceptions` | Exceções tipadas | ✅ |
 
 | _(planejado)_ | e-SIAPE (web), demais transações, utilidades | 🔜 |

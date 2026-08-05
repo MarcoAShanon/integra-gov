@@ -55,3 +55,46 @@ class LancamentoHodError(SiapeError):
 
 class TransacaoError(SiapeError):
     """Falha ao acessar/confirmar uma transação do SIAPE (``>COMANDO``)."""
+
+
+class InstituidorObrigatorio(SiapeError):
+    """A pensionista tem mais de um instituidor e ``matricula_instituidor``
+    não foi informada (ou não está entre as opções da tela).
+
+    Attributes:
+        matriculas_encontradas: matrículas listadas na tela de seleção,
+            para o chamador decidir qual usar.
+    """
+
+    def __init__(self, matriculas_encontradas: list[str]):
+        self.matriculas_encontradas = list(matriculas_encontradas)
+        super().__init__(
+            "a pensionista tem mais de um instituidor; informe "
+            "matricula_instituidor. Matrículas na tela: "
+            + (", ".join(self.matriculas_encontradas) or "(nenhuma legível)")
+        )
+
+
+class FichaIndisponivel(SiapeError):
+    """O fluxo não chegou à tela da ficha (matrícula inexistente ou sem
+    acesso na habilitação ativa). Distinta de "ano sem dados"."""
+
+
+class ExtracaoFichaInterrompida(SiapeError):
+    """A extração abortou no meio da faixa de anos.
+
+    Os PDFs dos anos já salvos ficam no disco; nenhum resultado parcial é
+    devolvido como completo.
+
+    Attributes:
+        anos_processados: anos concluídos (com ou sem dados) antes da falha.
+        causa: exceção original.
+    """
+
+    def __init__(self, anos_processados: list[int], causa: BaseException | None):
+        self.anos_processados = list(anos_processados)
+        self.causa = causa
+        super().__init__(
+            f"extração interrompida após os anos {self.anos_processados} "
+            f"(causa: {causa!r})"
+        )

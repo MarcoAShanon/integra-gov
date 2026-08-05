@@ -1,4 +1,4 @@
-# Guia de uso básico — `integra_gov.sei`
+# Guia de uso básico — `integra_gov`
 
 Este guia mostra a **sequência inicial correta** para automatizar o SEI com a
 biblioteca: abrir o navegador, fazer login, fechar o aviso pós-login, escolher a
@@ -695,3 +695,84 @@ finally:
   ```
 - **Trate as exceções tipadas** (`SeiError` é a base de todas) em vez de assumir
   que deu certo — a lib nunca devolve `False` silencioso.
+
+---
+
+## Ficha anual do pensionista (SIAPE 3270)
+
+`FichaAnualPensionista` (`integra_gov.siape.ficha_pensionista`) extrai a ficha
+financeira anual de **uma** pensionista, para uma faixa de anos, pela transação
+`>FPEMPSFICF` do terminal 3270. Um **PDF por ano** com dados; ano sem dados
+(código `(0034)` do SIAPE) **não é erro** — entra em `anos_sem_dados` no
+resultado.
+
+### Pré-requisitos
+
+Diferente do SEI (headless, via Selenium), o SIAPE 3270 automatiza um emulador
+de terminal na tela — o que impõe restrições próprias:
+
+- **Terminal já conectado**: uma `ControleTerminal3270` já atachada e
+  autenticada (`ConexaoTerminal3270(...).conectar()`), como na sequência do
+  [README](../README.md#uso).
+- **Habilitação certa já ativa**: troque com `TrocaHabilitacao(...).trocar()`
+  **antes** de chamar `extrair()` — o módulo não escolhe nem confere a
+  habilitação por você.
+- **Impressora de PDF configurada como saída do SIAPE**: a ficha "sai" pelo
+  fluxo de impressão do terminal (`>FPEMPSFICF` → confirmação → janela nativa
+  "Salvar Saída de Impressão como"). O parâmetro `impressora` (padrão
+  `"Microsoft Print to PDF"`) só é usado nas mensagens de erro, para você
+  conferir a impressora ativa — o módulo **não** troca a impressora do SIAPE.
+- **Sessão Windows GUI interativa**: `pywinauto` opera janelas nativas na tela;
+  não roda numa sessão puramente headless/RDP desconectada.
+- **Execução serial**: clipboard e foco de janela são recursos **globais** do
+  Windows — não rode duas extrações (nem outra automação que use clipboard) ao
+  mesmo tempo na mesma sessão.
+- **Locale do Windows em pt-BR**: os textos que o módulo casa na tela (ex.:
+  `"NAO EXISTEM DADOS"`, o título da janela "Salvar Saída de Impressão como")
+  são os que o SIAPE/Windows produzem em português.
+
+### Exemplo
+
+```python
+from pathlib import Path
+from integra_gov.siape import FichaAnualPensionista
+
+ficha = FichaAnualPensionista(controle, pasta_saida=Path("fichas/"))
+resultado = ficha.extrair("0000000", 2008, 2026)
+print(resultado.anos_com_dados, resultado.anos_sem_dados)
+# pensão múltipla: informe matricula_instituidor= (senão InstituidorObrigatorio
+# lista as opções da tela para você escolher)
+```
+
+`resultado` é um `ResultadoFichaAnual`: `pdfs` (caminhos salvos, um por ano com
+dados — `ficha_<matricula>_<ano>.pdf` em `pasta_saida`), `anos_com_dados`,
+`anos_sem_dados` e `duracao_s`.
+
+### Exceções
+
+| Exceção | Quando acontece |
+|---------|-----------------|
+| `InstituidorObrigatorio` | pensão múltipla e `matricula_instituidor` não foi informada (ou não está entre as opções da tela) — `matriculas_encontradas` traz as matrículas listadas, para você escolher e chamar de novo |
+| `FichaIndisponivel` | a matrícula da pensionista é inexistente ou não está acessível na habilitação ativa (distinto de "ano sem dados") |
+| `ExtracaoFichaInterrompida` | a extração abortou no meio da faixa de anos — `anos_processados` traz os anos já concluídos (com ou sem dados) e `causa` a exceção original; os PDFs já salvos permanecem em disco |
+| `SessaoSiapePerdida` | a sessão do terminal caiu durante a automação (estado irrecuperável — reinicie a sessão) |
+| `TransacaoError` | falha ao confirmar a transação (ex.: nem a janela de salvar nem o `(0034)` apareceram a tempo — geralmente a impressora ativa do SIAPE não é a esperada) |
+
+> `TransacaoError` e `SessaoSiapePerdida` ocorridas **durante o loop de anos**
+> chegam ao chamador embrulhadas em `ExtracaoFichaInterrompida.causa`; só
+> falhas no **posicionamento** (antes do loop) chegam puras — capture
+> `ExtracaoFichaInterrompida` e inspecione `.causa` para tratar as duas.
+
+```python
+from integra_gov.siape import FichaAnualPensionista, InstituidorObrigatorio
+
+try:
+    resultado = FichaAnualPensionista(controle, pasta_saida).extrair("0000000", 2020, 2026)
+except InstituidorObrigatorio as exc:
+    print(exc.matriculas_encontradas)   # escolha uma e chame de novo com matricula_instituidor=
+```
+
+> As constantes de espera (`DELAY_PADRAO`, `ESPERA_MSG_IMPRESSAO`,
+> `TIMEOUT_JANELA_SALVAR`, etc.) são **atributos de classe** — ajustáveis por
+> subclasse ou instância (`FichaAnualPensionista.TIMEOUT_JANELA_SALVAR = 30.0`)
+> em máquinas mais lentas, sem alterar o módulo.

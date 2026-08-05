@@ -12,12 +12,13 @@ from __future__ import annotations
 from .exceptions import PywinautoIndisponivel
 
 try:
-    from pywinauto import Application, clipboard
+    from pywinauto import Application, Desktop, clipboard
     from pywinauto.findwindows import ElementNotFoundError
 
     PYWINAUTO_DISPONIVEL = True
 except ImportError:  # pywinauto ausente (ex.: Linux/CI ou extra não instalado)
     Application = None
+    Desktop = None
     clipboard = None
 
     class ElementNotFoundError(Exception):  # placeholder p/ blocos ``except``

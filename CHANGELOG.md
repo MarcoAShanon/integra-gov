@@ -47,6 +47,18 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   verificada ao vivo pelo `download_documento`.
 
 ### Adicionado
+- `integra_gov.siape.ficha_pensionista`: **`FichaAnualPensionista`** — ficha
+  financeira anual do pensionista (`>FPEMPSFICF`), um PDF por ano com
+  confirmação em disco, seleção de instituidor em pensão múltipla (nunca
+  escolhe sozinha — `InstituidorObrigatorio` lista as opções da tela) e aborto
+  honesto (`ExtracaoFichaInterrompida`, com `anos_processados`). Comportamento
+  portado do extrator validado em produção (649 fichas). **Verificado ao vivo
+  em 2026-08-05** (SIAPE real, órgão de teste): pensão única com 2 anos com
+  dados (PDFs confirmados em disco, ~15 s/ano) e faixa com 2 anos vazios —
+  ambos em `anos_sem_dados`, com o `(0034)` tratado duas vezes seguidas
+  provando a recuperação do cursor via F2 (o ano seguinte foi digitado nos
+  campos certos); ao final de cada extração o F12 devolveu o terminal ao
+  prompt de matrícula, utilizável. A verificação não exigiu correções.
 - `integra_gov.sei.sessao`: **detecção de sessão caída** (página de login no
   meio do fluxo) — `sessao_expirada(driver)` (a página atual é a de login?) e
   `levantar_se_sessao_expirada(driver, causa)`; nova exceção

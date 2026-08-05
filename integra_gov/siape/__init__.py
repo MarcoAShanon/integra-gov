@@ -28,7 +28,10 @@ from .controle import ControleTerminal3270
 from .exceptions import (
     AcessoSiapeError,
     CodigoSegurancaError,
+    ExtracaoFichaInterrompida,
+    FichaIndisponivel,
     HabilitacaoNaoEncontrada,
+    InstituidorObrigatorio,
     LancamentoHodError,
     PywinautoIndisponivel,
     SessaoSiapePerdida,
@@ -38,6 +41,7 @@ from .exceptions import (
     TokenOtpError,
     TransacaoError,
 )
+from .ficha_pensionista import FichaAnualPensionista, ResultadoFichaAnual
 from .habilitacao import TrocaHabilitacao
 from .lancador import LancadorHod
 
@@ -47,10 +51,15 @@ __all__ = [
     "CodigoSegurancaError",
     "ConexaoTerminal3270",
     "ControleTerminal3270",
+    "ExtracaoFichaInterrompida",
+    "FichaAnualPensionista",
+    "FichaIndisponivel",
     "HabilitacaoNaoEncontrada",
+    "InstituidorObrigatorio",
     "LancadorHod",
     "LancamentoHodError",
     "PywinautoIndisponivel",
+    "ResultadoFichaAnual",
     "SessaoSiapePerdida",
     "SiapeError",
     "TerminalError",
