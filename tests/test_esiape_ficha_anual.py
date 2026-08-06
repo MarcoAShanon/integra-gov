@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -174,3 +175,132 @@ def test_consultar_bloco_tela_nao_abre_levanta(tmp_path):
     with patch.object(nav, "garantir_menu", lambda d, timeout=60: False):
         with pytest.raises(TransacaoNaoAbriu):
             ficha._consultar_bloco("0000000", 2008, 2022)
+
+
+def test_imprimir_bloco_popup_download_e_renomeio(tmp_path):
+    raiz, wa1, _mat = _arvore_fpemfichaf()
+    driver = DriverFicha(raiz)
+    driver.resultado_script = False
+    ficha = FichaAnualServidor(driver, pasta_saida=tmp_path)
+
+    imprimir = ElementoFake()
+    wa1.elementos[FichaAnualServidor.SEL_IMPRIMIR] = [imprimir]
+    wa1.elementos[FichaAnualServidor.SEL_GERAR_RELATORIO] = [ElementoFake()]
+
+    _click_imp = imprimir.click
+
+    def imprimir_click():
+        _click_imp()
+        driver.window_handles = ["principal", "popup_impressao"]
+        pdf_minimo(ficha.pasta_download / "fichas_financeiras.pdf")
+
+    imprimir.click = imprimir_click
+
+    caminho = ficha._imprimir_bloco("0000000", 2008, 2022)
+    assert caminho == tmp_path / "ficha_0000000_2008_2022.pdf"
+    assert caminho.exists()
+    assert "popup_impressao" in driver.fechadas       # fechado por Selenium
+    assert driver.janela_atual == "principal"
+    assert driver.refreshes >= 1                       # refresh pós-popup
+    # download não deixou órfão com o nome bruto
+    assert not (ficha.pasta_download / "fichas_financeiras.pdf").exists()
+
+
+def test_limpar_downloads_orfaos_remove_pdfs_antigos(tmp_path):
+    ficha = FichaAnualServidor(DriverFicha(FrameFake()), pasta_saida=tmp_path)
+    orfao = pdf_minimo(ficha.pasta_download / "resto_antigo.pdf")
+    ficha._limpar_downloads_orfaos()
+    assert not orfao.exists()
+
+
+def test_extrair_blocos_com_e_sem_dados_mescla_e_renomeia(tmp_path):
+    ficha = FichaAnualServidor(DriverFicha(FrameFake()), pasta_saida=tmp_path)
+
+    def consulta(matricula, ano_de, ano_ate):
+        return ano_de != 2023  # 2º bloco sem dados
+
+    def imprime(matricula, ano_de, ano_ate):
+        return pdf_minimo(
+            tmp_path / f"ficha_{matricula}_{ano_de}_{ano_ate}.pdf")
+
+    with patch.object(ficha, "_consultar_bloco", side_effect=consulta), \
+         patch.object(ficha, "_imprimir_bloco", side_effect=imprime):
+        r = ficha.extrair("0000000", 2008, 2026)
+
+    assert r.blocos_com_dados == [(2008, 2022)]
+    assert r.blocos_sem_dados == [(2023, 2026)]
+    assert r.pdfs_blocos == [tmp_path / "ficha_0000000_2008_2022.pdf"]
+    assert r.pdf == tmp_path / "ficha_0000000_2008_2026.pdf"
+    assert r.pdf.exists() and r.duracao_s >= 0
+
+
+def test_extrair_todos_sem_dados_pdf_none(tmp_path):
+    ficha = FichaAnualServidor(DriverFicha(FrameFake()), pasta_saida=tmp_path)
+    with patch.object(ficha, "_consultar_bloco", return_value=False):
+        r = ficha.extrair("0000000", 2020, 2024)
+    assert r.pdf is None
+    assert r.blocos_sem_dados == [(2020, 2024)]
+
+
+def test_extrair_erro_no_bloco_aborta_com_processados(tmp_path):
+    ficha = FichaAnualServidor(DriverFicha(FrameFake()), pasta_saida=tmp_path)
+
+    def consulta(matricula, ano_de, ano_ate):
+        if ano_de == 2023:
+            raise RuntimeError("Browser window not found")
+        return True
+
+    def imprime(matricula, ano_de, ano_ate):
+        return pdf_minimo(
+            tmp_path / f"ficha_{matricula}_{ano_de}_{ano_ate}.pdf")
+
+    with patch.object(ficha, "_consultar_bloco", side_effect=consulta), \
+         patch.object(ficha, "_imprimir_bloco", side_effect=imprime):
+        with pytest.raises(ExtracaoFichaEsiapeInterrompida) as exc:
+            ficha.extrair("0000000", 2008, 2026)
+    assert exc.value.blocos_processados == [(2008, 2022)]
+    assert isinstance(exc.value.causa, RuntimeError)
+    # parcial fica no disco para diagnóstico
+    assert (tmp_path / "ficha_0000000_2008_2022.pdf").exists()
+
+
+def test_mesclar_ordem_cronologica(tmp_path):
+    from pypdf import PdfReader
+
+    ficha = FichaAnualServidor(DriverFicha(FrameFake()), pasta_saida=tmp_path)
+    a = pdf_minimo(tmp_path / "a.pdf")
+    b = pdf_minimo(tmp_path / "b.pdf")
+    destino = ficha._mesclar([a, b], tmp_path / "final.pdf")
+    assert PdfReader(destino).get_num_pages() == 2
+
+
+class DriverPopupTeimoso(DriverFicha):
+    """close() não fecha de verdade (popup teimoso do CIS)."""
+
+    def close(self):
+        self.fechadas.append(self.janela_atual)  # registra, mas não remove
+
+
+def test_popup_teimoso_fallback_js_e_fluxo_segue(tmp_path):
+    raiz, wa1, _mat = _arvore_fpemfichaf()
+    driver = DriverPopupTeimoso(raiz)
+    driver.resultado_script = False
+    ficha = FichaAnualServidor(driver, pasta_saida=tmp_path)
+
+    imprimir = ElementoFake()
+    wa1.elementos[FichaAnualServidor.SEL_IMPRIMIR] = [imprimir]
+    wa1.elementos[FichaAnualServidor.SEL_GERAR_RELATORIO] = [ElementoFake()]
+
+    _click_imp = imprimir.click
+
+    def imprimir_click():
+        _click_imp()
+        driver.window_handles = ["principal", "popup_teimoso"]
+        pdf_minimo(ficha.pasta_download / "fichas_financeiras.pdf")
+
+    imprimir.click = imprimir_click
+
+    caminho = ficha._imprimir_bloco("0000000", 2008, 2022)
+    assert caminho.exists()                       # o fluxo NÃO morre
+    assert any("window.close" in s for s in driver.scripts)  # fallback JS
+    assert "popup_teimoso" in driver.window_handles  # órfã fica p/ a varredura

@@ -18,11 +18,17 @@ from pathlib import Path
 
 from selenium.webdriver.common.by import By
 
-from .exceptions import FichaEsiapeIndisponivel, TransacaoNaoAbriu
+from .exceptions import (
+    ExtracaoFichaEsiapeInterrompida,
+    FichaEsiapeIndisponivel,
+    TransacaoNaoAbriu,
+)
 from .navegacao import (
     esperar_seletor,
+    fechar_janelas_extras,
     frames_visiveis,
     ir_para_frame,
+    limpar_overlay,
     navegar_para_transacao,
     procurar_em_frames,
 )
@@ -108,7 +114,37 @@ class FichaAnualServidor:
         if int(ano_inicial) > int(ano_final):
             raise ValueError(
                 f"faixa invertida: {ano_inicial} > {ano_final}")
-        raise NotImplementedError  # Tasks 3-4
+
+        inicio = time.monotonic()
+        resultado = ResultadoFichaEsiape()
+        try:
+            for ano_de, ano_ate in self._dividir_blocos(ano_inicial, ano_final):
+                if not self._consultar_bloco(matricula, ano_de, ano_ate):
+                    resultado.blocos_sem_dados.append((ano_de, ano_ate))
+                    continue
+                caminho = self._imprimir_bloco(matricula, ano_de, ano_ate)
+                resultado.blocos_com_dados.append((ano_de, ano_ate))
+                resultado.pdfs_blocos.append(caminho)
+        except Exception as exc:
+            blocos = sorted(resultado.blocos_com_dados
+                            + resultado.blocos_sem_dados)
+            raise ExtracaoFichaEsiapeInterrompida(blocos, exc) from exc
+
+        if resultado.pdfs_blocos:
+            destino = (self.pasta_saida
+                       / f"ficha_{matricula}_{ano_inicial}_{ano_final}.pdf")
+            if len(resultado.pdfs_blocos) == 1:
+                import shutil
+
+                shutil.copy2(resultado.pdfs_blocos[0], destino)
+            else:
+                self._mesclar(resultado.pdfs_blocos, destino)
+            resultado.pdf = destino
+        resultado.duracao_s = time.monotonic() - inicio
+        _log.info("Matrícula %s: %d bloco(s) com dados, %d sem, %.1fs",
+                  matricula, len(resultado.blocos_com_dados),
+                  len(resultado.blocos_sem_dados), resultado.duracao_s)
+        return resultado
 
     # ----- consulta de um bloco -----
 
@@ -193,3 +229,141 @@ class FichaAnualServidor:
                 time.sleep(self.DELAY_PADRAO)
         except Exception as exc:
             _log.warning("Sair falhou (ignorado): %s", exc)
+
+    # ----- impressão de um bloco (sequência estabilizada em produção) -----
+
+    def _imprimir_bloco(self, matricula: str, ano_de: int, ano_ate: int
+                        ) -> Path:
+        """Gera o relatório, imprime via popup e devolve o PDF RENOMEADO.
+
+        O popup de impressão é a origem histórica da degradação de sessão:
+        fechamos por handle Selenium (confiável) e SÓ então retornamos à
+        janela principal com refresh.
+        """
+        self._limpar_downloads_orfaos()
+        fechar_janelas_extras(self.driver)
+        limpar_overlay(self.driver)
+        handle_principal = self.driver.current_window_handle
+        handles_antes = list(self.driver.window_handles)
+
+        if esperar_seletor(self.driver, self.SEL_GERAR_RELATORIO,
+                           timeout=self.TIMEOUT_TELA) is None:
+            raise TransacaoNaoAbriu(self.TRANSACAO, self.SEL_GERAR_RELATORIO)
+        self.driver.find_element(By.CSS_SELECTOR,
+                                 self.SEL_GERAR_RELATORIO).click()
+        time.sleep(self.DELAY_PADRAO)
+
+        if esperar_seletor(self.driver, self.SEL_IMPRIMIR,
+                           timeout=self.TIMEOUT_TELA) is None:
+            raise TransacaoNaoAbriu(self.TRANSACAO, self.SEL_IMPRIMIR)
+        self.driver.find_element(By.CSS_SELECTOR, self.SEL_IMPRIMIR).click()
+
+        popup = self._aguardar_popup(handles_antes)
+        pdf_bruto = self._aguardar_pdf_estavel()
+        if popup is not None:
+            self._fechar_popup(popup)
+        self._retornar_apos_impressao(handle_principal)
+
+        destino = (self.pasta_saida
+                   / f"ficha_{matricula}_{ano_de}_{ano_ate}.pdf")
+        if destino.exists():
+            destino.unlink()
+        pdf_bruto.rename(destino)
+        _log.info("Bloco %d-%d salvo em %s", ano_de, ano_ate, destino)
+        return destino
+
+    def _aguardar_popup(self, handles_antes: list) -> str | None:
+        """Handle do popup de impressão (``None`` se não abriu — o download
+        pode disparar mesmo assim; quem decide é o PDF no disco)."""
+        limite = time.monotonic() + self.TIMEOUT_POPUP
+        while time.monotonic() < limite:
+            novos = [h for h in self.driver.window_handles
+                     if h not in handles_antes]
+            if novos:
+                return novos[0]
+            time.sleep(self.DELAY_CURTO)
+        _log.warning("Popup de impressão não detectado em %.0fs",
+                     self.TIMEOUT_POPUP)
+        return None
+
+    def _aguardar_pdf_estavel(self) -> Path:
+        """Espera UM PDF aparecer na pasta de download e ficar estável
+        (tamanho constante em 2 leituras). Erro honesto no timeout."""
+        limite = time.monotonic() + self.TIMEOUT_DOWNLOAD
+        tamanho_anterior: dict[Path, int] = {}
+        while time.monotonic() < limite:
+            pdfs = sorted(self.pasta_download.glob("*.pdf"),
+                          key=lambda p: p.stat().st_mtime, reverse=True)
+            if pdfs:
+                atual = pdfs[0]
+                tamanho = atual.stat().st_size
+                if tamanho > 0 and tamanho_anterior.get(atual) == tamanho:
+                    return atual
+                tamanho_anterior[atual] = tamanho
+            time.sleep(self.DELAY_CURTO)
+        raise TimeoutError(
+            f"o PDF do bloco não apareceu em {self.pasta_download} em "
+            f"{self.TIMEOUT_DOWNLOAD}s — a pasta de download do driver "
+            f"coincide com pasta_download?")
+
+    def _fechar_popup(self, popup_handle: str) -> None:
+        """Fecha o popup por handle Selenium (retry); JS como fallback."""
+        for _tentativa in range(2):
+            try:
+                if popup_handle not in self.driver.window_handles:
+                    return
+                self.driver.switch_to.window(popup_handle)
+                self.driver.close()
+                time.sleep(self.DELAY_CURTO)
+                if popup_handle not in self.driver.window_handles:
+                    return
+            except Exception:
+                pass
+        try:  # fallback JS
+            if popup_handle in self.driver.window_handles:
+                self.driver.switch_to.window(popup_handle)
+                self.driver.execute_script("window.close();")
+        except Exception:
+            pass
+        if popup_handle in self.driver.window_handles:
+            _log.warning("Popup de impressão resistiu — janela órfã será "
+                         "varrida por fechar_janelas_extras")
+
+    def _retornar_apos_impressao(self, handle_principal: str) -> None:
+        """Volta à janela principal, refresh e contexto raiz (a página fica
+        em carregamento eterno sem o refresh — comportamento real do CIS)."""
+        try:
+            if handle_principal in self.driver.window_handles:
+                self.driver.switch_to.window(handle_principal)
+            elif self.driver.window_handles:
+                self.driver.switch_to.window(self.driver.window_handles[0])
+            self.driver.refresh()
+            self.driver.switch_to.default_content()
+            time.sleep(self.DELAY_PADRAO)
+        except Exception as exc:
+            _log.warning("Retorno pós-impressão com falha (%s)", exc)
+
+    def _limpar_downloads_orfaos(self) -> None:
+        """Remove PDFs de tentativas anteriores da pasta de download (o
+        'mais recente' confundiria resto antigo com o bloco atual)."""
+        for pdf in self.pasta_download.glob("*.pdf"):
+            try:
+                pdf.unlink()
+                _log.debug("Órfão removido: %s", pdf.name)
+            except OSError:
+                pass
+
+    # ----- mesclagem -----
+
+    @staticmethod
+    def _mesclar(pdfs: list[Path], destino: Path) -> Path:
+        """Mescla os PDFs em ordem (pypdf) e devolve o destino."""
+        from pypdf import PdfWriter
+
+        w = PdfWriter()
+        for pdf in pdfs:
+            w.append(str(pdf))
+        with open(destino, "wb") as f:
+            w.write(f)
+        w.close()
+        return destino
