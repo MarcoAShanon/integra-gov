@@ -982,6 +982,11 @@ multi = FichaMultiOrgao(
 resultado = multi.extrair("0000000", 2008, 2026)
 ```
 
+Assim como `FichaAnualServidor`, `FichaMultiOrgao` também aceita
+`pasta_download=` — repassada a cada `FichaAnualServidor` interno da cadeia
+(uma faixa por órgão), pelo mesmo motivo: precisa coincidir com a pasta de
+download configurada no `driver`.
+
 Pontos importantes do resultado (`ResultadoMultiOrgao`):
 
 - **O ano da virada pertence aos dois órgãos.** Quem entrou no órgão novo em
@@ -994,9 +999,11 @@ Pontos importantes do resultado (`ResultadoMultiOrgao`):
   foi consultado (do mais recente ao mais antigo).
 - **`lacunas`** é a lista (sempre não-oculta) do que **não** foi coberto:
   faixa sem habilitação no órgão anterior, órgão anterior não encontrado no
-  `CDCOINDFUN`, ou faixa que esgotou as tentativas técnicas. `extrair()`
-  **nunca levanta** por uma lacuna legítima — entrega o que conseguiu cobrir
-  com as lacunas declaradas, para o chamador decidir o que fazer.
+  `CDCOINDFUN`, faixa que esgotou as tentativas técnicas, a consulta de
+  dados funcionais (`CDCOINDFUN`) falhou, ou o limite de `max_saltos` foi
+  atingido. `extrair()` **nunca levanta** por uma lacuna legítima — entrega
+  o que conseguiu cobrir com as lacunas declaradas, para o chamador decidir
+  o que fazer.
 - **`falhas_tecnicas`** é o subconjunto de `lacunas` de origem **técnica**
   (timeout, sessão perdida, habilitação recusada) — distinto de uma lacuna
   **estrutural** (não há órgão anterior registrado: a cadeia realmente
