@@ -17,6 +17,8 @@ from .acesso import AcessoEsiape
 from .exceptions import (
     AutenticacaoNaoConfirmada,
     EsiapeError,
+    ExtracaoFichaEsiapeInterrompida,
+    FichaEsiapeIndisponivel,
     HabilitacaoNaoEncontrada,
     MenuInacessivel,
     TransacaoNaoAbriu,
@@ -37,6 +39,8 @@ __all__ = [
     "AcessoEsiape",
     "AutenticacaoNaoConfirmada",
     "EsiapeError",
+    "ExtracaoFichaEsiapeInterrompida",
+    "FichaEsiapeIndisponivel",
     "HabilitacaoNaoEncontrada",
     "MenuInacessivel",
     "TransacaoNaoAbriu",

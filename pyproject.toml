@@ -27,6 +27,7 @@ classifiers = [
 ]
 dependencies = [
     "selenium>=4.0",
+    "pypdf>=3.0",
 ]
 
 [project.optional-dependencies]
