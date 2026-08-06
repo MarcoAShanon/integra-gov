@@ -54,6 +54,7 @@ class FichaMultiOrgao:
     """
 
     TENTATIVAS_POR_FAIXA = 2
+    TENTATIVAS_TROCA = 3
 
     def __init__(self, driver, orgao_inicial: str, pasta_saida: Path,
                  max_saltos: int = 5, pasta_download: Path | None = None):
@@ -144,18 +145,21 @@ class FichaMultiOrgao:
             pendente_ate = ano_de
             mat = dados.matricula_anterior or mat
             try:
-                TrocaHabilitacaoEsiape(self.driver,
-                                       orgao=dados.orgao_anterior).trocar()
+                self._trocar_para_orgao_anterior(dados.orgao_anterior)
             except EsiapeError as exc:
                 falta = f"{ano_inicial}-{pendente_ate}"
+                if relogin_pendente(self.driver):
+                    msg = (f"{falta}: troca para o órgão "
+                           f"{dados.orgao_anterior} falhou após "
+                           f"{self.TENTATIVAS_TROCA} tentativas "
+                           f"(relogin recorrente)")
+                else:
+                    msg = (f"{falta}: sem habilitação no órgão "
+                           f"{dados.orgao_anterior}")
                 _log.error("Sem habilitação no órgão %s: %s",
                            dados.orgao_anterior, exc)
-                r.lacunas.append(
-                    f"{falta}: sem habilitação no órgão "
-                    f"{dados.orgao_anterior}")
-                r.falhas_tecnicas.append(
-                    f"{falta}: sem habilitação no órgão "
-                    f"{dados.orgao_anterior}")
+                r.lacunas.append(msg)
+                r.falhas_tecnicas.append(msg)
                 break
             orgao = dados.orgao_anterior
         else:
@@ -191,6 +195,33 @@ class FichaMultiOrgao:
         _log.warning("Relogin pendente — refazendo a habilitação no órgão %s",
                      orgao)
         TrocaHabilitacaoEsiape(self.driver, orgao=orgao).trocar()
+
+    def _trocar_para_orgao_anterior(self, orgao_anterior: str) -> None:
+        """Troca a habilitação para o órgão anterior (o salto).
+
+        Se a troca atravessar um relogin do SERPRO, ``TrocaHabilitacaoEsiape``
+        aborta de propósito (a habilitação voltou ao padrão do usuário) e
+        levanta ``EsiapeError`` — mas a causa é TRANSITÓRIA: a flag
+        ``relogin_pendente`` fica setada e basta repetir a troca. Só desiste
+        na hora quando a falha é de habilitação de verdade (usuário não tem
+        acesso ao órgão), sem insistir à toa.
+        """
+        ultimo_exc: EsiapeError | None = None
+        for tentativa in range(1, self.TENTATIVAS_TROCA + 1):
+            try:
+                TrocaHabilitacaoEsiape(self.driver,
+                                       orgao=orgao_anterior).trocar()
+                return
+            except EsiapeError as exc:
+                ultimo_exc = exc
+                if relogin_pendente(self.driver):
+                    _log.warning(
+                        "Troca para %s abortada por relogin (tentativa "
+                        "%d) — repetindo", orgao_anterior, tentativa)
+                    time.sleep(2)
+                    continue
+                raise
+        raise ultimo_exc
 
     def _extrair_faixa(self, matricula: str, ano_de: int, ano_ate: int,
                        orgao: str) -> tuple[Path | None, bool]:

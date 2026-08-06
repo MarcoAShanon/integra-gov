@@ -382,3 +382,79 @@ def test_retorno_ao_orgao_inicial_falha_sinaliza(tmp_path):
     assert r.pdf is not None
     assert r.voltou_ao_orgao_inicial is False
     assert any("não voltou" in f for f in r.falhas_tecnicas)
+
+
+def test_salto_com_relogin_transitorio_repete_e_cobre_tudo(tmp_path):
+    """Relogin do SERPRO atravessa o salto para o órgão anterior: a
+    primeira troca aborta (TransacaoNaoAbriu) com a flag de relogin
+    setada — é transitório, basta repetir. Nada deve ser perdido."""
+    from integra_gov.esiape.exceptions import TransacaoNaoAbriu
+
+    driver = _driver()
+    multi = FichaMultiOrgao(driver, orgao_inicial="22222",
+                            pasta_saida=tmp_path)
+    chamadas = {"11111": 0}
+
+    def consultar(self, matricula, orgao):
+        if orgao == "22222":
+            return DadosFuncionais("11111", matricula, 2014, "11DEZ2014")
+        return DadosFuncionais(None, None, 2001, "05JAN2001")
+
+    def extrair_ficha(self, matricula, ano_inicial, ano_final):
+        return _resultado_ficha(tmp_path, matricula, ano_inicial, ano_final)
+
+    def trocar(self):
+        if self.orgao == "11111":
+            chamadas["11111"] += 1
+            if chamadas["11111"] == 1:
+                driver._esiape_relogin_pendente = True
+                raise TransacaoNaoAbriu("TROCAHAB", "x")
+            nav.limpar_flag_relogin(driver)
+
+    with patch("integra_gov.esiape.ficha_multi_orgao."
+               "DadosFuncionaisOrgao.consultar", consultar), \
+         patch("integra_gov.esiape.ficha_multi_orgao."
+               "FichaAnualServidor.extrair", extrair_ficha), \
+         patch("integra_gov.esiape.ficha_multi_orgao."
+               "TrocaHabilitacaoEsiape.trocar", trocar):
+        r = multi.extrair("0000001", 2008, 2026)
+
+    assert chamadas["11111"] == 2  # abortou por relogin e repetiu
+    assert r.trilha == [("22222", "0000001", 2014, 2026),
+                        ("11111", "0000001", 2008, 2014)]
+    assert r.lacunas == []  # nada perdido
+
+
+def test_salto_sem_habilitacao_real_nao_insiste(tmp_path):
+    """Falha de habilitação de verdade (não é relogin transitório): não
+    deve insistir — a troca é chamada uma única vez para o órgão
+    anterior e a lacuna diz 'sem habilitação'."""
+    from integra_gov.esiape.exceptions import HabilitacaoNaoEncontrada
+
+    driver = _driver()
+    multi = FichaMultiOrgao(driver, orgao_inicial="22222",
+                            pasta_saida=tmp_path)
+    chamadas = {"11111": 0}
+
+    def consultar(self, matricula, orgao):
+        return DadosFuncionais("11111", matricula, 2014, "11DEZ2014")
+
+    def extrair_ficha(self, matricula, ano_inicial, ano_final):
+        return _resultado_ficha(tmp_path, matricula, ano_inicial, ano_final)
+
+    def trocar(self):
+        if self.orgao == "11111":
+            chamadas["11111"] += 1
+            # flag de relogin LIMPA: falha real de habilitação
+            raise HabilitacaoNaoEncontrada("11111", ["22222"])
+
+    with patch("integra_gov.esiape.ficha_multi_orgao."
+               "DadosFuncionaisOrgao.consultar", consultar), \
+         patch("integra_gov.esiape.ficha_multi_orgao."
+               "FichaAnualServidor.extrair", extrair_ficha), \
+         patch("integra_gov.esiape.ficha_multi_orgao."
+               "TrocaHabilitacaoEsiape.trocar", trocar):
+        r = multi.extrair("0000001", 2008, 2026)
+
+    assert chamadas["11111"] == 1  # sem retry
+    assert any("sem habilitação no órgão 11111" in lac for lac in r.lacunas)
