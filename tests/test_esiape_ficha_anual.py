@@ -150,8 +150,13 @@ def test_consultar_bloco_sem_dados_devolve_false(tmp_path):
 
     raiz, wa1, matricula = _arvore_fpemfichaf()
     driver = DriverFicha(raiz)
-    driver.resultado_script = (
-        "mensagem: NAO HOUVE DADOS PARA CRITERIO SOLICITADO")
+
+    def roteiro(script, *args):
+        if "innerText" in script:
+            return "mensagem: NAO HOUVE DADOS PARA CRITERIO SOLICITADO"
+        return False  # overlay_presente e afins
+
+    driver.resultado_script = roteiro
     ficha = FichaAnualServidor(driver, pasta_saida=tmp_path)
     with patch.object(FichaAnualServidor, "TIMEOUT_CONSULTA", 0.05):
         assert ficha._consultar_bloco("0000000", 2008, 2022) is False
