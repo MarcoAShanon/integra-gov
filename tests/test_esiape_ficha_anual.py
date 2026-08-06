@@ -16,7 +16,7 @@ from integra_gov.esiape.ficha_anual import (
     FichaAnualServidor,
     ResultadoFichaEsiape,
 )
-from tests.test_esiape_navegacao import DriverFake, FrameFake
+from tests.test_esiape_navegacao import DriverFake, ElementoFake, FrameFake
 
 
 def test_excecoes_novas_sao_esiape_error():
@@ -96,3 +96,76 @@ def test_resultado_dataclass():
     assert r.blocos_com_dados == []
     assert r.blocos_sem_dados == []
     assert r.duracao_s == 0.0
+
+
+def _arvore_fpemfichaf():
+    """Menu com lupa; clicar Ir abre a tela do FPEMFICHAF completa."""
+    raiz = FrameFake()
+    wa1 = FrameFake("WA1", visivel=True)
+    wa1.elementos[nav.SELETOR_LUPA] = [ElementoFake()]
+    wa1.elementos[nav.SELETOR_CAMPO_TRANSACAO] = [ElementoFake()]
+    ir = ElementoFake()
+    wa1.elementos[nav.SELETOR_BTN_IR] = [ir]
+    raiz.filhos = [wa1]
+
+    consulta_online = ElementoFake()
+    matricula = ElementoFake()
+    ano_ini, ano_fim = ElementoFake(), ElementoFake()
+    pesquisar_seletores = {
+        FichaAnualServidor.SEL_CONSULTA_ONLINE: [consulta_online],
+        FichaAnualServidor.SEL_MATRICULA: [matricula],
+        FichaAnualServidor.SEL_ANO_INICIO: [ano_ini],
+        FichaAnualServidor.SEL_ANO_FIM: [ano_fim],
+    }
+
+    _click_ir = ir.click
+
+    def ir_click():
+        _click_ir()
+        wa1.elementos.update(pesquisar_seletores)
+
+    ir.click = ir_click
+    return raiz, wa1, matricula
+
+
+def test_consultar_bloco_com_dados(tmp_path):
+    raiz, wa1, matricula = _arvore_fpemfichaf()
+    driver = DriverFicha(raiz)
+    driver.resultado_script = ""  # texto da tela sem MSG_SEM_DADOS
+    ficha = FichaAnualServidor(driver, pasta_saida=tmp_path)
+    # após a consulta, o botão Gerar Relatório aparece = tem dados
+    _click_mat = matricula.send_keys
+
+    def mat_keys(*teclas):
+        _click_mat(*teclas)
+        wa1.elementos[FichaAnualServidor.SEL_GERAR_RELATORIO] = [ElementoFake()]
+
+    matricula.send_keys = mat_keys
+    assert ficha._consultar_bloco("0000000", 2008, 2022) is True
+    assert "0000000" in matricula.teclas
+
+
+def test_consultar_bloco_sem_dados_devolve_false(tmp_path):
+    from unittest.mock import patch
+
+    raiz, wa1, matricula = _arvore_fpemfichaf()
+    driver = DriverFicha(raiz)
+    driver.resultado_script = (
+        "mensagem: NAO HOUVE DADOS PARA CRITERIO SOLICITADO")
+    ficha = FichaAnualServidor(driver, pasta_saida=tmp_path)
+    with patch.object(FichaAnualServidor, "TIMEOUT_CONSULTA", 0.05):
+        assert ficha._consultar_bloco("0000000", 2008, 2022) is False
+
+
+def test_consultar_bloco_tela_nao_abre_levanta(tmp_path):
+    from unittest.mock import patch
+
+    driver = DriverFicha(FrameFake())  # sem lupa, sem nada
+    driver.resultado_script = ""
+    ficha = FichaAnualServidor(driver, pasta_saida=tmp_path)
+    from integra_gov.esiape.exceptions import TransacaoNaoAbriu
+
+    # garantir_menu tem timeout REAL de 60s (monotonic) — atalha p/ o teste
+    with patch.object(nav, "garantir_menu", lambda d, timeout=60: False):
+        with pytest.raises(TransacaoNaoAbriu):
+            ficha._consultar_bloco("0000000", 2008, 2022)
