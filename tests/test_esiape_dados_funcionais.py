@@ -29,6 +29,8 @@ DATA OCORRENCIA : 01DEZ2014
 ORGAO/MATRIC ANTER.: 11111 / 0000000
 """
 
+TEXTO_TELA_2 = "SELECIONE:\nINGRESSO NO ORGAO\nORGAO ATUAL/ANTERIOR"
+
 
 def test_extrair_parseia_orgao_anterior_e_ingresso():
     d = DadosFuncionaisOrgao._extrair(TEXTO_TELA_3)
@@ -61,9 +63,12 @@ def test_consultar_tela_nao_abre_levanta():
 
 
 def test_consultar_fluxo_completo_3_telas_com_armadilha_do_rotulo():
-    """As 3 telas felizes — e a prova do marcador: a tela 2 contém o rótulo
-    'INGRESSO NO ORGAO' (checkbox) mas NÃO 'Cadastramento no SIAPE'; o
-    parse só acontece quando a tela 3 de fato chega."""
+    """As 3 telas felizes — e a prova do marcador em disputa REAL: após o
+    clique de Pesquisar 2, o CIS continua mostrando o texto da tela 2 (com
+    o rótulo-armadilha 'INGRESSO NO ORGAO') por algumas leituras antes de
+    finalmente trocar para a tela 3 — simulando a transição lenta real do
+    CIS. Se o marcador aceitasse o texto da tela 2, o parse aconteceria
+    cedo demais e as asserções de órgão/ano quebrariam."""
     raiz = FrameFake()
     wa1 = FrameFake("WA1", visivel=True)
     wa1.elementos[nav.SELETOR_LUPA] = [ElementoFake()]
@@ -104,17 +109,23 @@ def test_consultar_fluxo_completo_3_telas_com_armadilha_do_rotulo():
     def p2_click():
         _click_p2()
         estado["tela"] = 3
+        estado["leituras_pos_p2"] = 0
 
     pesquisar_2.click = p2_click
 
     driver = DriverFake(raiz)
 
     def texto_da_tela(script, *args):
+        if "innerText" not in script:
+            return False  # overlay_presente e afins
         if estado["tela"] == 2:
-            return "SELECIONE:\nINGRESSO NO ORGAO\nORGAO ATUAL/ANTERIOR"
+            return TEXTO_TELA_2
         if estado["tela"] == 3:
+            estado["leituras_pos_p2"] += 1
+            if estado["leituras_pos_p2"] <= 3:
+                return TEXTO_TELA_2  # transição: o CIS ainda mostra a tela 2
             return TEXTO_TELA_3
-        return False  # overlay_presente etc.
+        return ""
 
     driver.resultado_script = texto_da_tela
 
@@ -123,3 +134,4 @@ def test_consultar_fluxo_completo_3_telas_com_armadilha_do_rotulo():
     assert d.ano_ingresso == 2014
     assert "22222" in orgao_campo.teclas       # órgão EXPLÍCITO preenchido
     assert all(cb.cliques == 1 for cb in checkboxes.values())
+    assert estado["leituras_pos_p2"] > 3  # o texto-armadilha foi LIDO e rejeitado antes da tela 3
