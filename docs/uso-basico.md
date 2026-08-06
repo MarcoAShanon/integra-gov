@@ -936,6 +936,46 @@ Se o PDF não aparecer nessa pasta a tempo, o módulo levanta `TimeoutError`
 com essa pergunta explícita na mensagem — é o sintoma mais comum de
 desalinhamento entre `pasta_download` e a configuração real do navegador.
 
+### Configuração do Chrome (obrigatória)
+
+A impressão do bloco só salva o PDF de fato se o `driver` do Chrome estiver
+configurado assim — sem isso, ela trava num diálogo nativo ou é bloqueada
+silenciosamente:
+
+```python
+import json
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from integra_gov.sei import criar_driver_chrome
+
+destino = {"recentDestinations": [{"id": "Save as PDF", "origin": "local", "account": ""}],
+           "selectedDestinationId": "Save as PDF", "version": 2}
+opts = ChromeOptions()
+opts.add_experimental_option("prefs", {
+    "download.default_directory": str(PASTA_DOWNLOAD),
+    "savefile.default_directory": str(PASTA_DOWNLOAD),
+    "download.prompt_for_download": False,
+    "download.directory_upgrade": True,
+    "plugins.always_open_pdf_externally": True,
+    "plugins.plugins_disabled": ["Chrome PDF Viewer"],
+    "profile.default_content_settings.popups": 0,
+    "profile.default_content_setting_values.automatic_downloads": 1,
+    "printing.print_preview_sticky_settings.appState": json.dumps(destino),
+})
+driver = criar_driver_chrome(options=opts,
+                            args_extra=["--kiosk-printing", "--disable-popup-blocking"])
+```
+
+Três pontos são críticos, descobertos ao vivo: sem
+`automatic_downloads: 1` o Chrome bloqueia o download disparado pelo popup
+de impressão (conta como download automático "extra" e passa a exigir
+confirmação manual); sem fixar `selectedDestinationId: "Save as PDF"` no
+`appState`, o `--kiosk-printing` manda a impressão para a impressora padrão
+do Windows e abre o diálogo nativo "Salvar como", travando a automação à
+espera de um clique que nunca vem; e `PASTA_DOWNLOAD` aqui precisa ser
+exatamente a mesma pasta passada em `pasta_download` (seção anterior) — a
+divergência entre as duas é a causa mais comum do `TimeoutError` citado
+acima.
+
 ### Bloco sem dados não é erro
 
 Cada bloco é resolvido por **evidência**, nunca por timeout silencioso: ou o

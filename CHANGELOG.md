@@ -69,8 +69,22 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   matrícula do lote não pode ser consultada no órgão errado). Comportamento
   portado do extrator validado em produção, com o lote multi-órgão real
   **14/14** confirmando o encadeamento e o retorno ao órgão inicial.
-  **PENDENTE: verificação ao vivo do módulo público** (as três classes ainda
-  não foram exercitadas contra o e-SIAPE real nesta versão generalizada).
+  **Verificado ao vivo em 2026-08-06** contra o e-SIAPE real: militar
+  reformado multi-órgão real, faixa 2008–2026, trilha de dois órgãos
+  (`[('40805', ..., 2014, 2026), ('17000', ..., 2008, 2014)]`) com o ano da
+  virada (2014) presente nos DOIS órgãos, `lacunas == []` e
+  `voltou_ao_orgao_inicial=True`; PDF final mesclado com 22 páginas
+  (13 + 9) cobrindo 2008–2026 (conferido com `pypdf`) em 108 s, atravessando
+  ao vivo DOIS relogins do SERPRO no meio do fluxo — inclusive um relogin
+  transitório durante o salto de órgão, sem perder a faixa do órgão anterior
+  graças ao retry adicionado pela verificação. A verificação corrigiu quatro
+  defeitos reais antes de passar: a sequência da tela FPEMFICHAF (ENTER
+  após a matrícula, com os anos como dropdowns `Select`, não campos de
+  texto); a consulta passou a disparar pelo botão `onClickBtnAvanca` (o
+  `w_opc_cons` é só o radio de opção, não o gatilho); a configuração do
+  Chrome exigida para a impressão realmente salvar o PDF, agora documentada
+  em `docs/uso-basico.md`; e o retry do salto de órgão após relogin
+  transitório (sem ele, a faixa do órgão anterior se perdia).
 - **Subpacote `integra_gov.esiape`** — automação do e-SIAPE **web**
   (CIS/Software AG), **multiplataforma** (roda no mesmo `driver` Selenium do
   SEI, sem `pywinauto`/extra dedicado). Camadas: `navegacao` (frames
