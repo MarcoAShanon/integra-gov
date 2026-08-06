@@ -891,3 +891,127 @@ if not navegar_para_transacao(driver, "COD", seletor_confirmacao):
 > As mecânicas foram validadas ao vivo num lote real do pacote **privado**
 > (14 extrações); a versão generalizada/publicada aqui ainda não teve
 > verificação própria ao vivo.
+
+---
+
+## Ficha anual e multi-órgão (e-SIAPE)
+
+Com a habilitação certa já ativa (seção anterior), dois módulos extraem a
+ficha financeira anual (`FPEMFICHAF`) pela web: `FichaAnualServidor` para
+**um único órgão** (o mais simples) e `FichaMultiOrgao` quando o servidor
+**migrou de órgão** ao longo da carreira.
+
+### Blocos de até 15 anos
+
+O e-SIAPE limita cada consulta a **15 anos**. `FichaAnualServidor.extrair()`
+divide a faixa pedida em blocos (`[2008, 2022]`, `[2023, 2026]`, …), consulta
+e imprime cada um, e **mescla tudo em ordem cronológica** num único PDF ao
+final (`pypdf`, dependência do núcleo — não é extra opcional):
+
+```python
+from pathlib import Path
+from integra_gov.esiape import FichaAnualServidor
+
+ficha = FichaAnualServidor(driver, pasta_saida=Path("fichas/"))
+resultado = ficha.extrair("0000000", 2008, 2026)   # matrícula fictícia
+```
+
+### A pasta de download do driver
+
+A impressão do bloco passa pelo fluxo de download do Chrome — o e-SIAPE não
+oferece um endpoint direto para o PDF. Por isso o `driver` **precisa estar
+configurado** para baixar automaticamente (sem o diálogo nativo "Salvar
+como") na **mesma pasta** que `pasta_download` aponta. Por padrão,
+`pasta_download` é a subpasta `_download_esiape` dentro de `pasta_saida`; se
+o seu `driver` usa outro destino de download, passe-o explicitamente:
+
+```python
+ficha = FichaAnualServidor(
+    driver, pasta_saida=Path("fichas/"),
+    pasta_download=Path("C:/Users/voce/Downloads"),  # deve bater com o Chrome
+)
+```
+
+Se o PDF não aparecer nessa pasta a tempo, o módulo levanta `TimeoutError`
+com essa pergunta explícita na mensagem — é o sintoma mais comum de
+desalinhamento entre `pasta_download` e a configuração real do navegador.
+
+### Bloco sem dados não é erro
+
+Cada bloco é resolvido por **evidência**, nunca por timeout silencioso: ou o
+botão "Gerar Relatório" aparece (há dados — o bloco é impresso e entra em
+`resultado.blocos_com_dados`), ou o CIS responde com a mensagem de "sem
+dados para o critério solicitado" (entra em `resultado.blocos_sem_dados`,
+sem gerar PDF). As duas situações são esperadas e **não** interrompem a
+extração dos blocos seguintes.
+
+Um **erro de verdade** no meio de um bloco (popup que não abre, sessão que
+cai, timeout sem nenhuma das duas evidências) **aborta a pessoa inteira**:
+`ExtracaoFichaEsiapeInterrompida` carrega `blocos_processados` (o que já foi
+concluído, com ou sem dados) e `causa` (a exceção original) — os PDFs já
+salvos permanecem em disco para diagnóstico, mas nenhum resultado parcial é
+devolvido como se fosse completo.
+
+```python
+from integra_gov.esiape import ExtracaoFichaEsiapeInterrompida, FichaEsiapeIndisponivel
+
+try:
+    resultado = ficha.extrair("0000000", 2008, 2026)
+except ExtracaoFichaEsiapeInterrompida as exc:
+    print(exc.blocos_processados, exc.causa)
+except FichaEsiapeIndisponivel:
+    ...  # matrícula não encontrada na habilitação ativa (distinto de "sem dados")
+```
+
+### Multi-órgão: cobrindo quem migrou
+
+`FichaAnualServidor` só enxerga o órgão da habilitação **ativa** — quem
+migrou de órgão perde os anos anteriores **silenciosamente** nessa consulta
+simples. `FichaMultiOrgao` encadeia a extração: consulta `CDCOINDFUN`
+(`DadosFuncionaisOrgao`) para descobrir o órgão anterior e o ano de ingresso,
+extrai a faixa do órgão atual, troca a habilitação (`TrocaHabilitacaoEsiape`)
+e repete, até esgotar a cadeia ou alcançar o ano inicial pedido:
+
+```python
+from pathlib import Path
+from integra_gov.esiape import FichaMultiOrgao
+
+multi = FichaMultiOrgao(
+    driver, orgao_inicial="00000", pasta_saida=Path("fichas/"),  # órgão fictício
+)
+resultado = multi.extrair("0000000", 2008, 2026)
+```
+
+Pontos importantes do resultado (`ResultadoMultiOrgao`):
+
+- **O ano da virada pertence aos dois órgãos.** Quem entrou no órgão novo em
+  dezembro deixou janeiro–novembro no órgão anterior — o módulo repete esse
+  ano de fronteira nas duas consultas de propósito (evita perder o mês da
+  troca), então `trilha` pode conter faixas com sobreposição de um ano nas
+  bordas.
+- **`trilha`** registra a cadeia percorrida: uma tupla
+  `(orgao, matricula, ano_de, ano_ate)` por órgão visitado, na ordem em que
+  foi consultado (do mais recente ao mais antigo).
+- **`lacunas`** é a lista (sempre não-oculta) do que **não** foi coberto:
+  faixa sem habilitação no órgão anterior, órgão anterior não encontrado no
+  `CDCOINDFUN`, ou faixa que esgotou as tentativas técnicas. `extrair()`
+  **nunca levanta** por uma lacuna legítima — entrega o que conseguiu cobrir
+  com as lacunas declaradas, para o chamador decidir o que fazer.
+- **`falhas_tecnicas`** é o subconjunto de `lacunas` de origem **técnica**
+  (timeout, sessão perdida, habilitação recusada) — distinto de uma lacuna
+  **estrutural** (não há órgão anterior registrado: a cadeia realmente
+  termina ali). Útil para saber se vale a pena repetir a extração.
+- **`voltou_ao_orgao_inicial`** confirma que a habilitação foi devolvida ao
+  `orgao_inicial` ao final (a próxima pessoa do lote não pode ser consultada
+  no órgão errado). Quando `False`, `falhas_tecnicas` traz o motivo — trate
+  como sinal para reabilitar manualmente antes de seguir o lote.
+
+```python
+print(resultado.pdf)                 # PDF único, mesclado em ordem cronológica
+print(resultado.trilha)              # [(orgao, matricula, ano_de, ano_ate), ...]
+if resultado.lacunas:
+    print("cobertura incompleta:", resultado.lacunas)
+if not resultado.voltou_ao_orgao_inicial:
+    print("ATENÇÃO — reabilitar antes do próximo da fila:",
+          resultado.falhas_tecnicas)
+```

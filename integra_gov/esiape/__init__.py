@@ -14,6 +14,7 @@ Exemplo mínimo::
 """
 
 from .acesso import AcessoEsiape
+from .dados_funcionais import DadosFuncionais, DadosFuncionaisOrgao
 from .exceptions import (
     AutenticacaoNaoConfirmada,
     EsiapeError,
@@ -23,6 +24,8 @@ from .exceptions import (
     MenuInacessivel,
     TransacaoNaoAbriu,
 )
+from .ficha_anual import FichaAnualServidor, ResultadoFichaEsiape
+from .ficha_multi_orgao import FichaMultiOrgao, ResultadoMultiOrgao
 from .habilitacao import TrocaHabilitacaoEsiape
 from .navegacao import (
     esperar_seletor,
@@ -38,11 +41,17 @@ from .navegacao import (
 __all__ = [
     "AcessoEsiape",
     "AutenticacaoNaoConfirmada",
+    "DadosFuncionais",
+    "DadosFuncionaisOrgao",
     "EsiapeError",
     "ExtracaoFichaEsiapeInterrompida",
+    "FichaAnualServidor",
     "FichaEsiapeIndisponivel",
+    "FichaMultiOrgao",
     "HabilitacaoNaoEncontrada",
     "MenuInacessivel",
+    "ResultadoFichaEsiape",
+    "ResultadoMultiOrgao",
     "TransacaoNaoAbriu",
     "TrocaHabilitacaoEsiape",
     "esperar_seletor",

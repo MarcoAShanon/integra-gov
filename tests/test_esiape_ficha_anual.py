@@ -304,3 +304,13 @@ def test_popup_teimoso_fallback_js_e_fluxo_segue(tmp_path):
     assert caminho.exists()                       # o fluxo NÃO morre
     assert any("window.close" in s for s in driver.scripts)  # fallback JS
     assert "popup_teimoso" in driver.window_handles  # órfã fica p/ a varredura
+
+
+def test_exports_do_ciclo_e2():
+    import integra_gov.esiape as pacote
+
+    for nome in ("FichaAnualServidor", "ResultadoFichaEsiape",
+                 "DadosFuncionais", "DadosFuncionaisOrgao",
+                 "FichaMultiOrgao", "ResultadoMultiOrgao"):
+        assert hasattr(pacote, nome), nome
+        assert nome in pacote.__all__

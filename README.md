@@ -469,6 +469,39 @@ finally:
 Detalhes das mecânicas de navegação (frames ocultos, popups modais, relogin
 do SERPRO) em [Fluxo do e-SIAPE web](docs/uso-basico.md#fluxo-do-e-siape-web).
 
+Com a habilitação certa já ativa, a ficha anual (`FPEMFICHAF`) sai em blocos de
+até 15 anos, mesclados num único PDF — **um único órgão** é o caso simples:
+
+```python
+from pathlib import Path
+from integra_gov.esiape import FichaAnualServidor
+
+ficha = FichaAnualServidor(driver, pasta_saida=Path("fichas/"))
+resultado = ficha.extrair("0000000", 2008, 2026)  # matrícula fictícia
+print(resultado.pdf, resultado.blocos_com_dados, resultado.blocos_sem_dados)
+```
+
+Quem **migrou de órgão** perde os anos anteriores nessa consulta simples (o
+e-SIAPE só enxerga o órgão da habilitação ativa). `FichaMultiOrgao` encadeia a
+extração por todos os órgãos anteriores automaticamente (via `CDCOINDFUN`),
+trocando a habilitação a cada salto e voltando ao órgão de partida ao final:
+
+```python
+from pathlib import Path
+from integra_gov.esiape import FichaMultiOrgao
+
+multi = FichaMultiOrgao(driver, orgao_inicial="00000", pasta_saida=Path("fichas/"))
+resultado = multi.extrair("0000000", 2008, 2026)  # matrícula e órgão fictícios
+print(resultado.pdf, resultado.trilha)
+if resultado.lacunas:
+    print("cobertura incompleta:", resultado.lacunas)
+```
+
+Detalhes de blocos, pasta de download, semântica de bloco-sem-dados e
+lacunas multi-órgão em [Ficha anual e multi-órgão
+(e-SIAPE)](docs/uso-basico.md#ficha-anual-e-multi-órgão-e-siape) no guia de
+uso básico.
+
 ## Módulos
 
 ### SEI — multiplataforma (núcleo)
@@ -518,6 +551,9 @@ do SERPRO) em [Fluxo do e-SIAPE web](docs/uso-basico.md#fluxo-do-e-siape-web).
 | `integra_gov.esiape.navegacao` | Navegação nas telas CIS: frames visíveis, popups modais, cortina de transição, travessia de relogin | ✅ |
 | `integra_gov.esiape.acesso` | Acesso via SERPRO ID — você confirma no app; a lib nunca digita PIN/senha | ✅ |
 | `integra_gov.esiape.habilitacao` | Troca de habilitação de ÓRGÃO (`TROCAHAB`) | ✅ |
+| `integra_gov.esiape.ficha_anual` | Ficha financeira anual (`FPEMFICHAF`), um único órgão: blocos de até 15 anos, PDF mesclado, bloco sem dados ≠ erro | ✅ |
+| `integra_gov.esiape.dados_funcionais` | `CDCOINDFUN`: descobre o órgão anterior e o ano de ingresso do servidor | ✅ |
+| `integra_gov.esiape.ficha_multi_orgao` | Encadeia `ficha_anual` por todos os órgãos do servidor (via `dados_funcionais`), com lacunas sempre declaradas | ✅ |
 | `integra_gov.esiape.exceptions` | Exceções tipadas | ✅ |
 
 | _(planejado)_ | demais transações do e-SIAPE, utilidades | 🔜 |

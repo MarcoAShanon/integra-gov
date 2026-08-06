@@ -47,6 +47,30 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   verificada ao vivo pelo `download_documento`.
 
 ### Adicionado
+- `integra_gov.esiape.ficha_anual`, `integra_gov.esiape.dados_funcionais` e
+  `integra_gov.esiape.ficha_multi_orgao`: extração da **ficha financeira
+  anual** (`FPEMFICHAF`) pela web, num único órgão ou encadeada por todos os
+  órgãos do servidor. `FichaAnualServidor` divide a faixa pedida em blocos de
+  até 15 anos (limite do e-SIAPE), imprime cada um e mescla tudo num único
+  PDF em ordem cronológica (`pypdf`, já dependência do **núcleo** desde a
+  criação do subpacote — sem extra dedicado); decide por **evidência**
+  (botão "Gerar Relatório" ou a mensagem de "sem dados" do CIS), nunca por
+  timeout silencioso — bloco sem dados entra em `blocos_sem_dados` (não é
+  erro), enquanto um erro de verdade no meio de um bloco aborta a pessoa
+  inteira (`ExtracaoFichaEsiapeInterrompida`, com `blocos_processados` e
+  `causa` — os PDFs já salvos permanecem em disco). `DadosFuncionaisOrgao`
+  consulta o `CDCOINDFUN` para descobrir deterministicamente o órgão
+  anterior e o ano de ingresso de quem migrou (sem sondar ficha mês a mês).
+  `FichaMultiOrgao` encadeia os dois: extrai a faixa do órgão ativo, troca a
+  habilitação para o órgão anterior e repete, respeitando a regra de que o
+  **ano da virada pertence aos dois órgãos**; devolve um PDF único mesclado,
+  a `trilha` percorrida, `lacunas`/`falhas_tecnicas` sempre declaradas (nunca
+  levanta por uma lacuna legítima) e `voltou_ao_orgao_inicial` (a próxima
+  matrícula do lote não pode ser consultada no órgão errado). Comportamento
+  portado do extrator validado em produção, com o lote multi-órgão real
+  **14/14** confirmando o encadeamento e o retorno ao órgão inicial.
+  **PENDENTE: verificação ao vivo do módulo público** (as três classes ainda
+  não foram exercitadas contra o e-SIAPE real nesta versão generalizada).
 - **Subpacote `integra_gov.esiape`** — automação do e-SIAPE **web**
   (CIS/Software AG), **multiplataforma** (roda no mesmo `driver` Selenium do
   SEI, sem `pywinauto`/extra dedicado). Camadas: `navegacao` (frames
