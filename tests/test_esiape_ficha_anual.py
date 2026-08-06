@@ -199,6 +199,40 @@ def test_selecionar_ano_sem_campo_levanta_transacao_nao_abriu(tmp_path):
             ficha._selecionar_ano(FichaAnualServidor.SEL_ANO_INICIO, 2008)
 
 
+def test_disparar_consulta_clica_opcao_e_avanca(tmp_path):
+    wa0 = FrameFake("WA0", visivel=True)
+    opcao = ElementoFake()
+    avanca = ElementoFake()
+    wa0.elementos[FichaAnualServidor.SEL_OPCAO_CONSULTA] = [opcao]
+    wa0.elementos[FichaAnualServidor.SEL_AVANCA] = [avanca]
+    raiz = FrameFake()
+    raiz.filhos = [wa0]
+
+    driver = DriverFicha(raiz)
+    ficha = FichaAnualServidor(driver, pasta_saida=tmp_path)
+
+    ficha._disparar_consulta()
+
+    assert opcao.cliques == 1
+    assert avanca.cliques == 1
+
+
+def test_disparar_consulta_sem_botao_avanca_levanta(tmp_path):
+    from integra_gov.esiape.exceptions import TransacaoNaoAbriu
+
+    wa0 = FrameFake("WA0", visivel=True)
+    wa0.elementos[FichaAnualServidor.SEL_OPCAO_CONSULTA] = [ElementoFake()]
+    raiz = FrameFake()
+    raiz.filhos = [wa0]  # sem SEL_AVANCA: opção existe, botão não aparece
+
+    driver = DriverFicha(raiz)
+    ficha = FichaAnualServidor(driver, pasta_saida=tmp_path)
+
+    with patch.object(FichaAnualServidor, "TIMEOUT_TELA", 0.05):
+        with pytest.raises(TransacaoNaoAbriu):
+            ficha._disparar_consulta()
+
+
 def test_imprimir_bloco_popup_download_e_renomeio(tmp_path):
     raiz, wa1, _mat = _arvore_fpemfichaf()
     driver = DriverFicha(raiz)

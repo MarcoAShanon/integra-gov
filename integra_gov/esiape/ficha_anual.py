@@ -67,6 +67,7 @@ class FichaAnualServidor:
     SEL_ANO_INICIO = '[data-testtoolid="w_ano_inicio"]'
     SEL_ANO_FIM = '[data-testtoolid="w_ano_fim"]'
     SEL_OPCAO_CONSULTA = '[data-testtoolid="w_opc_cons"]'
+    SEL_AVANCA = '[data-testtoolid="onClickBtnAvanca"]'
     SEL_GERAR_RELATORIO = '[data-testtoolid="onClickBtnGerarTodosSemestres"]'
     SEL_IMPRIMIR = '[data-testtoolid="w_report.onGeneratePrintVersion"]'
     SEL_SAIR = '[data-testtoolid="onClickBtnSair"]'
@@ -223,10 +224,16 @@ class FichaAnualServidor:
         time.sleep(self.DELAY_PADRAO)
 
     def _disparar_consulta(self) -> None:
-        """Clica a opção de consulta e confirma com ENTER no elemento.
+        """Seleciona a opção de consulta e dispara a busca pelo botão Avança.
 
-        É a OPÇÃO DE CONSULTA (``SEL_OPCAO_CONSULTA``) que dispara a busca
-        na tela real — não o ENTER no campo de ano final.
+        Confirmado por despejo do DOM real da tela FPEMFICHAF (frame WA0):
+        ``SEL_OPCAO_CONSULTA`` aparece 3x como INPUT — são RADIO BUTTONS da
+        opção de consulta, e não um botão de submissão. Clicar o PRIMEIRO
+        deles apenas MARCA a opção (mantém o comportamento atual — é a opção
+        default do extrator privado já validado). Quem de fato dispara a
+        consulta e leva à tela seguinte é o botão Avança (``SEL_AVANCA``):
+        com o radio + ENTER a tela ficava IDÊNTICA em 2s/5s/10s — a consulta
+        nunca era disparada.
         """
         if esperar_seletor(self.driver, self.SEL_OPCAO_CONSULTA,
                            timeout=self.TIMEOUT_TELA) is None:
@@ -234,8 +241,12 @@ class FichaAnualServidor:
         elemento = self.driver.find_element(By.CSS_SELECTOR,
                                             self.SEL_OPCAO_CONSULTA)
         elemento.click()
-        elemento.send_keys("\n")
-        time.sleep(1.5)
+
+        if esperar_seletor(self.driver, self.SEL_AVANCA,
+                           timeout=self.TIMEOUT_TELA) is None:
+            raise TransacaoNaoAbriu(self.TRANSACAO, self.SEL_AVANCA)
+        self.driver.find_element(By.CSS_SELECTOR, self.SEL_AVANCA).click()
+        time.sleep(self.DELAY_PADRAO)
 
     def _texto_da_tela(self) -> str:
         """Texto concatenado de TODOS os frames visíveis (best-effort)."""
