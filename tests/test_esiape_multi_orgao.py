@@ -223,6 +223,57 @@ def test_sem_habilitacao_no_anterior_declara_lacuna_e_entrega(tmp_path):
     assert r.voltou_ao_orgao_inicial is True       # nunca saiu do 22222
 
 
+def test_consulta_cdcoindfun_falha_no_meio_entrega_parcial(tmp_path):
+    from integra_gov.esiape.exceptions import TransacaoNaoAbriu
+
+    multi = FichaMultiOrgao(_driver(), orgao_inicial="22222",
+                            pasta_saida=tmp_path)
+
+    def consultar(self, matricula, orgao):
+        if orgao == "22222":
+            return DadosFuncionais("11111", matricula, 2014, "11DEZ2014")
+        raise TransacaoNaoAbriu("CDCOINDFUN", "x")
+
+    def extrair_ficha(self, matricula, ano_inicial, ano_final):
+        return _resultado_ficha(tmp_path, matricula, ano_inicial, ano_final)
+
+    with patch("integra_gov.esiape.ficha_multi_orgao."
+               "DadosFuncionaisOrgao.consultar", consultar), \
+         patch("integra_gov.esiape.ficha_multi_orgao."
+               "FichaAnualServidor.extrair", extrair_ficha), \
+         patch("integra_gov.esiape.ficha_multi_orgao."
+               "TrocaHabilitacaoEsiape.trocar", lambda self: None):
+        r = multi.extrair("0000001", 2008, 2026)
+
+    assert r.pdf is not None  # parcial do 1o órgão entregue
+    assert any("dados funcionais falhou" in lac for lac in r.lacunas)
+    assert r.voltou_ao_orgao_inicial is True
+
+
+def test_faixa_sem_dados_legitimo_nao_e_falha_tecnica(tmp_path):
+    multi = FichaMultiOrgao(_driver(), orgao_inicial="22222",
+                            pasta_saida=tmp_path)
+
+    def consultar(self, matricula, orgao):
+        return DadosFuncionais(None, None, 2008, "01JAN2008")
+
+    def extrair_ficha(self, matricula, ano_inicial, ano_final):
+        return ResultadoFichaEsiape(pdf=None,
+                                    blocos_sem_dados=[(2008, 2026)])
+
+    with patch("integra_gov.esiape.ficha_multi_orgao."
+               "DadosFuncionaisOrgao.consultar", consultar), \
+         patch("integra_gov.esiape.ficha_multi_orgao."
+               "FichaAnualServidor.extrair", extrair_ficha), \
+         patch("integra_gov.esiape.ficha_multi_orgao."
+               "TrocaHabilitacaoEsiape.trocar", lambda self: None):
+        r = multi.extrair("0000001", 2008, 2026)
+
+    assert r.pdf is None
+    assert r.lacunas == []
+    assert r.falhas_tecnicas == []
+
+
 def test_retorno_ao_orgao_inicial_falha_sinaliza(tmp_path):
     multi = FichaMultiOrgao(_driver(), orgao_inicial="22222",
                             pasta_saida=tmp_path)

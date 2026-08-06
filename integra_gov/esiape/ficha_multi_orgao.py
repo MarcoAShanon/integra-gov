@@ -84,15 +84,28 @@ class FichaMultiOrgao:
                 break
             visitados.add((orgao, mat))
 
-            dados = DadosFuncionaisOrgao(self.driver).consultar(mat, orgao)
+            try:
+                dados = DadosFuncionaisOrgao(self.driver).consultar(mat, orgao)
+            except EsiapeError as exc:
+                falta = f"{ano_inicial}-{pendente_ate}"
+                msg = (f"{falta} (órgão {orgao}): consulta de dados "
+                       f"funcionais falhou ({exc})")
+                _log.error(msg)
+                r.lacunas.append(msg)
+                r.falhas_tecnicas.append(msg)
+                break
             ano_de = (max(int(ano_inicial), dados.ano_ingresso)
                       if dados.ano_ingresso else int(ano_inicial))
 
             if ano_de <= pendente_ate:
-                pdf = self._extrair_faixa(mat, ano_de, pendente_ate, orgao)
+                pdf, sem_dados = self._extrair_faixa(mat, ano_de,
+                                                      pendente_ate, orgao)
                 if pdf is not None:
                     pdfs.append((ano_de, pdf))
                     r.trilha.append((orgao, mat, ano_de, pendente_ate))
+                elif sem_dados:
+                    _log.info("Faixa %d-%d sem dados no órgão %s — "
+                              "seguindo", ano_de, pendente_ate, orgao)
                 else:
                     msg = (f"{ano_de}-{pendente_ate} (órgão {orgao}): "
                            f"extração falhou após "
@@ -161,9 +174,16 @@ class FichaMultiOrgao:
         TrocaHabilitacaoEsiape(self.driver, orgao=orgao).trocar()
 
     def _extrair_faixa(self, matricula: str, ano_de: int, ano_ate: int,
-                       orgao: str) -> Path | None:
+                       orgao: str) -> tuple[Path | None, bool]:
         """Uma faixa com retry (falha intermitente de popup não pode custar
-        a pessoa). ``None`` = falhou todas as tentativas."""
+        a pessoa).
+
+        Devolve ``(caminho, sem_dados)``: no sucesso, ``(caminho, False)``;
+        quando a faixa legitimamente não tem dados, ``(None, True)``
+        (não é falha técnica — não deve virar lacuna nem falha_tecnica);
+        quando as tentativas se esgotam por falha técnica, ``(None,
+        False)``.
+        """
         for tentativa in range(1, self.TENTATIVAS_POR_FAIXA + 1):
             fechar_janelas_extras(self.driver)
             limpar_overlay(self.driver)
@@ -185,9 +205,9 @@ class FichaMultiOrgao:
                 if unico.exists():
                     unico.unlink()
                 resultado.pdf.rename(unico)
-                return unico
-            return None  # faixa legitimamente sem dados
-        return None
+                return unico, False
+            return None, True  # faixa legitimamente sem dados
+        return None, False
 
     def _voltar_ao_orgao_inicial(self, orgao_atual: str,
                                  r: ResultadoMultiOrgao) -> None:
