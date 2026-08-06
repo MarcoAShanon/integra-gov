@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path  # noqa: F401
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -95,6 +95,61 @@ def test_sem_orgao_anterior_declara_lacuna(tmp_path):
     assert any("2008-2013" in lac for lac in r.lacunas)
 
 
+def test_ingresso_ilegivel_com_orgao_anterior_declara_lacuna(tmp_path):
+    """ano_ingresso ilegível (None) COM órgão anterior presente: hoje o
+    break de 'cobertura alcançou' dispara sem declarar nada e os anos do
+    órgão anterior somem em silêncio — deve declarar a lacuna."""
+    multi = FichaMultiOrgao(_driver(), orgao_inicial="22222",
+                            pasta_saida=tmp_path)
+
+    def consultar(self, matricula, orgao):
+        return DadosFuncionais("11111", "0000001", None, None)
+
+    def extrair_ficha(self, matricula, ano_inicial, ano_final):
+        return _resultado_ficha(tmp_path, matricula, ano_inicial, ano_final)
+
+    with patch("integra_gov.esiape.ficha_multi_orgao."
+               "DadosFuncionaisOrgao.consultar", consultar), \
+         patch("integra_gov.esiape.ficha_multi_orgao."
+               "FichaAnualServidor.extrair", extrair_ficha), \
+         patch("integra_gov.esiape.ficha_multi_orgao."
+               "TrocaHabilitacaoEsiape.trocar", lambda self: None):
+        r = multi.extrair("0000001", 2008, 2026)
+
+    # sem ano_ingresso legível, ano_de cai no ano_inicial: a faixa TODA é
+    # extraída no órgão atual (o CDCOINDFUN não é seguido)
+    assert r.trilha == [("22222", "0000001", 2008, 2026)]
+    assert any("órgão anterior 11111 não seguido" in lac for lac in r.lacunas)
+
+
+def test_pasta_download_repassada_a_ficha_anual(tmp_path):
+    """FichaMultiOrgao aceita pasta_download e repassa à FichaAnualServidor
+    de cada faixa (o driver precisa baixar sempre no mesmo lugar)."""
+    pasta_download = tmp_path / "downloads"
+    multi = FichaMultiOrgao(_driver(), orgao_inicial="22222",
+                            pasta_saida=tmp_path,
+                            pasta_download=pasta_download)
+    assert multi.pasta_download == pasta_download
+
+    def consultar(self, matricula, orgao):
+        return DadosFuncionais(None, None, 2008, "01JAN2008")
+
+    ficha_mock = MagicMock()
+    ficha_mock.return_value.extrair.return_value = _resultado_ficha(
+        tmp_path, "0000001", 2008, 2026)
+
+    with patch("integra_gov.esiape.ficha_multi_orgao."
+               "DadosFuncionaisOrgao.consultar", consultar), \
+         patch("integra_gov.esiape.ficha_multi_orgao.FichaAnualServidor",
+               ficha_mock), \
+         patch("integra_gov.esiape.ficha_multi_orgao."
+               "TrocaHabilitacaoEsiape.trocar", lambda self: None):
+        multi.extrair("0000001", 2008, 2026)
+
+    _, kwargs = ficha_mock.call_args
+    assert kwargs["pasta_download"] == pasta_download
+
+
 def test_relogin_pendente_rehabilita_antes_de_consultar(tmp_path):
     driver = _driver()
     driver._esiape_relogin_pendente = True
@@ -122,6 +177,29 @@ def test_relogin_pendente_rehabilita_antes_de_consultar(tmp_path):
         r = multi.extrair("0000001", 2008, 2026)
     assert "22222" in trocas  # re-habilitação aconteceu
     assert r.pdf is not None
+
+
+def test_rehabilitar_pre_laco_falha_declara_e_nao_estoura(tmp_path):
+    """Flag de relogin pendente ANTES do laço: se a re-habilitação falhar
+    (HabilitacaoNaoEncontrada), extrair() não deve estourar — declara a
+    falha e devolve, honestamente, sem nada extraído."""
+    from integra_gov.esiape.exceptions import HabilitacaoNaoEncontrada
+
+    driver = _driver()
+    driver._esiape_relogin_pendente = True
+    multi = FichaMultiOrgao(driver, orgao_inicial="22222",
+                            pasta_saida=tmp_path)
+
+    def trocar(self):
+        raise HabilitacaoNaoEncontrada(self.orgao, [])
+
+    with patch("integra_gov.esiape.ficha_multi_orgao."
+               "TrocaHabilitacaoEsiape.trocar", trocar):
+        r = multi.extrair("0000001", 2008, 2026)
+
+    assert r.pdf is None
+    assert any("re-habilitação" in f for f in r.falhas_tecnicas)
+    assert any("re-habilitação" in lac for lac in r.lacunas)
 
 
 def test_falha_intermitente_retenta_faixa(tmp_path):
@@ -192,6 +270,7 @@ def test_ciclo_detectado_para(tmp_path):
                "TrocaHabilitacaoEsiape.trocar", lambda self: None):
         r = multi.extrair("0000001", 2008, 2026)
     assert len(r.trilha) <= 2  # parou no ciclo, não loopou até max_saltos
+    assert any("ciclo de órgãos detectado" in lac for lac in r.lacunas)
 
 
 def test_sem_habilitacao_no_anterior_declara_lacuna_e_entrega(tmp_path):

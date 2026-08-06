@@ -234,6 +234,25 @@ def test_extrair_blocos_com_e_sem_dados_mescla_e_renomeia(tmp_path):
     assert r.pdf.exists() and r.duracao_s >= 0
 
 
+def test_extrair_bloco_unico_fim_a_fim_sem_colisao_de_nome(tmp_path):
+    """Faixa que cabe num único bloco: o bloco JÁ nasce com o mesmo nome do
+    destino mesclado. Copiar src==dst estourava PermissionError no Windows —
+    aqui não deve copiar, só reconhecer o próprio arquivo como resultado."""
+    ficha = FichaAnualServidor(DriverFicha(FrameFake()), pasta_saida=tmp_path)
+
+    def imprime(matricula, ano_de, ano_ate):
+        caminho = tmp_path / f"ficha_{matricula}_{ano_de}_{ano_ate}.pdf"
+        return pdf_minimo(caminho)
+
+    with patch.object(ficha, "_consultar_bloco", return_value=True), \
+         patch.object(ficha, "_imprimir_bloco", side_effect=imprime):
+        r = ficha.extrair("0000000", 2014, 2026)
+
+    esperado = tmp_path / "ficha_0000000_2014_2026.pdf"
+    assert r.pdf == esperado
+    assert esperado.exists()
+
+
 def test_extrair_todos_sem_dados_pdf_none(tmp_path):
     ficha = FichaAnualServidor(DriverFicha(FrameFake()), pasta_saida=tmp_path)
     with patch.object(ficha, "_consultar_bloco", return_value=False):

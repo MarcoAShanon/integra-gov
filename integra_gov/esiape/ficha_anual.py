@@ -134,9 +134,13 @@ class FichaAnualServidor:
             destino = (self.pasta_saida
                        / f"ficha_{matricula}_{ano_inicial}_{ano_final}.pdf")
             if len(resultado.pdfs_blocos) == 1:
-                import shutil
+                # faixa cabe num único bloco: o PDF do bloco já É o destino
+                # (mesmo caminho) — copiar src==dst estoura PermissionError
+                # no Windows, então só copia quando os caminhos diferem.
+                if resultado.pdfs_blocos[0] != destino:
+                    import shutil
 
-                shutil.copy2(resultado.pdfs_blocos[0], destino)
+                    shutil.copy2(resultado.pdfs_blocos[0], destino)
             else:
                 self._mesclar(resultado.pdfs_blocos, destino)
             resultado.pdf = destino

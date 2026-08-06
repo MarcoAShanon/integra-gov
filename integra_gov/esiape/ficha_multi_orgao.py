@@ -49,16 +49,20 @@ class FichaMultiOrgao:
         orgao_inicial: órgão da habilitação de partida (e de retorno).
         pasta_saida: destino dos PDFs.
         max_saltos: limite de órgãos encadeados (salvaguarda).
+        pasta_download: repassada à ``FichaAnualServidor`` de cada faixa
+            (ver docs — deve coincidir com a configuração do driver).
     """
 
     TENTATIVAS_POR_FAIXA = 2
 
     def __init__(self, driver, orgao_inicial: str, pasta_saida: Path,
-                 max_saltos: int = 5):
+                 max_saltos: int = 5, pasta_download: Path | None = None):
         self.driver = driver
         self.orgao_inicial = str(orgao_inicial).strip()
         self.pasta_saida = Path(pasta_saida)
         self.max_saltos = max_saltos
+        self.pasta_download = (Path(pasta_download)
+                               if pasta_download is not None else None)
 
     def extrair(self, matricula: str, ano_inicial: int, ano_final: int
                 ) -> ResultadoMultiOrgao:
@@ -76,11 +80,22 @@ class FichaMultiOrgao:
 
         fechar_janelas_extras(self.driver)
         limpar_overlay(self.driver)
-        self._rehabilitar_se_relogin(orgao)
+        try:
+            self._rehabilitar_se_relogin(orgao)
+        except EsiapeError as exc:
+            msg = (f"{ano_inicial}-{ano_final}: re-habilitação pós-relogin "
+                   f"falhou ({exc})")
+            r.lacunas.append(msg)
+            r.falhas_tecnicas.append(msg)
+            r.duracao_s = time.monotonic() - inicio
+            return r
 
         for _salto in range(self.max_saltos):
             if (orgao, mat) in visitados:
                 _log.warning("Ciclo detectado em %s/%s — parando", orgao, mat)
+                r.lacunas.append(
+                    f"{ano_inicial}-{pendente_ate}: ciclo de órgãos "
+                    f"detectado em {orgao}")
                 break
             visitados.add((orgao, mat))
 
@@ -114,6 +129,10 @@ class FichaMultiOrgao:
                     r.falhas_tecnicas.append(msg)
 
             if ano_de <= int(ano_inicial):
+                if dados.ano_ingresso is None and dados.orgao_anterior:
+                    r.lacunas.append(
+                        f"órgão anterior {dados.orgao_anterior} não "
+                        f"seguido: ano de ingresso ilegível no CDCOINDFUN")
                 _log.info("Cobertura alcançou %d — completo", ano_inicial)
                 break
             if not dados.orgao_anterior:
@@ -187,10 +206,11 @@ class FichaMultiOrgao:
         for tentativa in range(1, self.TENTATIVAS_POR_FAIXA + 1):
             fechar_janelas_extras(self.driver)
             limpar_overlay(self.driver)
-            self._rehabilitar_se_relogin(orgao)
             try:
+                self._rehabilitar_se_relogin(orgao)
                 resultado = FichaAnualServidor(
-                    self.driver, pasta_saida=self.pasta_saida
+                    self.driver, pasta_saida=self.pasta_saida,
+                    pasta_download=self.pasta_download,
                 ).extrair(matricula, ano_de, ano_ate)
             except Exception as exc:
                 _log.warning("Faixa %d-%d falhou (tentativa %d): %s",
