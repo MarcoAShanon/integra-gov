@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select
 
 from .exceptions import (
     ExtracaoFichaEsiapeInterrompida,
@@ -65,6 +66,7 @@ class FichaAnualServidor:
     SEL_MATRICULA = '[data-testtoolid="w_matr_infor_alfa"]'
     SEL_ANO_INICIO = '[data-testtoolid="w_ano_inicio"]'
     SEL_ANO_FIM = '[data-testtoolid="w_ano_fim"]'
+    SEL_OPCAO_CONSULTA = '[data-testtoolid="w_opc_cons"]'
     SEL_GERAR_RELATORIO = '[data-testtoolid="onClickBtnGerarTodosSemestres"]'
     SEL_IMPRIMIR = '[data-testtoolid="w_report.onGeneratePrintVersion"]'
     SEL_SAIR = '[data-testtoolid="onClickBtnSair"]'
@@ -76,6 +78,9 @@ class FichaAnualServidor:
     TIMEOUT_DOWNLOAD = 60
     DELAY_CURTO = 0.3
     DELAY_PADRAO = 1.0
+    # tela real: após ENTER na matrícula, os campos de ano (e às vezes o
+    # FRAME inteiro — os WA* se revezam) demoram a renderizar.
+    DELAY_ANTES_ANO = 2.5
 
     def __init__(self, driver, pasta_saida: Path,
                  pasta_download: Path | None = None):
@@ -173,20 +178,14 @@ class FichaAnualServidor:
         campo = self.driver.find_element(By.CSS_SELECTOR, self.SEL_MATRICULA)
         campo.clear()
         campo.send_keys(matricula)
-        time.sleep(self.DELAY_CURTO)
-        for seletor, valor in ((self.SEL_ANO_INICIO, str(ano_de)),
-                               (self.SEL_ANO_FIM, str(ano_ate))):
-            try:
-                el = self.driver.find_element(By.CSS_SELECTOR, seletor)
-                el.clear()
-                el.send_keys(valor)
-                time.sleep(self.DELAY_CURTO)
-            except Exception as exc:
-                raise TransacaoNaoAbriu(self.TRANSACAO, seletor) from exc
+        # ENTER no próprio campo é o que faz a tela renderizar os campos de
+        # período (os campos de ano nem existem antes disso).
+        campo.send_keys("\n")
+        time.sleep(self.DELAY_ANTES_ANO)
 
-        # dispara a consulta (ENTER no campo de ano final)
-        self.driver.find_element(By.CSS_SELECTOR, self.SEL_ANO_FIM
-                                 ).send_keys("\n")
+        self._selecionar_ano(self.SEL_ANO_INICIO, ano_de)
+        self._selecionar_ano(self.SEL_ANO_FIM, ano_ate)
+        self._disparar_consulta()
 
         # decide por EVIDÊNCIA: relatório disponível OU mensagem de sem-dados
         limite = time.monotonic() + self.TIMEOUT_CONSULTA
@@ -206,6 +205,37 @@ class FichaAnualServidor:
             f"respondeu nem com relatório nem com '{self.MSG_SEM_DADOS}' em "
             f"{self.TIMEOUT_CONSULTA}s — matrícula fora da habilitação ativa?"
         )
+
+    def _selecionar_ano(self, seletor: str, ano: int) -> None:
+        """Seleciona o ``ano`` num dropdown de período (ano início/fim).
+
+        Localiza o seletor de forma frame-aware (``esperar_seletor``) —
+        depois do ENTER na matrícula os campos de ano podem ter mudado de
+        FRAME (os iframes WA* se revezam), então nunca usar
+        ``find_element`` direto no frame antigo. É um ``<select>`` real:
+        usa :class:`~selenium.webdriver.support.ui.Select` (não digitação).
+        """
+        if esperar_seletor(self.driver, seletor,
+                           timeout=self.TIMEOUT_TELA) is None:
+            raise TransacaoNaoAbriu(self.TRANSACAO, seletor)
+        elemento = self.driver.find_element(By.CSS_SELECTOR, seletor)
+        Select(elemento).select_by_value(str(ano))
+        time.sleep(self.DELAY_PADRAO)
+
+    def _disparar_consulta(self) -> None:
+        """Clica a opção de consulta e confirma com ENTER no elemento.
+
+        É a OPÇÃO DE CONSULTA (``SEL_OPCAO_CONSULTA``) que dispara a busca
+        na tela real — não o ENTER no campo de ano final.
+        """
+        if esperar_seletor(self.driver, self.SEL_OPCAO_CONSULTA,
+                           timeout=self.TIMEOUT_TELA) is None:
+            raise TransacaoNaoAbriu(self.TRANSACAO, self.SEL_OPCAO_CONSULTA)
+        elemento = self.driver.find_element(By.CSS_SELECTOR,
+                                            self.SEL_OPCAO_CONSULTA)
+        elemento.click()
+        elemento.send_keys("\n")
+        time.sleep(1.5)
 
     def _texto_da_tela(self) -> str:
         """Texto concatenado de TODOS os frames visíveis (best-effort)."""

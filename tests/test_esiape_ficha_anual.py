@@ -134,21 +134,24 @@ def test_consultar_bloco_com_dados(tmp_path):
     driver = DriverFicha(raiz)
     driver.resultado_script = ""  # texto da tela sem MSG_SEM_DADOS
     ficha = FichaAnualServidor(driver, pasta_saida=tmp_path)
-    # após a consulta, o botão Gerar Relatório aparece = tem dados
-    _click_mat = matricula.send_keys
 
-    def mat_keys(*teclas):
-        _click_mat(*teclas)
+    # Select() não funciona com os fakes — isola os passos Selenium-
+    # específicos (dropdowns de ano + opção de consulta) via mock. O mock
+    # de _disparar_consulta é quando a tela real revela o relatório.
+    def disparar():
         wa1.elementos[FichaAnualServidor.SEL_GERAR_RELATORIO] = [ElementoFake()]
 
-    matricula.send_keys = mat_keys
-    assert ficha._consultar_bloco("0000000", 2008, 2022) is True
+    with patch.object(ficha, "_selecionar_ano") as mock_ano, \
+         patch.object(ficha, "_disparar_consulta", side_effect=disparar):
+        assert ficha._consultar_bloco("0000000", 2008, 2022) is True
+
     assert "0000000" in matricula.teclas
+    assert "\n" in matricula.teclas
+    mock_ano.assert_any_call(FichaAnualServidor.SEL_ANO_INICIO, 2008)
+    mock_ano.assert_any_call(FichaAnualServidor.SEL_ANO_FIM, 2022)
 
 
 def test_consultar_bloco_sem_dados_devolve_false(tmp_path):
-    from unittest.mock import patch
-
     raiz, wa1, matricula = _arvore_fpemfichaf()
     driver = DriverFicha(raiz)
 
@@ -159,13 +162,19 @@ def test_consultar_bloco_sem_dados_devolve_false(tmp_path):
 
     driver.resultado_script = roteiro
     ficha = FichaAnualServidor(driver, pasta_saida=tmp_path)
-    with patch.object(FichaAnualServidor, "TIMEOUT_CONSULTA", 0.05):
+    with patch.object(FichaAnualServidor, "TIMEOUT_CONSULTA", 0.05), \
+         patch.object(ficha, "_selecionar_ano") as mock_ano, \
+         patch.object(ficha, "_disparar_consulta") as mock_disparar:
         assert ficha._consultar_bloco("0000000", 2008, 2022) is False
+
+    assert "0000000" in matricula.teclas
+    assert "\n" in matricula.teclas
+    mock_ano.assert_any_call(FichaAnualServidor.SEL_ANO_INICIO, 2008)
+    mock_ano.assert_any_call(FichaAnualServidor.SEL_ANO_FIM, 2022)
+    mock_disparar.assert_called_once()
 
 
 def test_consultar_bloco_tela_nao_abre_levanta(tmp_path):
-    from unittest.mock import patch
-
     driver = DriverFicha(FrameFake())  # sem lupa, sem nada
     driver.resultado_script = ""
     ficha = FichaAnualServidor(driver, pasta_saida=tmp_path)
@@ -175,6 +184,19 @@ def test_consultar_bloco_tela_nao_abre_levanta(tmp_path):
     with patch.object(nav, "garantir_menu", lambda d, timeout=60: False):
         with pytest.raises(TransacaoNaoAbriu):
             ficha._consultar_bloco("0000000", 2008, 2022)
+
+
+def test_selecionar_ano_sem_campo_levanta_transacao_nao_abriu(tmp_path):
+    from integra_gov.esiape import ficha_anual as fmod
+    from integra_gov.esiape.exceptions import TransacaoNaoAbriu
+
+    driver = DriverFicha(FrameFake())  # árvore sem o seletor de ano
+    ficha = FichaAnualServidor(driver, pasta_saida=tmp_path)
+    # esperar_seletor é importado por nome em ficha_anual.py — patchear
+    # nav.esperar_seletor não afetaria essa referência já vinculada.
+    with patch.object(fmod, "esperar_seletor", lambda *a, **k: None):
+        with pytest.raises(TransacaoNaoAbriu):
+            ficha._selecionar_ano(FichaAnualServidor.SEL_ANO_INICIO, 2008)
 
 
 def test_imprimir_bloco_popup_download_e_renomeio(tmp_path):
