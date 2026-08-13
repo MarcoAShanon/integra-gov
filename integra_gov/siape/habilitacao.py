@@ -4,12 +4,13 @@ Entra na tela de troca de habilitação, procura a habilitação desejada
 percorrendo as páginas e a seleciona. Mantém o histórico da última habilitação
 para evitar trocas redundantes.
 
-Suporta os dois modelos de acesso do SIAPE:
+Suporta os dois modelos de acesso do SIAPE — qual deles aparece na tela
+depende do **perfil de acesso** de cada pessoa:
 
 - **por UNIDADE** (clássico): habilitação ÓRGÃO + UPAG, linha com a coluna
   UNIDADE preenchida;
-- **por ÓRGÃO** (desde 22/07/2026): a coluna UNIDADE vem vazia e o nível de
-  acesso é ``ORGAO`` — não há mais UPAG para quem migrou.
+- **por ÓRGÃO** (categoria OPERAC): a coluna UNIDADE vem vazia e o nível de
+  acesso é ``ORGAO`` — nesse perfil não há UPAG a informar.
 
 Requer um terminal já conectado/autenticado — use :class:`ConexaoTerminal3270`
 para o acesso, e compartilhe o mesmo :class:`ControleTerminal3270`.
@@ -124,13 +125,13 @@ class TrocaHabilitacao:
         Quando ``upag`` foi informada, o candidato exato ÓRGÃO+UPAG vem
         primeiro (comportamento clássico, acesso a nível de UNIDADE); o
         candidato de nível ÓRGÃO (coluna UNIDADE vazia, nível de acesso
-        ``ORGAO``) vem sempre por último, como fallback para acessos migrados
-        (SIAPE, desde 22/07/2026). Sem ``upag``, só o candidato de nível ÓRGÃO
-        é tentado.
+        ``ORGAO``) vem sempre por último, como fallback para os perfis que
+        têm a habilitação nesse nível. Sem ``upag``, só o candidato de nível
+        ÓRGÃO é tentado.
 
-        A ordem importa: se o fallback fosse tentado primeiro, quem ainda tem
-        as DUAS linhas (unidade e órgão) passaria a cair sempre na mais ampla
-        — mudança de comportamento silenciosa para quem não migrou.
+        A ordem importa: se o fallback fosse tentado primeiro, quem tem as
+        DUAS linhas (unidade e órgão) passaria a cair sempre na mais ampla —
+        mudança de comportamento silenciosa para o acesso por unidade.
         """
         candidatos: list[tuple[re.Pattern[str], str]] = []
         if self.upag:

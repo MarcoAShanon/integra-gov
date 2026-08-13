@@ -6,15 +6,17 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não publicado]
 
 ### Alterado
-- `integra_gov.siape.TrocaHabilitacao`: **`upag` vira opcional**. Em
-  22/07/2026 o SIAPE passou a conceder algumas habilitações a **nível de
-  ÓRGÃO** (categoria OPERAC): a linha da tela TROCAHAB vem com a coluna
-  UNIDADE vazia e o nível de acesso `ORGAO`, em vez do par ÓRGÃO+UPAG
-  clássico. A busca agora testa candidatos em ordem de preferência, em cada
-  página: com `upag` informada, primeiro o padrão exato ÓRGÃO+UPAG
-  (comportamento clássico, intacto); sempre, por último, o padrão de nível
-  ÓRGÃO (`orgao` seguido de `ORGAO` após os brancos) como fallback. Quem
-  ainda tem acesso por unidade não muda de comportamento; quem migrou cai no
+- `integra_gov.siape.TrocaHabilitacao`: **`upag` vira opcional** — o módulo
+  passou a contemplar as **duas formas** de escolher o órgão de trabalho na
+  tela TROCAHAB. Conforme o **perfil de acesso** de cada pessoa, a habilitação
+  pode vir vinculada ao par ÓRGÃO+UPAG (formato clássico, com a coluna
+  UNIDADE preenchida) ou concedida a **nível de ÓRGÃO** (categoria OPERAC):
+  aí a linha vem com a coluna UNIDADE vazia e o nível de acesso `ORGAO`. A
+  busca agora testa candidatos em ordem de preferência, em cada página: com
+  `upag` informada, primeiro o padrão exato ÓRGÃO+UPAG (comportamento
+  clássico, intacto); sempre, por último, o padrão de nível ÓRGÃO (`orgao`
+  seguido de `ORGAO` após os brancos) como fallback. Quem tem acesso por
+  unidade não muda de comportamento; quem tem no nível do órgão cai no
   fallback automaticamente, sem mudar chamadores. Sem `upag`, busca direto a
   habilitação de nível ÓRGÃO. A exceção `HabilitacaoNaoEncontrada` agora
   lista os candidatos tentados.
