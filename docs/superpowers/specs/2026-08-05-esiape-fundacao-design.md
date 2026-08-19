@@ -98,7 +98,7 @@ Seletores como constantes de módulo (valores observados ao vivo):
   → confirmação REAL pelo cabeçalho `[data-testtoolid="w_menu_orgao_usu"]`
   refletir o novo órgão → volta ao menu (`SELETOR_HOME`) → **limpa a flag
   de relogin** (pendência sanada).
-- `orgao_atual()`: órgão ativo lido do cabeçalho (ex.: `"40805"`), `None` se
+- `orgao_atual()`: órgão ativo lido do cabeçalho (ex.: `"99995"`), `None` se
   ilegível.
 - Sem habilitação no destino → `HabilitacaoNaoEncontrada` (lista o que a
   grade mostrou).

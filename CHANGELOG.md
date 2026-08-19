@@ -125,7 +125,7 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   **14/14** confirmando o encadeamento e o retorno ao órgão inicial.
   **Verificado ao vivo em 2026-08-06** contra o e-SIAPE real: militar
   reformado multi-órgão real, faixa 2008–2026, trilha de dois órgãos
-  (`[('40805', ..., 2014, 2026), ('17000', ..., 2008, 2014)]`) com o ano da
+  (`[('99995', ..., 2014, 2026), ('77000', ..., 2008, 2014)]`) com o ano da
   virada (2014) presente nos DOIS órgãos, `lacunas == []` e
   `voltou_ao_orgao_inicial=True`; PDF final mesclado com 22 páginas
   (13 + 9) cobrindo 2008–2026 (conferido com `pypdf`) em 108 s, atravessando

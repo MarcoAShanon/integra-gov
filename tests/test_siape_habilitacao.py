@@ -138,18 +138,18 @@ def _tela_com_linhas(conteudos: dict[int, str]) -> str:
 
 
 def test_upag_e_opcional_chamada_apenas_com_orgao():
-    troca = TrocaHabilitacao(_controle(), "40805")
+    troca = TrocaHabilitacao(_controle(), "99995")
     assert troca.upag == ""
 
 
 @pytest.mark.parametrize("upag_bruto", [None, "", "   "])
 def test_upag_normaliza_valores_vazios(upag_bruto):
-    troca = TrocaHabilitacao(_controle(), "40805", upag_bruto)
+    troca = TrocaHabilitacao(_controle(), "99995", upag_bruto)
     assert troca.upag == ""
 
 
 def test_candidatos_busca_com_upag_tem_dois_exato_primeiro():
-    troca = TrocaHabilitacao(_controle(), "40805", "000000002")
+    troca = TrocaHabilitacao(_controle(), "99995", "000000002")
     candidatos = troca._candidatos_busca()
     assert len(candidatos) == 2
     assert candidatos[0][1].startswith("ÓRGÃO+UPAG")
@@ -157,7 +157,7 @@ def test_candidatos_busca_com_upag_tem_dois_exato_primeiro():
 
 
 def test_candidatos_busca_sem_upag_tem_um_nivel_orgao():
-    troca = TrocaHabilitacao(_controle(), "40805")
+    troca = TrocaHabilitacao(_controle(), "99995")
     candidatos = troca._candidatos_busca()
     assert len(candidatos) == 1
     assert candidatos[0][1].startswith("nível ÓRGÃO")
@@ -170,13 +170,13 @@ def test_tela_antiga_com_upag_acha_exato_mesmo_com_nivel_orgao_presente():
     c = _controle()
     tela = _tela_com_linhas(
         {
-            12: "40805      ORGAO             OPERAC    22JUL2026            NAO",
-            13: "40805 000000002 UNIDADE       OPERAC    01JAN2026            NAO",
+            12: "99995      ORGAO             OPERAC    22JUL2026            NAO",
+            13: "99995 000000002 UNIDADE       OPERAC    01JAN2026            NAO",
         }
     )
     c.copiar_tela.return_value = tela
 
-    TrocaHabilitacao(c, "40805", "000000002").trocar()
+    TrocaHabilitacao(c, "99995", "000000002").trocar()
 
     enviados = [ch.args[0] for ch in c.enviar_teclas.call_args_list if ch.args]
     assert enviados.count("{TAB}") == 1  # linha 13 (exato), não a 12 (nível órgão)
@@ -185,23 +185,23 @@ def test_tela_antiga_com_upag_acha_exato_mesmo_com_nivel_orgao_presente():
 def test_tela_nova_nivel_orgao_via_fallback_quando_exato_nao_existe():
     """Tela nova (habilitação a nível de ÓRGÃO, SIAPE 22/07/2026): o exato
     ÓRGÃO+UPAG não existe mais, mas o fallback de nível ÓRGÃO encontra — e o
-    regex não confunde com órgãos vizinhos (40804/40806)."""
+    regex não confunde com órgãos vizinhos (99994/99996)."""
     c = _controle()
     tela = _tela_com_linhas(
         {
-            12: "26000           ORGAO             OPERAC    22JUL2026            NAO",
-            13: "40806           ORGAO             OPERAC    22JUL2026            NAO",
-            14: "40805           ORGAO             OPERAC    22JUL2026            NAO",
-            15: "40804           ORGAO             OPERAC    22JUL2026            NAO",
+            12: "88000           ORGAO             OPERAC    22JUL2026            NAO",
+            13: "99996           ORGAO             OPERAC    22JUL2026            NAO",
+            14: "99995           ORGAO             OPERAC    22JUL2026            NAO",
+            15: "99994           ORGAO             OPERAC    22JUL2026            NAO",
         }
     )
     c.copiar_tela.return_value = tela
 
-    # o regex de nível ÓRGÃO casa exatamente 1 vez na tela (não pega 40804/40806)
-    padrao = re.compile(re.escape("40805") + r"\s+ORGAO\b")
+    # o regex de nível ÓRGÃO casa exatamente 1 vez na tela (não pega 99994/99996)
+    padrao = re.compile(re.escape("99995") + r"\s+ORGAO\b")
     assert len(padrao.findall(tela)) == 1
 
-    TrocaHabilitacao(c, "40805", "000000002").trocar()
+    TrocaHabilitacao(c, "99995", "000000002").trocar()
 
     enviados = [ch.args[0] for ch in c.enviar_teclas.call_args_list if ch.args]
     assert enviados.count("{TAB}") == 2  # linha 14 - 12
@@ -210,11 +210,11 @@ def test_tela_nova_nivel_orgao_via_fallback_quando_exato_nao_existe():
 def test_tela_nova_sem_upag_encontra_direto():
     c = _controle()
     tela = _tela_com_linhas(
-        {12: "40805           ORGAO             OPERAC    22JUL2026            NAO"}
+        {12: "99995           ORGAO             OPERAC    22JUL2026            NAO"}
     )
     c.copiar_tela.return_value = tela
 
-    TrocaHabilitacao(c, "40805").trocar()
+    TrocaHabilitacao(c, "99995").trocar()
 
     enviados = [ch.args[0] for ch in c.enviar_teclas.call_args_list if ch.args]
     assert "X" in enviados
@@ -225,7 +225,7 @@ def test_habilitacao_nao_encontrada_lista_candidatos_tentados():
     c = _controle()
     c.copiar_tela.return_value = "tela sem nenhum candidato e sem continua"
     with pytest.raises(HabilitacaoNaoEncontrada) as exc_info:
-        TrocaHabilitacao(c, "40805", "000000002").trocar()
+        TrocaHabilitacao(c, "99995", "000000002").trocar()
     mensagem = str(exc_info.value)
     assert "ÓRGÃO+UPAG" in mensagem
     assert "nível ÓRGÃO" in mensagem
@@ -234,10 +234,10 @@ def test_habilitacao_nao_encontrada_lista_candidatos_tentados():
 def test_retrocompat_chamada_posicional_antiga():
     """Assinatura posicional antiga (controle, orgao, upag) continua válida."""
     c = _controle()
-    tela = _tela_com_texto_na_linha("40805 000000002", 13)
+    tela = _tela_com_texto_na_linha("99995 000000002", 13)
     c.copiar_tela.return_value = tela
 
-    TrocaHabilitacao(c, "40805", "000000002").trocar()
+    TrocaHabilitacao(c, "99995", "000000002").trocar()
 
     enviados = [ch.args[0] for ch in c.enviar_teclas.call_args_list if ch.args]
     assert "X" in enviados

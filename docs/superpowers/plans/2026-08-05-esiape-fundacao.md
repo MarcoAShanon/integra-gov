@@ -1236,7 +1236,7 @@ class TrocaHabilitacaoEsiape:
             raise ValueError("orgao é obrigatório")
 
     def orgao_atual(self) -> str | None:
-        """Órgão ativo lido do cabeçalho (ex.: ``"40805"``); ``None`` se
+        """Órgão ativo lido do cabeçalho (ex.: ``"99995"``); ``None`` se
         ilegível."""
         try:
             if procurar_em_frames(self.driver, self.SELETOR_ORGAO_ATIVO) is None:

@@ -147,7 +147,7 @@ class TrocaHabilitacao:
             )
         # O 'ORGAO' logo após os brancos (coluna UNIDADE vazia) é o
         # discriminador: não casa com linhas de unidade nem com órgãos
-        # vizinhos (ex.: 40804/40806 não casam com o padrão de 40805).
+        # vizinhos (ex.: 99994/99996 não casam com o padrão de 99995).
         candidatos.append(
             (
                 re.compile(re.escape(self.orgao) + r"\s+ORGAO\b"),
