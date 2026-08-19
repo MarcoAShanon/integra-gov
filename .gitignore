@@ -51,3 +51,6 @@ nul
 * - Copy.*
 *.bak
 *.backup*
+
+# Fichas financeiras reais (referencia local) - NUNCA versionar
+fichas/

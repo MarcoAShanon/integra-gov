@@ -1062,3 +1062,157 @@ if not resultado.voltou_ao_orgao_inicial:
     print("ATENÇÃO — reabilitar antes do próximo da fila:",
           resultado.falhas_tecnicas)
 ```
+
+---
+
+## Ler uma ficha financeira
+
+Os módulos anteriores **produzem** o PDF da ficha. Este o **lê de volta como
+dados**: recebe o arquivo — de servidor, aposentado, pensionista ou
+instituidor — e devolve os lançamentos estruturados. Ele não decide nada de
+negócio; quem escolhe o que fazer com os números é o script que consome.
+
+```python
+from integra_gov.ficha_financeira import ler_ficha_financeira
+
+ficha = ler_ficha_financeira("ficha.pdf")   # caminho, bytes ou arquivo aberto
+
+print(ficha.identificacao.nome, ficha.identificacao.tipo.value)
+print(ficha.exercicio, ficha.emitido_em)
+
+for lanc in ficha.lancamentos:
+    print(lanc.competencia, lanc.rubrica, lanc.descricao,
+          lanc.valor, lanc.natureza.value)
+```
+
+Consultas de conveniência (leitura, não regra de negócio):
+
+```python
+ficha.rubricas()                    # ('00597', '00599', '00600')
+ficha.competencias()                # (Competencia(2024, 1), ...)
+ficha.por_rubrica("00597")          # em ordem cronológica ("597" também acha)
+ficha.por_competencia(2024, 11)     # tudo que caiu em novembro
+ficha.por_natureza(Natureza.DESCONTO)
+ficha.totais_de(2024, 11)           # os totais IMPRESSOS daquele mês
+ficha.to_dict()                     # serializável em JSON (Decimal → texto)
+```
+
+### Um PDF pode conter várias fichas
+
+`esiape.ficha_anual` mescla blocos de até 15 anos e `esiape.ficha_multi_orgao`
+mescla vários órgãos num arquivo só — com **matrícula e órgão mudando entre
+páginas**. Ler isso como "uma ficha" misturaria pessoas diferentes. A unidade
+de retorno é *uma identidade em um exercício*:
+
+```python
+from integra_gov.ficha_financeira import ler_fichas_financeiras
+
+for ficha in ler_fichas_financeiras("ficha_0000000_2008_2026.pdf"):
+    print(ficha.identificacao.matricula, ficha.identificacao.orgao_codigo,
+          ficha.exercicio, ficha.origem.paginas)
+```
+
+`ler_ficha_financeira()` atende o caso simples e levanta `MultiplasFichasError`
+quando há mais de uma — devolver a primeira seria escolher em silêncio por
+quem chamou.
+
+### A leitura se autoconfere
+
+A soma dos lançamentos de cada mês é comparada com o `TOTAL BRUTO`,
+`TOTAL DESCONTOS` e `TOTAL LÍQUIDO` **impressos na própria ficha**. Isso não é
+enfeite: é o que impede um erro de leitura de virar um número silenciosamente
+trocado.
+
+```python
+if ficha.consistente:               # gate de uma checagem só
+    ...
+else:
+    for aviso in ficha.avisos:
+        print(aviso.codigo, aviso.competencia, aviso.mensagem)
+
+    for total in ficha.totais:      # granularidade por mês
+        if not total.confere:
+            print("não fecha:", total.competencia)
+```
+
+Os códigos de aviso são **estáveis** (`CodigoAviso.MES_NAO_CONFERE`,
+`NATUREZA_INDEFINIDA`, `TOTAIS_AUSENTES`, `PAGINA_ILEGIVEL`), para decisão
+programática sem casar substring de mensagem.
+
+Duas classes de problema, tratadas de forma diferente de propósito:
+
+- **Divergência aritmética** (os totais não fecham) vira aviso e
+  `confere=False`. O dado degradado fica à vista e o consumidor decide.
+  `ler_fichas_financeiras(..., strict=True)` transforma em exceção.
+- **Perda de dado** (uma linha da tabela não reconhecida) levanta **sempre**,
+  com a linha e a página no payload. Total que não fecha é honesto por
+  construção; linha descartada em silêncio some sem rastro e deixa a ficha
+  parecendo íntegra estando incompleta.
+
+Mês sem totais impressos **não** é mês conferido: sai com `confere=False` e
+`TOTAIS_AUSENTES`. Não houve divergência porque não houve conferência.
+
+### A coluna R/D e a natureza dos lançamentos
+
+A ficha **não** imprime o marcador `R/D` em toda linha: ele aparece onde o
+grupo começa e as linhas seguintes o herdam. A biblioteca resolve isso na
+ordem impressa e expõe os dois lados:
+
+```python
+lanc.natureza             # Natureza.RENDIMENTO / DESCONTO / INDEFINIDA
+lanc.natureza_declarada   # "R", "D" ou None (herdado)
+lanc.natureza_inferida    # True quando veio por herança
+```
+
+A mesma rubrica pode ter naturezas **opostas** em meses diferentes — a 00599
+(adiantamento da gratificação natalina) é crédito em junho e débito em
+novembro. A natureza é do **lançamento**, nunca da rubrica.
+
+`Natureza.INDEFINIDA` é a admissão honesta de que não deu para determinar
+(linha sem marcador e sem grupo anterior). O mês que a contém nunca é dado por
+conferido, mesmo que os números batam: a soma está incompleta dos dois lados.
+
+### O PDF precisa ter camada de texto
+
+A biblioteca **não faz OCR** — reconhecer dígito por dígito em valor monetário
+troca centavos sem avisar. Um PDF impresso por um driver que converte as fontes
+em contorno vetorial fica visualmente perfeito e completamente ilegível por
+máquina. O caso conhecido é a impressora virtual **`Microsoft Print to PDF`**
+do Windows.
+
+Qualquer PDF que preserve o texto serve, **não importa a origem**: se o sistema
+oferecer download direto do arquivo, é a via mais segura (o PDF vem pronto do
+servidor, sem passar por driver de impressão); se for impressão, use um destino
+que não vetorize as fontes.
+
+O guard é público e reutilizável — vale para qualquer PDF que você acabou de
+gerar, não só para ficha financeira:
+
+```python
+from integra_gov.ficha_financeira import tem_camada_de_texto
+
+if not tem_camada_de_texto(caminho):
+    ...   # ilegível por máquina: obtenha outro antes de seguir o pipeline
+```
+
+Sem essa verificação, um PDF assim atravessa o pipeline inteiro em silêncio e
+entrega uma ficha sem lançamento nenhum, como se fosse uma ficha vazia
+legítima. `ler_fichas_financeiras()` já falha com `PdfSemTextoError` nesse caso,
+explicando o que fazer.
+
+### Os dois layouts
+
+São lidos o **relatório do SIAPE mainframe** (`L.A54120.DE`, monoespaçado,
+largura fixa, seis meses por página) e a **impressão web do e-SIAPE** (tabela
+por `|`, dois semestres por página). Cada página é classificada pelo seu
+próprio detector, então um PDF mesclado pode misturar os dois — `origem.layout`
+diz de onde cada ficha veio.
+
+Página com texto que não corresponde a nenhum dos dois levanta
+`LayoutNaoReconhecidoError`, com o número da página.
+
+Os dois foram validados contra PDFs reais. No caso do e-SIAPE, o corte por `|`
+foi escolhido por ser mais resistente que posição de coluna às variações da
+extração — e o round-trip confirmou: a estrutura sobrevive intacta, e o ruído da
+impressão (cabeçalho com data/hora, rodapé com a URL e o `SESSIONID`) é
+descartado sem virar lançamento.

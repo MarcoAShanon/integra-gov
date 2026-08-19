@@ -502,6 +502,65 @@ lacunas multi-órgão em [Ficha anual e multi-órgão
 (e-SIAPE)](docs/uso-basico.md#ficha-anual-e-multi-órgão-e-siape) no guia de
 uso básico.
 
+### Ler uma ficha financeira em PDF
+
+Os módulos acima **produzem** o PDF da ficha; este o **lê de volta como
+dados**. Recebe o arquivo — de servidor, aposentado, pensionista ou
+instituidor — e devolve os lançamentos estruturados: rubrica, descrição,
+competência, valor e natureza (rendimento ou desconto). Não decide nada de
+negócio: quem escolhe o que fazer é o script que consome.
+
+```python
+from integra_gov.ficha_financeira import ler_ficha_financeira
+
+ficha = ler_ficha_financeira("ficha.pdf")
+
+for lanc in ficha.por_rubrica("00597"):
+    print(lanc.competencia, lanc.valor, lanc.natureza.value)
+
+if not ficha.consistente:                 # a leitura não se autoconfirmou
+    for aviso in ficha.avisos:
+        print(aviso.codigo, aviso.mensagem)
+```
+
+Um PDF pode conter **várias fichas** — `ficha_anual` mescla até 15 anos e
+`ficha_multi_orgao` mescla vários órgãos num arquivo só, com matrícula e órgão
+mudando entre páginas. A unidade de retorno é *uma identidade em um
+exercício*, então a API principal é plural; a singular recusa escolher:
+
+```python
+from integra_gov.ficha_financeira import ler_fichas_financeiras
+
+for ficha in ler_fichas_financeiras("ficha_0000000_2008_2026.pdf"):
+    print(ficha.identificacao.matricula, ficha.exercicio,
+          len(ficha.lancamentos), ficha.consistente)
+```
+
+A leitura **se autoconfere**: a soma dos lançamentos de cada mês é comparada
+com o `TOTAL BRUTO`/`TOTAL DESCONTOS`/`TOTAL LÍQUIDO` impressos. Mês que não
+fecha volta com `confere=False` e aviso, em vez de devolver número trocado em
+silêncio. Perda de dado (linha não reconhecida) levanta sempre.
+
+Os dois layouts são lidos: o **relatório do SIAPE mainframe** (`L.A54120.DE`,
+monoespaçado) e a **impressão web do e-SIAPE** (tabela por `|`, dois semestres
+por página). Um mesmo PDF pode misturar os dois — cada ficha registra em
+`origem.layout` de onde veio.
+
+O PDF precisa ter **camada de texto** — a lib não faz OCR, porque reconhecer
+dígito em valor monetário troca centavos sem avisar. Ficha impressa por um
+driver que vetoriza as fontes (o caso conhecido é a impressora virtual
+`Microsoft Print to PDF` do Windows) falha com orientação em vez de devolver
+ficha vazia. O guard é reutilizável:
+
+```python
+from integra_gov.ficha_financeira import tem_camada_de_texto
+
+if not tem_camada_de_texto(caminho_do_pdf):
+    ...  # PDF ilegível por máquina: obtenha outro (download direto, se houver)
+```
+
+Detalhes em [Ler uma ficha financeira](docs/uso-basico.md#ler-uma-ficha-financeira).
+
 ## Módulos
 
 ### SEI — multiplataforma (núcleo)
@@ -557,6 +616,18 @@ uso básico.
 | `integra_gov.esiape.exceptions` | Exceções tipadas | ✅ |
 
 | _(planejado)_ | demais transações do e-SIAPE, utilidades | 🔜 |
+
+### Ficha financeira (leitura de PDF) — multiplataforma
+
+| Módulo | Descrição | Status |
+|--------|-----------|--------|
+| `integra_gov.ficha_financeira.modelo` | Contrato de dados: `FichaFinanceira`, `Lancamento`, `Competencia`, `TotaisMes`, `Aviso` | ✅ |
+| `integra_gov.ficha_financeira.leitura` | PDF → texto por página; `tem_camada_de_texto()` distingue PDF legível de PDF vetorizado | ✅ |
+| `integra_gov.ficha_financeira._layout_siape` | Parser do relatório do SIAPE mainframe (`L.A54120.DE`), largura fixa | ✅ |
+| `integra_gov.ficha_financeira._layout_esiape` | Parser da impressão web do e-SIAPE, tabela por `\|`, dois semestres por página | ✅ |
+| `integra_gov.ficha_financeira.conciliacao` | Resolve a natureza R/D herdada e confere os lançamentos contra os totais impressos | ✅ |
+| `integra_gov.ficha_financeira.api` | `ler_fichas_financeiras()` / `ler_ficha_financeira()`, com despacho de layout | ✅ |
+| `integra_gov.ficha_financeira.exceptions` | Exceções tipadas | ✅ |
 
 ## Como contribuir
 

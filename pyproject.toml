@@ -27,7 +27,10 @@ classifiers = [
 ]
 dependencies = [
     "selenium>=4.0",
-    "pypdf>=3.0",
+    # 4.0 introduziu extraction_mode="layout", de que a leitura de ficha
+    # financeira depende: no relatório do SIAPE a informação está na POSIÇÃO
+    # do caractere, e sem o modo layout as colunas se perdem.
+    "pypdf>=4.0",
 ]
 
 [project.optional-dependencies]

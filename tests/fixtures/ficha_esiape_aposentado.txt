@@ -1,0 +1,106 @@
+19/08/2026, 10:54                                                                                                                                                         $11/default/titlePrintVersionOutput$
+
+     Siape - Sistema Integrado de Administracao de Recursos Humanos                                                   Emitido em: 19/08/2026
+     Ficha Financeira referente a: 2026 - 1º Semestre
+
+     Órgão: 99999 - ORGAO FICTICIO DE TESTE                            Unid. Pagadora : 000000555 - UPAG FICTICIA - DF                       
+     DF
+     Reg. Jurídico:EST Situação Servidor:02 - APOSENTADO               Unid. Exercício: 000000777 - ORGAO EXERCICIO
+     Nome: 8888888 - BELTRANO DE TAL TESTE                                              Banco/Agência/C. Corrente: 999/00000-0/000000000000-0
+     Cargo/Lotação: 000000 X X                 Função/Exerc.:                           Localização: 000000031     Dep.IR/SF:      T.serv.:
+     ____________________________________________________________________________________________________________________________________________
+
+     Dados do responsável pela emissão
+     Nome: SERVIDOR DE TESTE                      Matrícula: 00000-0000000                     Data: 19/08/2026
+     ____________________________________________________________________________________________________________________________________________
+
+     Rubrica|              Nome Rubrica              |R/D|Seq.|    JAN     |    FEV     |    MAR     |    ABR     |    MAI     |    JUN
+      00005 |PROVENTO BASICO                         | R | 0  |    1.536,79|    1.536,79|    1.536,79|    1.613,63|    1.613,63|    1.613,63
+      00182 |ADIANT.GRATIF.NATALINA - AP             |   | 1  |            |            |            |            |            |    1.868,80
+      10289 |DECISAO JUDICIAL N TRAN JUG AP          |   | 0  |      867,26|      867,26|      867,26|      867,26|      867,26|      867,26
+      82881 |GDEXT - LEI 13.681/18 AP                |   | 0  |    1.196,31|    1.196,31|    1.196,31|    1.256,71|    1.256,71|    1.256,71
+      34113 |EMPREST BCO OFICIAL - CEF               | D | 1  |    1.260,12|    1.260,12|    1.260,12|    1.260,12|    1.260,12|    1.260,12
+      34334 |MENSALIDADE SINDICAL - SINDSEF          |   | 1  |       30,60|       30,60|       30,60|       31,76|       31,76|       31,76
+      34855 |MENSALIDADE SINDICAL - SINTERO          |   | 1  |       28,80|       28,80|       28,80|       29,90|       29,90|       29,90
+            |                                        |   |    |            |            |            |            |            |
+            |                                        |   |    |            |            |            |            |            |
+      ***** |TOTAL BRUTO                             |   |    |    3.600,36|    3.600,36|    3.600,36|    3.737,60|    3.737,60|    5.606,40
+      ***** |TOTAL DESCONTOS                         |   |    |    1.319,52|    1.319,52|    1.319,52|    1.321,78|    1.321,78|    1.321,78
+      ***** |TOTAL LÍQUIDO                           |   |    |    2.280,84|    2.280,84|    2.280,84|    2.415,82|    2.415,82|    4.284,62
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Siape - Sistema Integrado de Administracao de Recursos Humanos                                                   Emitido em: 19/08/2026
+     Ficha Financeira referente a: 2026 - 2º Semestre
+
+     Órgão: 99999 - ORGAO FICTICIO DE TESTE                            Unid. Pagadora : 000000555 - UPAG FICTICIA - DF                       
+     DF
+     Reg. Jurídico:EST Situação Servidor:02 - APOSENTADO               Unid. Exercício: 000000777 - ORGAO EXERCICIO
+     Nome: 8888888 - BELTRANO DE TAL TESTE                                              Banco/Agência/C. Corrente: 999/00000-0/000000000000-0
+     Cargo/Lotação: 000000 X X                 Função/Exerc.:                           Localização: 000000031     Dep.IR/SF:      T.serv.:
+     ____________________________________________________________________________________________________________________________________________
+
+     Dados do responsável pela emissão
+     Nome: SERVIDOR DE TESTE                      Matrícula: 00000-0000000                     Data: 19/08/2026
+     ____________________________________________________________________________________________________________________________________________
+
+     Rubrica|              Nome Rubrica              |R/D|Seq.|    JUL     |    AGO     |    SET     |    OUT     |    NOV     |    DEZ
+      00005 |PROVENTO BASICO                         | R | 0  |    2.825,50|            |            |            |            |
+      10289 |DECISAO JUDICIAL N TRAN JUG AP          |   | 0  |      867,26|            |            |            |            |
+      82881 |GDEXT - LEI 13.681/18 AP                |   | 0  |    2.878,76|            |            |            |            |
+      34113 |EMPREST BCO OFICIAL - CEF               | D | 1  |    1.260,12|            |            |            |            |
+      34334 |MENSALIDADE SINDICAL - SINDSEF          |   | 1  |       55,85|            |            |            |            |
+      34855 |MENSALIDADE SINDICAL - SINTERO          |   | 1  |       52,57|            |            |            |            |
+      99015 |IMPOSTO DE RENDA APO/PENSIONIS          |   | 0  |      134,43|            |            |            |            |
+            |                                        |   |    |            |            |            |            |            |
+            |                                        |   |    |            |            |            |            |            |
+      ***** |TOTAL BRUTO                             |   |    |    6.571,52|            |            |            |            |
+      ***** |TOTAL DESCONTOS                         |   |    |    1.502,97|            |            |            |            |
+      ***** |TOTAL LÍQUIDO                           |   |    |    5.068,55|            |            |            |            |
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+https://esiape.sigepe.gov.br/modsiape/servlet/StartCISPage?PAGEURL=/HTMLBasedGUI/popupdbquerypdfoutput.html&SESSIONID=TESTE000…                                                                                                                                                                                                                                  1/1

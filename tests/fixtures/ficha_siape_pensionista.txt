@@ -1,0 +1,40 @@
+SIAPE - SISTEMA INTEGRADO DE ADMINISTRACAO DE RECURSOS HUMANOS                                             PAGINA       :         1
+L.A54120.DE                                                                                                MES PAGAMENTO:   JAN2026
+FICHA FINANCEIRA PENSIONISTA REFERENTE A 2024                                                              EMITIDO EM   : 02JAN2026
+ORGAO : 99999 - ORGAO FICTICIO DE TESTE                    UNID.PAGADORA: 000000555 - ORGAO FICTICIO DE TESTE                  - DF
+UNID.LOCALIZ.: 000000777 - FICTIC     - DF                 UNID.CONTROLE: 000000777 - MINISTERIO FICTICIO DE TES               - DF
+BENEF: 99999999 - MARIA DA SILVA TESTE                           BANCO/AGENCIA/C.CORRENTE : 999/00000-0/000000000000-0  DEP.IR :
+INST.: 8888888  - JOAO PEREIRA TESTADO  
+------------------------------------------------------------------------------------------------------------------------------------
+DADOS DO RESPONSAVEL PELA EMISSAO
+NOME: SERVIDOR DE TESTE XYZ     MATRICULA: 00000-0000000    DATA: 02/01/2026
+------------------------------------------------------------------------------------------------------------------------------------
+   R U B R I C A                R/D SEQ           JAN            FEV            MAR            ABR            MAI            JUN
+------------------------------------------------------------------------------------------------------------------------------------
+00597 PENSAO COMPLEMENTAR - CIVI R  0           1.931,56       1.931,56       1.931,56       1.931,56       1.931,56       1.931,56
+00599 ADIANT.GRAT.NAT.BENEF.PENS    0                                                                                        965,78
+
+**** T O T A L   B R U T O          ****        1.931,56       1.931,56       1.931,56       1.931,56       1.931,56       2.897,34
+**** T O T A L   D E S C O N T O S  ****
+**** T O T A L   L I Q U I D O      ****        1.931,56       1.931,56       1.931,56       1.931,56       1.931,56       2.897,34
+
+SIAPE - SISTEMA INTEGRADO DE ADMINISTRACAO DE RECURSOS HUMANOS                                             PAGINA       :         2
+L.A54120.DE                                                                                                MES PAGAMENTO:   JAN2026
+FICHA FINANCEIRA PENSIONISTA REFERENTE A 2024                                                              EMITIDO EM   : 02JAN2026
+ORGAO : 99999 - ORGAO FICTICIO DE TESTE                    UNID.PAGADORA: 000000555 - ORGAO FICTICIO DE TESTE                  - DF
+UNID.LOCALIZ.: 000000777 - FICTIC     - DF                 UNID.CONTROLE: 000000777 - MINISTERIO FICTICIO DE TES               - DF
+BENEF: 99999999 - MARIA DA SILVA TESTE                           BANCO/AGENCIA/C.CORRENTE : 999/00000-0/000000000000-0  DEP.IR :
+INST.: 8888888  - JOAO PEREIRA TESTADO  
+------------------------------------------------------------------------------------------------------------------------------------
+DADOS DO RESPONSAVEL PELA EMISSAO
+NOME: SERVIDOR DE TESTE XYZ     MATRICULA: 00000-0000000    DATA: 02/01/2026
+------------------------------------------------------------------------------------------------------------------------------------
+   R U B R I C A                R/D SEQ           JUL            AGO            SET            OUT            NOV            DEZ
+------------------------------------------------------------------------------------------------------------------------------------
+00597 PENSAO COMPLEMENTAR - CIVI R  0           1.931,56       1.931,56       1.931,56       1.931,56       1.931,56       1.931,56
+00600 GRAT.NATALINA BENEF.PENSAO    0                                                                       1.931,56
+00599 ADIANT.GRAT.NAT.BENEF.PENS D  0                                                                         965,78
+
+**** T O T A L   B R U T O          ****        1.931,56       1.931,56       1.931,56       1.931,56       3.863,12       1.931,56
+**** T O T A L   D E S C O N T O S  ****                                                                      965,78
+**** T O T A L   L I Q U I D O      ****        1.931,56       1.931,56       1.931,56       1.931,56       2.897,34       1.931,56

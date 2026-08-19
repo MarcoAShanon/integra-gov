@@ -5,6 +5,58 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não publicado]
 
+### Adicionado
+- **Novo subpacote `integra_gov.ficha_financeira`** — leitura de ficha
+  financeira em PDF **como dados**. Recebe o arquivo (servidor, aposentado,
+  pensionista ou instituidor) e devolve os lançamentos estruturados: rubrica,
+  descrição, competência, valor e natureza (rendimento/desconto), num formato
+  neutro que qualquer script consome. Fecha o outro lado do ciclo: os módulos
+  `siape.ficha_pensionista`, `esiape.ficha_anual` e `esiape.ficha_multi_orgao`
+  **produzem** o PDF; este o lê de volta.
+  - API: `ler_fichas_financeiras(pdf)` devolve **uma ficha por identidade e
+    exercício** — um PDF mesclado (até 15 anos, vários órgãos) contém várias.
+    `ler_ficha_financeira(pdf)` atende o caso simples e levanta
+    `MultiplasFichasError` em vez de escolher uma em silêncio.
+  - **A leitura se autoconfere.** A soma dos lançamentos de cada mês é
+    comparada com o `TOTAL BRUTO`/`TOTAL DESCONTOS`/`TOTAL LÍQUIDO` impressos:
+    mês que não fecha volta com `confere=False` e `Aviso` de código estável,
+    e `FichaFinanceira.consistente` é o gate de uma checagem só. Divergência
+    aritmética é aviso (ou exceção, com `strict=True`); **perda de dado**
+    (linha da tabela não reconhecida) levanta sempre.
+  - A coluna `R/D` não é impressa em toda linha: o marcador aparece onde o
+    grupo começa e as seguintes o herdam. A resolução é determinística, na
+    ordem impressa, e a conferência contra os totais é que a **valida** — se a
+    herança estiver errada, o mês não fecha em vez de devolver um valor com o
+    sinal trocado. A mesma rubrica pode ter naturezas opostas em meses
+    diferentes (adiantamento da gratificação natalina é crédito em junho e
+    débito em novembro), então a natureza é do **lançamento**, não da rubrica.
+  - Valores em `Decimal`, sempre positivos, com o sinal na `Natureza` — sem
+    convenção contábil embutida e sem erro de arredondamento binário.
+  - `tem_camada_de_texto(pdf)` é público e reutilizável: distingue um PDF
+    legível por máquina de um impresso com as fontes convertidas em curva
+    vetorial (o caso conhecido é a impressora virtual `Microsoft Print to PDF`
+    do Windows). Sem esse guard, um PDF assim atravessa qualquer pipeline em
+    silêncio e produz uma ficha vazia que parece legítima. A biblioteca **não
+    faz OCR**: reconhecer dígito em valor monetário troca centavos sem avisar.
+  - **Dois layouts** são lidos: o relatório do **SIAPE mainframe**
+    (`L.A54120.DE`, monoespaçado, largura fixa) e a **impressão web do
+    e-SIAPE** (tabela por `|`, dois semestres por página). Cada página é
+    classificada pelo seu próprio detector, então um PDF mesclado pode
+    misturar os dois; `origem.layout` registra de onde cada ficha veio.
+  - Verificado contra fichas reais: a de pensionista (mainframe) fecha os 12
+    meses contra os totais impressos, e a de instituidor (e-SIAPE) fecha os 7
+    meses com lançamento — as duas sem aviso.
+  - Ambos validados contra PDFs reais, inclusive o **round-trip** da
+    impressão do e-SIAPE: a estrutura por `|` sobrevive à extração e o ruído
+    da impressão (cabeçalho com data/hora, rodapé com a URL) é descartado sem
+    virar lançamento.
+
+### Alterado
+- `pyproject.toml`: piso do `pypdf` subiu de `>=3.0` para `>=4.0`. O modo de
+  extração `layout` — de que a leitura da ficha depende, porque no relatório
+  do SIAPE a informação está na **posição** do caractere — só existe a partir
+  do 4.0. Com o piso antigo o pacote instalava e quebrava em runtime.
+
 ### Alterado
 - `integra_gov.siape.TrocaHabilitacao`: **`upag` vira opcional** — o módulo
   passou a contemplar as **duas formas** de escolher o órgão de trabalho na
