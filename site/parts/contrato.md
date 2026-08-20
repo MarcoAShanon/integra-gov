@@ -308,6 +308,27 @@ dentro de um `<h2>`. Na dúvida: mono.
 `.num` e `.num-g` já trazem `font-variant-numeric:tabular-nums` e o zero
 cortado. Não redeclare.
 
+### 5.4-b Onde mais o mono entra, e onde não entra
+
+A regra do § 5.4 diz o que **sempre** vai em mono (número). Faltava o resto, e
+sem isso cada fatia decide sozinha o que "merece" mono. A lista é fechada:
+
+**Vai em mono:**
+
+1. Todo número (`.num`, `.num-g`).
+2. Micro-rótulo em caixa alta: `.pill`, `.marca-desc`, `.ficha dt`, `.tabela th`.
+3. Eixo, valor e legenda de gráfico.
+4. Trecho de terminal ou de código.
+5. **Identificador técnico literal** — caminho de arquivo, comando, nome de
+   módulo, URL e e-mail. É o que o leitor copiaria caractere por caractere, e
+   é por isso que o mono ajuda: ele separa `l` de `1` e `O` de `0`.
+
+**Não vai em mono:** prosa, título, lede, rótulo de botão, nome de pessoa, nome
+de órgão. Nada fora dos cinco itens acima.
+
+O `$` do prompt no hero e o e-mail no rodapé são o item 5. O nome do órgão ao
+lado deles, não.
+
 ### 5.5 A escala tipográfica — oito degraus
 
 | token | valor | uso |
@@ -317,12 +338,19 @@ cortado. Não redeclare.
 | `--t-3` | `.94rem` | texto secundário, texto de botão, célula de tabela |
 | `--t-4` | `1.0625rem` (17px) | **corpo** — é o `font-size` do `body` |
 | `--t-5` | `1.3rem` | lede (o parágrafo de abertura de cada seção) e `h4` |
-| `--t-6` | `clamp(1.4rem, 1.22rem + .7vw, 1.7rem)` | `h3` |
+| `--t-6` | `clamp(1.4rem, 1.22rem + .7vw, 1.7rem)` | `h3` que abre um bloco da faixa |
 | `--t-7` | `clamp(1.85rem, 1.3rem + 2.4vw, 2.7rem)` | `h2` e `.num-g` |
 | `--t-8` | `clamp(2.35rem, 1.5rem + 3.8vw, 3.85rem)` | `h1` — existe **um** na página, no hero |
 
 Nenhum `font-size` fora desta escala. Se você precisa de um tamanho que não
 está aqui, o layout está errado, não a escala.
+
+**`h3` dentro de `.card` desce um degrau, para `--t-5`**, e isso já vem do
+sistema (`.card h3`). O `--t-6` é a medida de um `h3` que abre um bloco da
+faixa; dentro de um cartão ele compete com o `<h2>` da seção. Não é degrau novo
+na escala — é o mesmo `--t-5`, usado num segundo papel. A fatia 5 chegou a esta
+conclusão sozinha e estava certa; agora as cinco resolvem igual sem precisar
+chegar lá.
 
 O degrau `--t-4` → `--t-5` foi aberto de propósito, de 1,111 (≈2px) para 1,224
 (≈4px). No valor antigo o `.lede` se distinguia do corpo quase só pela cor, e o
@@ -469,8 +497,37 @@ São cores diferentes de mesma claridade: separadas por matiz, não por valor �
 some em escala de cinza, some para quem tem daltonismo, some para quem enxerga
 mal.
 
-Contra `--text`, ao contrário, `--acento-ink` mede **3,05:1** — o link se
-distingue do texto de corpo mesmo se o sublinhado sumir.
+**E esta tabela tem escopo.** Os números acima são do tema claro fora da faixa
+de tinta. A `.faixa.tinta` reescopa quinze tokens, e o tema escuro reescopa
+outros tantos — então a mesma pergunta dá outra resposta em cada lugar:
+
+| par | claro (faixas 01–04) | escuro, e a faixa de tinta nos dois temas |
+|---|---|---|
+| `--acento-ink` × `--text` | **3,05:1** | **1,68:1** |
+| `--ok` × `--text` | 2,99:1 | 1,76:1 |
+| `--acento-ink` × `--text-soft` | 1,07:1 | 1,19:1 |
+| `--ok` × `--text-soft` | 1,05:1 | 1,14:1 |
+
+Leia a tabela pela coluna, não pela linha, e note a assimetria que importa:
+
+- **As proibições sobrevivem em todo escopo.** Os pares de baixo ficam entre
+  1,05:1 e 1,19:1 em qualquer lugar — nunca se separam. A regra "nada colorido
+  dentro de texto `--text-soft`" vale igual nas cinco faixas e nos dois temas.
+- **As permissões, não.** `--acento-ink` × `--text` só chega a 3,05:1 no tema
+  claro fora da tinta. Em qualquer outro escopo cai para 1,68:1.
+
+Daí a segunda regra:
+
+> **Realce de cor dentro de texto nunca é o único portador de significado, e
+> dentro da `.faixa.tinta` não se usa realce de cor em texto** — lá ele não
+> separa em tema nenhum.
+
+O `<em>` âmbar do `<h1>` do hero é legítimo porque o hero é faixa clara e porque
+`<em>` é marcação semântica: o leitor de tela anuncia a ênfase, a cor é
+ornamento. Repetir o mesmo `<em>` num `<h2>` da faixa 05 seria confiar em
+1,68:1 e em mais nada. (A fatia 5 percebeu isso sozinha e não transportou o
+recurso. Estava certa — e é exatamente o tipo de acerto que não pode depender de
+o agente estar atento.)
 
 Daí a regra geral, que vale para qualquer fatia:
 
@@ -767,9 +824,21 @@ sublinhado.
 **Onde ele NÃO vive — e isto é regra, não gosto:** dentro de `.lede`,
 `.rodape`, `figcaption`, legenda, ou qualquer bloco em `--text-soft`. Ali ele
 mede **1,07:1** contra o texto vizinho (§ 6.2-b): mesma claridade, só outro
-matiz, e o sublinhado passa a ser a única coisa que o distingue. Precisa de um
-link num lede? Duas saídas, as duas legítimas: promova o parágrafo a `--text`,
-ou tire o link do lede e ponha a ação logo abaixo, como `.btn-s`.
+matiz, e o sublinhado passa a ser a única coisa que o distingue.
+
+Precisa de um link nesse tipo de bloco? **Três saídas, as três legítimas:**
+
+1. Promova o parágrafo a `--text`, e use `.link` normalmente.
+2. Tire o link do bloco e ponha a ação logo abaixo, como `.btn-s`.
+3. **Use `.link-neutro`** — quando o bloco é `--text-soft` *por primitiva* e não
+   dá para promover: o `.rodape` é assim, e precisa de links de contato e
+   repositório. `.link-neutro` herda a cor do bloco e se marca só pelo
+   sublinhado permanente. Em vez de fingir uma distinção por cor que mede
+   1,07:1, ele para de usar cor e passa a usar o único sinal que de fato
+   funciona ali — que é, aliás, o que o HTML sem CSS nenhum já fazia.
+
+A saída 3 foi encontrada pela fatia 5, que topou com o caso que as duas
+primeiras não cobrem.
 
 **Não use** para uma ação principal — isso é `.btn-p`. **Não use** em cima de
 um `.card` inteiro que já é `<a class="card">`.
@@ -842,6 +911,12 @@ use** para texto corrido com um rótulo: isso é um parágrafo com `<b>`.
 ### 8.3-i `.rodape`
 O bloco institucional, último dentro da faixa 05 (§ 4.1-b). Fio no topo, texto
 em `--t-2` e `--text-soft`.
+
+**Espera exatamente dois filhos diretos**, porque é um `space-between`: o bloco
+institucional à esquerda (órgão, revista, licença) e o de contato à direita
+(site, repositório, e-mail). Com um filho ele encosta à esquerda; com três, o
+do meio flutua sem alinhamento previsível. Links aqui são `.link-neutro`
+(§ 8.3-c), porque o bloco inteiro é `--text-soft`.
 **Não use** como faixa própria; não existe fatia 06.
 
 ### 8.3-j `.trilha`
@@ -875,6 +950,28 @@ delimitar nada.
 **Não use** como decoração de um parágrafo solto, nem aninhado dentro de outro
 `.card` (dois fios concêntricos é ruído). Se o cartão for um link inteiro, use
 `<a class="card">` — o sistema dá o hover de borda âmbar.
+
+### 8.4-b Alvo de toque: 44×44, e é do sistema
+
+Todo controle acionável tem **no mínimo 44×44 px CSS** de área de toque — a
+medida de um dedo. Isso é garantido pelas primitivas, não por você:
+
+| primitiva | como chega aos 44px |
+|---|---|
+| `.btn` | `min-height:44px` (sem ele fecha em 41: 12+15+12 mais 2 de fio) |
+| `.nav a` | caixa `inline-flex` de `min-height:44px` — a letra continua em `--t-3` |
+| `.skip` | `min-height:44px` |
+| `.lightbox-fechar` | 44×44 fixos |
+
+**Não conserte isso no seu prefixo.** A fatia 5 mediu 41px e corrigiu com
+`padding:var(--e-4) var(--e-5)`, chegando a 57px — conserto certo no lugar
+errado, que produziria cinco alturas de botão diferentes na mesma página. Se
+você encontrar um alvo abaixo de 44px, é defeito de primitiva: reporte.
+
+O caso do `.nav a` merece nota, porque a saída não foi aumentar a letra: a área
+de toque cresce pela **caixa**, não pelo tamanho do texto. O `.topo` já tem 44px
+de altura por causa da `.marca`, então os links passaram de 24px para 44px de
+caixa **sem mudar nada no desenho** — é área de toque de graça.
 
 ### 8.5 `.btn`, `.btn-p`, `.btn-s`
 Sempre `.btn` mais **uma** das duas variantes. `.btn-p` (âmbar preenchido) é a
@@ -1157,6 +1254,11 @@ E confira à mão, item por item:
 - [ ] nenhum `.link` e nenhum `✓` dentro de bloco em `--text-soft` (§ 6.2-b)
 - [ ] nenhuma `.pill` acima de 32 caracteres
 - [ ] se você mexeu em token de cor: `python site/auditar_contrato.py` limpo
+- [ ] nenhum realce de cor dentro de texto na faixa de tinta (§ 6.2-b)
+- [ ] nenhum controle acionável abaixo de 44×44 — e nenhum conserto disso no
+      seu prefixo (§ 8.4-b)
+- [ ] mono só nos cinco papéis do § 5.4-b
+- [ ] nenhum glifo colado em `content:` — use escape CSS (`"\2713"`)
 - [ ] nenhum `href="#"`; toda âncora aponta para um `id` existente
 - [ ] a hierarquia de títulos não pula degrau
 - [ ] você olhou a seção nos dois temas, claro e escuro

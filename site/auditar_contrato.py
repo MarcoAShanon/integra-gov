@@ -47,6 +47,19 @@ O QUE ELE CHECA
    aposentada, o ambar da marca que nao pode ser barra, a faixa do fio de
    cabelo) tambem sao recalculadas, em vez de ficarem de fora so por nao
    estarem numa tabela.
+5-b. ESCOPO — TODA checagem roda em TODOS os escopos, e o auditor prova
+   que rodou: ao final ele confere que a lista de escopos visitados e a
+   lista de escopos que existem. Nenhuma checagem pode trazer a sua
+   propria lista de escopos.
+
+   Isto tambem e cicatriz, e da MESMA forma de erro das outras tres, um
+   nivel acima: pergunta certa, medida certa, ESCOPO errado. A tabela de
+   vizinhanca do contrato nasceu medida so no :root e publicada como se
+   fosse universal — mas .faixa.tinta reescopa 15 tokens, e la dentro
+   --acento-ink x --text cai de 3,05:1 para 1,68:1. As PROIBICOES
+   sobreviviam (sao conservadoras); as PERMISSOES, nao. Uma checagem que
+   escolhe onde olhar acaba olhando onde o defeito nao esta.
+
 5. VIZINHANCA — contraste CONTRA O FUNDO e contraste ENTRE VIZINHOS sao
    perguntas diferentes, e a segunda ja nos pegou duas vezes: a rampa de
    dados (tres cores a 1,02:1 entre si, todas passando contra o fundo) e
@@ -78,6 +91,7 @@ from __future__ import annotations
 import pathlib
 import re
 import sys
+import unicodedata
 
 RAIZ = pathlib.Path(__file__).resolve().parent
 PARTS = RAIZ / "parts"
@@ -97,7 +111,10 @@ TOKENS_TEXTO = ("--text", "--text-soft", "--acento-ink", "--ok")
 TOKENS_GRAFICO = ("--dado", "--dado-neutro", "--dado-fraco")
 FUNDOS = ("--bg", "--fundo-alt", "--surface")
 
-_RE_COR = re.compile(r"(--[a-z0-9-]+)\s*:\s*(#[0-9A-Fa-f]{6})")
+# um token pode valer um hexadecimal OU um var() para outro token. Ler so
+# hexadecimal fazia o auditor enxergar um CSS que nao existe mais.
+_RE_COR = re.compile(r"(--[a-z0-9-]+)\s*:\s*(#[0-9A-Fa-f]{6}|var\(\s*--[a-z0-9-]+\s*\))")
+_RE_VAR = re.compile(r"var\(\s*(--[a-z0-9-]+)\s*\)")
 _RE_COMENTARIO = re.compile(r"/\*.*?\*/", re.S)
 
 
@@ -157,6 +174,26 @@ def _bloco(css: str, seletor: str, desde: int = 0) -> dict[str, str]:
     return dict(_RE_COR.findall(css[inicio : _fim(css, inicio)]))
 
 
+def _resolver(escopo: dict[str, str]) -> dict[str, str]:
+    """Troca cada valor `var(--x)` pelo valor de `--x` no mesmo escopo.
+
+    E o minimo de "resolver a cascata em vez de ler declaracoes": depois
+    do F4, as superficies de faixa sao `--surface:var(--surface-alt)`, e
+    um auditor que so lesse hexadecimal simplesmente nao veria mais o
+    valor do cartao das faixas pares.
+    """
+    resolvido = dict(escopo)
+    for _ in range(8):  # profundidade de sobra; corta ciclo por construcao
+        pendentes = {k: v for k, v in resolvido.items() if v.startswith("var(")}
+        if not pendentes:
+            break
+        for token, valor in pendentes.items():
+            alvo = _RE_VAR.match(valor).group(1)
+            if alvo in resolvido and resolvido[alvo] != valor:
+                resolvido[token] = resolvido[alvo]
+    return {k: v for k, v in resolvido.items() if v.startswith("#")}
+
+
 def paletas(css: str) -> dict[str, dict[str, str]]:
     """Os seis escopos de cor que a pagina pode apresentar."""
     css = _RE_COMENTARIO.sub("", css)
@@ -183,12 +220,15 @@ def paletas(css: str) -> dict[str, dict[str, str]]:
         escopo["--bg"] = escopo.get("--fundo-tinta", escopo["--bg"])
 
     return {
-        "claro": claro,
-        "claro/faixa par": alt_claro,
-        "escuro": escuro,
-        "escuro/faixa par": alt_escuro,
-        "tinta no tema claro": tinta_claro,
-        "tinta no tema escuro": tinta_escuro,
+        nome: _resolver(escopo)
+        for nome, escopo in (
+            ("claro", claro),
+            ("claro/faixa par", alt_claro),
+            ("escuro", escuro),
+            ("escuro/faixa par", alt_escuro),
+            ("tinta no tema claro", tinta_claro),
+            ("tinta no tema escuro", tinta_escuro),
+        )
     }
 
 
@@ -234,17 +274,113 @@ def _cor(referencia: str, paleta: dict[str, str]) -> str | None:
 # Pares que aparecem LADO A LADO e precisam se distinguir um do outro.
 # (rotulo, token A, token B, minimo, escopos)
 # (A rampa de dados tem checagem propria, mais acima.)
+# NENHUMA destas listas traz escopo: todas rodam em todos os escopos. Ver
+# o item 5-b da docstring — foi uma lista de escopos embutida numa
+# checagem que deixou a tabela do contrato valendo so no tema claro.
 PARES_VIZINHOS = (
-    ("o texto secundario ao lado do principal", "--text-soft", "--text", 1.8, ("claro", "escuro")),
+    ("o texto secundario ao lado do principal", "--text-soft", "--text", 1.8),
+)
+
+# Pares vizinhos cujos numeros o contrato PUBLICA (secao 6.2-b). Cada um e
+# recalculado em cada escopo, e cada valor tem que aparecer no contrato —
+# e o que obriga a tabela de la a ter uma coluna por escopo.
+VIZINHOS_PUBLICADOS = (
+    ("--acento-ink", "--text"),
+    ("--ok", "--text"),
+    ("--acento-ink", "--text-soft"),
+    ("--ok", "--text-soft"),
 )
 
 # Pares que o contrato declara INDISTINGUIVEIS, e sobre os quais monta
 # proibicoes. O auditor cobra que continuem indistinguiveis: se separarem,
 # a proibicao virou letra morta e o texto precisa ser revisto.
 NAO_SEPARAM = (
-    ("--acento-ink", "--text-soft", "§ 8.3-c proibe .link dentro de .lede", 1.5),
-    ("--ok", "--text-soft", "§ 8.3-h proibe .lista-ok com texto em --text-soft", 1.5),
+    ("--acento-ink", "--text-soft", "8.3-c proibe .link dentro de .lede", 1.5),
+    ("--ok", "--text-soft", "8.3-h proibe .lista-ok com texto em --text-soft", 1.5),
 )
+
+
+# ------------------------------------------------------- cascata e glifos
+_RE_REGRA = re.compile(r"([^{}]+)\{([^{}]*)\}")
+
+
+def auditar_cascata(css: str) -> list[str]:
+    """Token declarado pelo MESMO seletor em dois lugares de igual peso.
+
+    O defeito F4 em uma frase: `.faixa.alt{--surface:...}` existia dentro
+    do @media escuro E fora dele. Mesma especificidade, e a de baixo vence
+    NOS DOIS TEMAS — entao o cartao das faixas pares ficava com a
+    superficie clara dentro da faixa escura, com o texto do tema escuro
+    por cima. Ilegivel, e invisivel para quem le declaracao por
+    declaracao.
+
+    A regra: uma declaracao INCONDICIONAL de (seletor, token) nao pode vir
+    depois de uma declaracao do mesmo par dentro de um @media. Se vier,
+    ela apaga a condicional em todos os temas.
+    """
+    achados: list[str] = []
+    limpo = _RE_COMENTARIO.sub("", css)
+    condicionais: dict[tuple[str, str], int] = {}
+    incondicionais: dict[tuple[str, str], int] = {}
+
+    # marca as faixas de texto cobertas por @media
+    faixas_media: list[tuple[int, int]] = []
+    for m in re.finditer(r"@media[^{]*\{", limpo):
+        faixas_media.append((m.start(), _fim(limpo, m.end() - 1)))
+
+    def dentro_de_media(pos: int) -> bool:
+        return any(ini <= pos <= fim for ini, fim in faixas_media)
+
+    for regra in _RE_REGRA.finditer(limpo):
+        seletor = " ".join(regra.group(1).split())
+        if seletor.startswith("@") or not seletor:
+            continue
+        for token, _valor in _RE_COR.findall(regra.group(2)):
+            chave = (seletor, token)
+            if dentro_de_media(regra.start()):
+                condicionais.setdefault(chave, regra.start())
+            else:
+                incondicionais.setdefault(chave, regra.start())
+
+    for chave, pos_incond in incondicionais.items():
+        pos_cond = condicionais.get(chave)
+        if pos_cond is not None and pos_incond > pos_cond:
+            seletor, token = chave
+            achados.append(
+                f"cascata: {seletor!r} declara {token} dentro de um @media e "
+                f"DE NOVO fora dele, mais abaixo — a de fora vence nos dois "
+                f"temas e apaga a condicional (foi o defeito F4)"
+            )
+    return achados
+
+
+def auditar_glifos(nome: str, css: str) -> list[str]:
+    """`content:` com byte nao-ASCII, e caractere invisivel em qualquer lugar.
+
+    O `content` da .lista-ok ficou com os bytes C2 B9 33 — "u00b93" — em vez
+    do visto: o `\\2713` perdeu a barra invertida num round-trip e o `271`
+    virou escape OCTAL. Passou por cinco portoes porque nenhuma fatia tinha
+    usado a primitiva ainda. Escape sobrevive a round-trip de codificacao;
+    glifo colado nao — entao a regra e escape, e nao "glifo, com cuidado".
+    """
+    achados: list[str] = []
+    for m in re.finditer(r"content\s*:\s*(['\"])(.*?)\1", css, re.S):
+        valor = m.group(2)
+        fora = [c for c in valor if ord(c) > 127]
+        if fora:
+            pontos = ", ".join(hex(ord(c)) for c in fora)
+            achados.append(
+                f"glifo: {nome} tem content com byte nao-ASCII ({pontos}) — "
+                f"use escape CSS (\\2713), que sobrevive a round-trip de codificacao"
+            )
+    for i, ch in enumerate(css):
+        if ord(ch) > 127 and unicodedata.category(ch) in ("Cc", "Cf", "Co", "Cn"):
+            linha = css.count(chr(10), 0, i) + 1
+            achados.append(
+                f"glifo: {nome} linha {linha} tem caractere invisivel "
+                f"{hex(ord(ch))} ({unicodedata.category(ch)})"
+            )
+    return achados
 
 
 # ------------------------------------------------------------- auditoria
@@ -293,12 +429,13 @@ def auditar(css: str, contrato: str, *, verboso: bool = False) -> list[str]:
             else:
                 passou.append(f"ok {formatar(valor):>9}  [{nome}] {rotulo}")
 
-    # 5 — vizinhanca: quem precisa se separar, e quem o contrato jura que nao separa
-    for rotulo, a_tok, b_tok, minimo, escopos_alvo in PARES_VIZINHOS:
-        for nome in escopos_alvo:
-            paleta = escopos[nome]
+    # 5 — vizinhanca, em TODOS os escopos (ver 5-b da docstring)
+    visitados: set[str] = set()
+    for nome, paleta in escopos.items():
+        for rotulo, a_tok, b_tok, minimo in PARES_VIZINHOS:
             if a_tok not in paleta or b_tok not in paleta:
                 continue
+            visitados.add(nome)
             valor = razao(paleta[a_tok], paleta[b_tok])
             if valor < minimo:
                 achados.append(
@@ -308,9 +445,10 @@ def auditar(css: str, contrato: str, *, verboso: bool = False) -> list[str]:
             else:
                 passou.append(f"ok {formatar(valor):>9}  [{nome}] {a_tok} x {b_tok}")
 
-    for a_tok, b_tok, motivo, teto in NAO_SEPARAM:
-        for nome in ("claro", "escuro"):
-            paleta = escopos[nome]
+        for a_tok, b_tok, motivo, teto in NAO_SEPARAM:
+            if a_tok not in paleta or b_tok not in paleta:
+                continue
+            visitados.add(nome)
             valor = razao(paleta[a_tok], paleta[b_tok])
             if valor >= teto:
                 achados.append(
@@ -322,6 +460,28 @@ def auditar(css: str, contrato: str, *, verboso: bool = False) -> list[str]:
                 passou.append(
                     f"ok {formatar(valor):>9}  [{nome}] {a_tok} x {b_tok} segue indistinguivel"
                 )
+
+        # numeros que o contrato publica por escopo: a tabela do 6.2-b
+        for a_tok, b_tok in VIZINHOS_PUBLICADOS:
+            if a_tok not in paleta or b_tok not in paleta:
+                continue
+            visitados.add(nome)
+            texto = formatar(razao(paleta[a_tok], paleta[b_tok]))
+            if texto not in contrato:
+                achados.append(
+                    f"sem lastro: [{nome}] {a_tok} x {b_tok} vale {texto} e esse "
+                    f"numero nao aparece no contrato — a tabela de vizinhanca "
+                    f"precisa de uma coluna para este escopo"
+                )
+            else:
+                passou.append(f"ok {texto:>9}  [{nome}] {a_tok} x {b_tok} (publicado)")
+
+    # a prova de que nenhuma checagem escolheu onde olhar
+    if visitados != set(escopos):
+        achados.append(
+            f"escopo: a vizinhanca visitou {sorted(visitados)} mas existem "
+            f"{sorted(escopos)} — alguma checagem esta escolhendo onde olhar"
+        )
 
     # 4 — as afirmacoes avulsas
     for rotulo, frente, fundo, escopo in DERIVADOS:
@@ -351,6 +511,11 @@ def main() -> int:
     css = (PARTS / "00-sistema.css").read_text(encoding="utf-8")
     contrato = (PARTS / "contrato.md").read_text(encoding="utf-8")
     achados = auditar(css, contrato, verboso=verboso)
+    achados += auditar_cascata(css)
+    # glifo se checa em TODO CSS de parts, nao so no sistema: qualquer
+    # fatia pode colar um caractere e o defeito e o mesmo.
+    for arquivo in sorted(PARTS.glob("*.css")):
+        achados += auditar_glifos(arquivo.name, arquivo.read_text(encoding="utf-8"))
     if not achados:
         print("auditar_contrato: sem achados — todo numero do contrato tem lastro")
         return 0

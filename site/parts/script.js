@@ -102,7 +102,7 @@
       lb.setAttribute('aria-modal', 'true');
       lb.setAttribute('aria-label', 'Vídeo de execução');
       lb.innerHTML =
-        '<button type="button" class="lightbox-fechar" aria-label="Fechar vídeo">✕</button>' +
+        '<button type="button" class="lightbox-fechar" aria-label="Fechar vídeo">\u2715</button>' +
         '<video class="lightbox-video" controls playsinline preload="none"></video>';
       document.body.appendChild(lb);
     }

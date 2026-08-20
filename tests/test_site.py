@@ -909,3 +909,82 @@ def test_auditor_aprova_a_vizinhanca_atual():
     exigidos seguem separando — nenhum achado de vizinhanca."""
     achados = a.auditar(CSS_SISTEMA, CONTRATO)
     assert not [achado for achado in achados if achado.startswith("vizinhanca:")]
+
+
+# ------------------------------------- cascata, glifos e escopo (ciclo 5)
+CSS_F4 = "\n".join([
+    ":root{--surface:#FFFFFF}",
+    "@media (prefers-color-scheme:dark){",
+    "  :root{--surface:#241D15}",
+    "  .faixa.alt{--surface:#2D2720}",
+    "}",
+    ".faixa.alt{background:var(--fundo-alt);--surface:#F8F6F1}",
+])
+
+CSS_ORDEM_CERTA = "\n".join([
+    ":root{--surface:#FFFFFF}",
+    ".faixa.alt{--surface:#F8F6F1}",
+    "@media (prefers-color-scheme:dark){ .faixa.alt{--surface:#2D2720} }",
+])
+
+
+def test_auditor_acusa_token_declarado_dentro_e_fora_de_media():
+    """Regressao do F4: .faixa.alt{--surface} existia no @media escuro E
+    fora dele. Mesma especificidade, a de baixo vence NOS DOIS TEMAS, e o
+    cartao das faixas pares virava papel branco dentro da faixa escura,
+    com o texto do tema escuro por cima."""
+    achados = a.auditar_cascata(CSS_F4)
+    assert any(achado.startswith("cascata:") for achado in achados)
+    assert any(".faixa.alt" in achado and "--surface" in achado for achado in achados)
+
+
+def test_auditor_aceita_override_de_media_que_vem_depois():
+    """O inverso NAO e defeito: condicional depois de incondicional e a
+    ordem normal de um tema escuro, e funciona."""
+    assert a.auditar_cascata(CSS_ORDEM_CERTA) == []
+
+
+def test_sistema_nao_tem_token_sombreado():
+    assert a.auditar_cascata(CSS_SISTEMA) == []
+
+
+def test_auditor_acusa_glifo_colado_em_content():
+    """content com glifo colado nao sobrevive a round-trip de codificacao —
+    foi assim que o visto da .lista-ok virou os bytes C2 B9 33 ("¹3")."""
+    colado = '.x::before{content:"' + chr(0x2713) + '"}'
+    achados = a.auditar_glifos("teste.css", colado)
+    assert any(achado.startswith("glifo:") for achado in achados)
+
+
+def test_auditor_aceita_escape_css():
+    escapado = r'.x::before{content:"\2713"}'
+    assert a.auditar_glifos("teste.css", escapado) == []
+
+
+def test_auditor_acusa_caractere_invisivel():
+    invisivel = ".x{color:red}" + chr(0x200B)
+    achados = a.auditar_glifos("teste.css", invisivel)
+    assert any("invisivel" in achado for achado in achados)
+
+
+def test_sistema_nao_tem_glifo_nem_invisivel():
+    assert a.auditar_glifos("00-sistema.css", CSS_SISTEMA) == []
+
+
+def test_auditor_resolve_var_entre_tokens():
+    """Depois do F4 as superficies de faixa sao var(--surface-alt). Um
+    auditor que so lesse hexadecimal deixaria de enxergar o cartao das
+    faixas pares — e voltaria a auditar um CSS que nao existe."""
+    escopos = a.paletas(CSS_SISTEMA)
+    assert escopos["claro/faixa par"]["--surface"] == "#F8F6F1"
+    assert escopos["escuro/faixa par"]["--surface"] == "#2D2720"
+    assert escopos["tinta no tema claro"]["--surface"] == "#241D15"
+    assert escopos["tinta no tema escuro"]["--surface"] == "#352C1F"
+
+
+def test_auditor_visita_todos_os_escopos():
+    """A vizinhanca nao pode escolher onde olhar: foi uma lista de escopos
+    embutida numa checagem que deixou a tabela do contrato valendo so no
+    tema claro."""
+    achados = a.auditar(CSS_SISTEMA, CONTRATO)
+    assert not [x for x in achados if x.startswith("escopo:")]

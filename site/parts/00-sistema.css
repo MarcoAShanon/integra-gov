@@ -107,18 +107,30 @@
   --dado:#563506;        /* serie cheia — o nivel mais escuro */
   --dado-neutro:#695E54; /* referencia / cenario manual — meio, dessaturado */
   --dado-fraco:#AA8046;  /* periodo parcial — o nivel mais claro */
+
+  /* Superficies que dependem da FAIXA, nao so do tema. Moram aqui, e nao
+     dentro de .faixa.alt/.faixa.tinta, por um motivo aprendido a duras
+     penas: uma regra de faixa declarada duas vezes (uma no @media escuro,
+     outra fora) tem a mesma especificidade, e a de baixo vence NOS DOIS
+     TEMAS. Foi assim que o cartao das faixas pares virou papel branco
+     dentro da faixa escura. Token so se declara em :root, onde o @media
+     escuro ja e a autoridade — e a regra da faixa passa a ser unica. */
+  --surface-alt:#F8F6F1;   /* cartao sobre --fundo-alt */
+  --tinta-fundo-alt:#1B1711;
+  --tinta-surface:#241D15;
+  --tinta-border:#3A3227;
 }
 
 /* A faixa de tinta troca a ESCALA inteira dentro dela, para que toda
    primitiva (cartao, botao, pilula, fio) continue valendo la dentro sem
    a fatia precisar saber de nada. */
 .faixa.tinta{
-  --bg:#14110D;
-  --fundo-alt:#1B1711;
-  --surface:#241D15;
+  --bg:var(--fundo-tinta);
+  --fundo-alt:var(--tinta-fundo-alt);
+  --surface:var(--tinta-surface);
   --text:#F3EEE5;
   --text-soft:#B3A99B;
-  --border:#3A3227;
+  --border:var(--tinta-border);
   --acento:#F0AE3E;
   --acento-ink:#F0AE3E;
   --acento-soft:#2C2214;
@@ -151,15 +163,13 @@
     --dado:#EFD7AF;
     --dado-neutro:#ABA69C;
     --dado-fraco:#92764F;
-  }
-  /* no escuro a faixa de tinta sobe em vez de descer, senao ela some
-     dentro da propria pagina escura. */
-  .faixa.alt{--surface:#2D2720}
-  .faixa.tinta{
-    --bg:#2A2318;
-    --fundo-alt:#352C1F;
-    --surface:#352C1F;
-    --border:#4A4030;
+    /* as superficies de faixa, no escuro. Antes isto era uma regra
+       .faixa.alt aqui dentro, que a regra .faixa.alt de baixo
+       sobrescrevia nos dois temas — o defeito F4. */
+    --surface-alt:#2D2720;
+    --tinta-fundo-alt:#352C1F;
+    --tinta-surface:#352C1F;
+    --tinta-border:#4A4030;
   }
 }
 
@@ -245,7 +255,7 @@ th,td{text-align:left;padding:0}
   color:var(--text);
 }
 .faixa + .faixa{border-top:1px solid var(--border)}
-.faixa.alt{background:var(--fundo-alt);--surface:#F8F6F1}
+.faixa.alt{background:var(--fundo-alt);--surface:var(--surface-alt)}
 .faixa.tinta{background:var(--fundo-tinta)}
 /* entre uma faixa clara e a faixa de tinta a propria troca de cor ja
    separa: o fio ali viraria sujeira. */
@@ -292,6 +302,22 @@ th,td{text-align:left;padding:0}
 }
 .link:hover{text-decoration-thickness:2px}
 
+/* .link-neutro — link que HERDA a cor do bloco e se marca so pelo
+   sublinhado. Existe para o caso que as duas saidas do 8.3-c nao cobrem:
+   bloco que e --text-soft POR PRIMITIVA (o .rodape, uma figcaption) e
+   que mesmo assim precisa de links. Ali um link em --acento-ink mediria
+   1,07:1 contra o texto ao redor; herdando a cor, ele para de fingir que
+   se distingue por cor e passa a se distinguir pelo que de fato
+   funciona. E o que o HTML sem CSS ja fazia. */
+.link-neutro{
+  color:inherit;
+  text-decoration:underline;
+  text-underline-offset:.18em;
+  text-decoration-thickness:1px;
+  transition:text-decoration-thickness var(--tempo) var(--curva);
+}
+.link-neutro:hover{text-decoration-thickness:2px}
+
 /* .topo — a barra da marca + navegacao, no alto do hero. NAO e
    grudenta: a pagina e curta, tem um CTA so, e uma barra fixa teria de
    negociar fundo com cada faixa. Por isso --z-topo quase nunca importa. */
@@ -311,7 +337,16 @@ th,td{text-align:left;padding:0}
   gap:var(--e-3) var(--e-5);
   font-size:var(--t-3);
 }
-.nav a{color:var(--text-soft);transition:color var(--tempo) var(--curva)}
+/* o link de navegacao e texto pequeno: a altura de toque vem da caixa,
+   nao do tamanho da letra. 44px de caixa dentro de um .topo que ja tem
+   44px de marca — ou seja, area de toque cheia sem mexer no desenho. */
+.nav a{
+  display:inline-flex;
+  align-items:center;
+  min-height:44px;
+  color:var(--text-soft);
+  transition:color var(--tempo) var(--curva);
+}
 .nav a:hover{color:var(--acento-ink)}
 
 /* .acoes — o grupo de botoes. Existe porque .btn vira largura total
@@ -358,7 +393,7 @@ th,td{text-align:left;padding:0}
 .lista-ok{list-style:none;margin:0;padding:0;display:grid;gap:var(--e-3)}
 .lista-ok li{display:flex;gap:var(--e-3);align-items:flex-start;margin:0}
 .lista-ok li::before{
-  content:"¹3";
+  content:"\2713";
   color:var(--ok);
   font-weight:700;
   flex:none;
@@ -432,6 +467,11 @@ th,td{text-align:left;padding:0}
   border-radius:var(--raio);
   padding:var(--e-5);
 }
+/* titulo dentro de cartao desce um degrau: --t-6 e a medida de um h3 que
+   abre um bloco da faixa, e dentro de um cartao ele compete com o h2. Fica
+   no sistema para as cinco fatias resolverem igual — a fatia 5 resolveu
+   sozinha pondo o h3 em --t-5, e estava certa. */
+.card h3{font-size:var(--t-5)}
 a.card{display:block;transition:border-color var(--tempo) var(--curva)}
 a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 
@@ -447,6 +487,11 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
   line-height:1;
   letter-spacing:.005em;
   padding:var(--e-3) var(--e-4);
+  /* 44px e a medida de um dedo. Sem isto o botao fecha em 41px (12+15+12
+     mais 2 de fio) e cada fatia conserta no proprio prefixo, com um valor
+     diferente. A altura visual sobe 3px; a alternativa era cinco botoes
+     de tamanhos distintos na mesma pagina. */
+  min-height:44px;
   border:1px solid transparent;
   border-radius:var(--raio-s);
   cursor:pointer;
@@ -501,8 +546,10 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
   left:var(--e-4);
   top:calc(-1 * var(--e-8));
   z-index:var(--z-skip);
-  display:inline-block;
   padding:var(--e-3) var(--e-4);
+  min-height:44px;
+  display:inline-flex;
+  align-items:center;
   background:var(--surface);
   color:var(--text);
   border:1px solid var(--acento-ink);
