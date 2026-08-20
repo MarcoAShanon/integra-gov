@@ -121,6 +121,31 @@ def test_montar_so_uma_fatia_tambem_emite_header_antes_do_main():
     assert html.index("<header>") < html.index('<main id="conteudo">')
 
 
+# ------------------------------------------------ A3: modo previa (Task 10)
+@completo
+def test_previa_leva_noindex():
+    """A previa fica publica numa URL adivinhavel; buscador nao pode indexa-la."""
+    html = m.montar(previa=True)
+    assert '<meta name="robots" content="noindex,nofollow">' in html
+
+
+@completo
+def test_pagina_de_producao_nao_leva_noindex():
+    assert "noindex" not in m.montar()
+
+
+@completo
+def test_previa_e_producao_diferem_so_pelo_robots():
+    previa = m.montar(previa=True).replace(
+        '<meta name="robots" content="noindex,nofollow">\n', ""
+    )
+    assert previa == m.montar()
+
+
+def test_caminho_saida_da_previa_e_isolado():
+    assert m.caminho_saida(None, previa=True).name == "previa.html"
+
+
 # ------------------------------------------------------------- verificar
 def test_h1_duplicado_e_achado():
     achados = v.verificar("<h1>a</h1><h1>b</h1>")

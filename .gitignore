@@ -60,3 +60,6 @@ site/media/
 # previas por fatia — artefato de trabalho; so o index.html e versionado
 site/preview-*.html
 site/amostra.html
+# previa de publicacao (Task 10, --previa) — artefato gerado, como as
+# previas de fatia acima; o que vai pra VPS e um upload manual, nao commit
+site/previa.html
