@@ -49,9 +49,13 @@ qualquer primitiva deste contrato.
     `--z-skip` (999), e ela cobre a página inteira.
 
 O montador (`site/montar.py`) já emite, sozinho, o `<!doctype>`, o `<html>`, o
-`<head>`, o skip link `<a class="skip" href="#conteudo">` e o
-`<main id="conteudo">`. **Nenhuma fatia escreve isso.** O id `conteudo` e o id
-`lightbox-video` são reservados.
+`<head>`, o skip link `<a class="skip" href="#conteudo">`, o `<header>` que
+envolve a navegação e o `<main id="conteudo">`. **Nenhuma fatia escreve isso.**
+O id `conteudo` e o id `lightbox-video` são reservados.
+
+A fatia 01 entrega **dois** arquivos de marcação: `01-hero.html` (a faixa, dentro
+do `<main>`) e `nav.html` (a navegação, que o montador põe dentro do `<header>`,
+fora do `<main>` — ver § 4.1-b). As fatias 02 a 05 entregam um só.
 
 ---
 
@@ -135,11 +139,31 @@ intencional. No escuro o deslocamento é só de valor (ΔL\*=4,89), e por isso e
 Nenhuma das duas tinha lei aqui, e o agente do hero construiria a primeira no
 escuro. Agora tem:
 
-- **O topo é `.topo`**, primeiro filho do `.wrap` da faixa 01: `.marca` à
-  esquerda, `.nav` à direita. **Não é grudento** (`position:sticky` está
-  proibido): a página é curta, tem um CTA só, e uma barra fixa teria de negociar
-  fundo com cada faixa — inclusive com a de tinta — o que é justamente o tipo de
-  costura que este contrato existe para evitar.
+- **A navegação mora em `site/parts/nav.html`**, um arquivo próprio, escrito
+  pelo agente da fatia 01 — **não** dentro de `01-hero.html`. O montador a emite
+  dentro de um `<header>`, entre o skip link e o `<main>`. Isso dá à página o
+  landmark `banner` e faz o skip link pular de fato a navegação.
+- **O conteúdo de `nav.html` é exatamente isto**, e nada mais:
+
+  ```html
+  <div class="wrap">
+    <div class="topo">
+      <span class="marca">…</span>
+      <nav class="nav" aria-label="Seções da página">
+        <a href="#prova">Resultados</a>
+        …
+      </nav>
+    </div>
+  </div>
+  ```
+
+  O `<header>` é do montador; o `.wrap` é seu, porque fora de uma `.faixa` não
+  há quem centralize. **Não** ponha `.faixa` aqui: o topo não é uma faixa, não
+  tem o ritmo vertical de uma, e o fundo dele é o do `<body>`.
+- **O topo não é grudento** (`position:sticky` está proibido): a página é curta,
+  tem um CTA só, e uma barra fixa teria de negociar fundo com cada faixa —
+  inclusive com a de tinta — o que é justamente o tipo de costura que este
+  contrato existe para evitar.
 - **`.nav`** é uma fileira de links de texto para âncoras internas
   (`#prova`, `#contexto`, `#oferta`, `#conversao`). Sem menu sanfonado, sem
   submenu, sem ícone de hambúrguer: abaixo de 768px o `.topo` vira coluna e os
@@ -148,13 +172,11 @@ escuro. Agora tem:
   faixa. É onde vive o bloco institucional que a página no ar tem — CGPAG, a
   revista, licença MIT, contato.
 
-> **Pendência estrutural, registrada e não resolvida por mim.** O `montar.py`
-> envolve as cinco fatias em `<main id="conteudo">`, então a `<nav>` fica dentro
-> de `<main>`: a página não tem landmark `banner`, e o skip link — que aterrissa
-> em `#conteudo` — cai **antes** da navegação, sem pular nada, que é o seu único
-> propósito. Isso não se conserta dentro de uma fatia. A emenda mínima está
-> proposta no § 12; até ela existir, monte o `.topo` como descrito acima, que é
-> o que funciona hoje.
+A ordem que o montador emite hoje é: `<a class="skip">`, depois
+`<header>` com o conteúdo de `nav.html`, e **só então** `<main id="conteudo">`
+com as cinco faixas. Se `nav.html` ainda não existir, o `<header>` sai vazio e a
+montagem não quebra — mas a página fica sem navegação, então ele é entregável da
+fatia 01.
 
 ### 4.2 A faixa de tinta troca a escala inteira
 
@@ -998,45 +1020,32 @@ E confira à mão, item por item:
       inteira, legível, com os números dos gráficos visíveis
 - [ ] toda `.col` é filha direta de uma `.trilha`
 - [ ] nenhum `--col-N` fora de um filho direto do `.wrap`
+- [ ] se você é a fatia 01: a navegação está em `nav.html`, com o seu próprio
+      `.wrap`, e **não** dentro de `01-hero.html`
 - [ ] nenhum `href="#"`; toda âncora aponta para um `id` existente
 - [ ] a hierarquia de títulos não pula degrau
 - [ ] você olhou a seção nos dois temas, claro e escuro
 
 ---
 
-## 12. Pendência que não é de fatia: a emenda do `montar.py`
+## 12. O andaime: o que o montador e o verificador fazem por você
 
-Registrada aqui porque é o único defeito estrutural que este contrato não
-consegue corrigir sozinho, e porque quem for consertá-lo precisa saber o que se
-espera.
+Duas coisas que este contrato **não** resolve sozinho foram corrigidas fora dele,
+e você precisa saber que existem — porque mudam o que você escreve.
 
-**O problema.** `montar.py` emite `<main id="conteudo">` envolvendo as cinco
-fatias. Logo a `<nav>` do hero fica dentro de `<main>`, e daí decorrem duas
-coisas erradas: a página não tem landmark `banner`, e o skip link — que aponta
-para `#conteudo` — aterrissa **antes** da navegação. Pular a navegação é o único
-propósito de um skip link; este não pula nada.
+**O `montar.py` emite o `<header>`.** Antes, as cinco fatias eram envolvidas em
+`<main id="conteudo">` e a navegação, por morar no hero, caía dentro do `<main>`:
+a página não tinha landmark `banner` e o skip link aterrissava **antes** da
+navegação, sem pular nada — que é o seu único propósito. Hoje a ordem é skip
+link, `<header>` com o conteúdo de `site/parts/nav.html`, e então o `<main>`. É
+por isso que a navegação é um arquivo próprio e não um pedaço do `01-hero.html`
+(§ 4.1-b).
 
-**A emenda mínima que eu recomendo.** Fazer o montador ler uma parte opcional
-`site/parts/topo.html` e emiti-la dentro de um `<header class="topo-fixo">`
-entre o skip link e o `<main>`:
+**O `verificar.py` escopa por fatia.** Rodando `verificar.py
+site/preview-02-prova.html`, ele varre **apenas** `02-prova.css` mais o
+`00-sistema.css`. Com cinco agentes construindo em paralelo na mesma árvore,
+você não será acusado pelo CSS meio escrito de outro — e, por isso mesmo,
+**não edite o arquivo de outra fatia** se um achado parecer vir de lá: não vem.
 
-```python
-partes_topo = PARTS / "topo.html"
-...
-'<a class="skip" href="#conteudo">Pular para o conteúdo</a>',
-*( [f'<header>{_ler("topo.html")}</header>'] if partes_topo.exists() else [] ),
-'<main id="conteudo">',
-```
-
-Com isso: `<header>` vira landmark `banner`; a `<nav>` sai de dentro de
-`<main>`; e o skip link passa a pular de fato a navegação. A fatia 01 deixa de
-escrever o `.topo` dentro do hero e passa a escrever `topo.html`, sem que
-nenhuma outra fatia mude.
-
-**Por que eu não fiz:** mexer no montador durante a construção das cinco fatias
-troca o contrato de saída no meio do caminho. Enquanto a emenda não existir,
-monte o `.topo` como o § 4.1-b descreve — funciona, só não produz o landmark.
-
-**O que NÃO recomendo:** envolver a fatia 01 inteira em `<header>` e deixar as
-outras quatro em `<main>`. Isso põe o `<h1>` fora do `<main>` e faz o skip link
-pular a proposta de valor inteira, não só a navegação.
+Nenhuma das duas muda alguma regra deste contrato. Estão aqui para que você não
+tente consertar no seu CSS um problema que o andaime já resolveu.
