@@ -32,10 +32,15 @@ PALAVRAS_DE_CONCLUSAO = ("completo", "pronto", "finalizado", "fecha o ciclo")
 # Frases EXATAS em que uma palavra de conclusao tem outro sentido no contexto
 # ja publicado da pagina ("vem pronto para" = *incluido*, nao "o projeto
 # acabou"). Cada frase aqui foi revisada e aprovada por humano — e a valvula
-# de escape do veto, NAO um espaco pra um agente futuro engordar a lista
-# sozinho ate o portao passar. Toda adicao exige decisao humana.
+# de escape do veto para O TRECHO ESPECIFICO que esta publicado, NAO um
+# passe livre pra "vem pronto para" reaparecer em qualquer frase nova. Por
+# isso a frase e o trecho MAIOR e mais especifico que de fato esta no ar
+# ("vem pronto para outro orgao adotar"), nao so as tres primeiras palavras
+# — "O projeto vem pronto para uso" nao bate nisso e continua achado. Toda
+# adicao a esta tupla exige decisao humana; nao e espaco pra um agente
+# futuro engordar a lista sozinho ate o portao passar.
 FRASES_PERMITIDAS = (
-    "vem pronto para",
+    "vem pronto para outro órgão adotar",
 )
 
 _RE_CPF = re.compile(r"\b\d{3}\.\d{3}\.\d{3}-\d{2}\b")
@@ -88,6 +93,13 @@ def _sem_comentarios(css: str) -> str:
     return re.sub(r"/\*.*?\*/", "", css, flags=re.S)
 
 
+def _sem_comentarios_html(html: str) -> str:
+    """Despe <!-- ... --> antes de escanear id/ancora: uma copia comentada
+    de um elemento nao esta na pagina renderizada, entao nao pode contar
+    pra deteccao de id duplicado nem servir de alvo valido de ancora."""
+    return re.sub(r"<!--.*?-->", "", html, flags=re.S)
+
+
 def _titulos(html: str) -> list[int]:
     return [int(m.group(1)) for m in _RE_TITULO.finditer(html)]
 
@@ -121,11 +133,27 @@ def _familia_do_shorthand(valor: str) -> str | None:
     return resto or None
 
 
+def _checar_host(url: str, achados: list[str]) -> None:
+    """Registra achado de 'externo' se o host de `url` nao estiver na
+    allowlist. Um so lugar pra decidir a regra de host — chamado dos
+    quatro pontos que descobrem uma URL de recurso (tag src/href,
+    @import/url() em CSS, atributo livre poster/data-video, e cada entrada
+    de srcset). O dia em que a regra de host mudar, so mexe aqui."""
+    if not any(h in url for h in HOSTS_PERMITIDOS):
+        achados.append(f"externo: recurso de terceiro nao permitido — {url[:90]}")
+
+
 def _cpf_valido(digitos: str) -> bool:
     """Valida os dois digitos verificadores de um CPF de 11 digitos (modulo
     11). Um CPF real tem o 10o e o 11o digito calculaveis a partir dos 9
     primeiros; um telefone ou outro numero de 11 digitos quase nunca
-    satisfaz isso — e mais honesto que uma heuristica de formato."""
+    satisfaz isso — e mais honesto que uma heuristica de formato.
+
+    As dez sequencias de digito repetido (00000000000...99999999999)
+    passam no modulo 11 por construcao, mas sao notoriamente invalidas —
+    toda biblioteca de referencia as exclui explicitamente, e aqui tambem."""
+    if digitos == digitos[0] * len(digitos):
+        return False
     nums = [int(c) for c in digitos]
 
     def _dv(fatia: list[int], peso_inicial: int) -> int:
@@ -175,14 +203,18 @@ def verificar(html: str, *, fatia: bool = False) -> list[str]:
 
     # --- ids duplicados (roda nos DOIS modos) e ancora interna quebrada (so
     # na pagina inteira — uma fatia isolada legitimamente aponta pra ancoras
-    # de outras fatias que ainda nao existem na previa dela).
-    ids = _RE_ID.findall(html)
+    # de outras fatias que ainda nao existem na previa dela). Despe
+    # comentarios HTML antes: uma copia comentada de um id nao esta na
+    # pagina renderizada e nao pode contar como duplicata, nem servir de
+    # alvo valido de ancora.
+    html_sem_comentarios = _sem_comentarios_html(html)
+    ids = _RE_ID.findall(html_sem_comentarios)
     for id_dup in sorted({i for i in ids if ids.count(i) > 1}):
         achados.append(f"id: {id_dup!r} aparece mais de uma vez no documento")
 
     if not fatia:
         id_set = set(ids)
-        for alvo_ancora in _RE_HREF_ANCORA.findall(html):
+        for alvo_ancora in _RE_HREF_ANCORA.findall(html_sem_comentarios):
             if alvo_ancora not in id_set:
                 achados.append(
                     f'ancora: href="#{alvo_ancora}" nao tem id="{alvo_ancora}" correspondente'
@@ -201,21 +233,18 @@ def verificar(html: str, *, fatia: bool = False) -> list[str]:
         re.I,
     )
     for _tag, url in padrao.findall(html):
-        if not any(h in url for h in HOSTS_PERMITIDOS):
-            achados.append(f"externo: recurso de terceiro nao permitido — {url[:90]}")
+        _checar_host(url, achados)
 
     # o CSS final vive inline dentro de <style>: @import e url() sao rotas
     # tao reais quanto <link>/<script> para um CDN entrar sem passar pela
     # checagem acima.
     for url in _RE_CSS_RECURSO.findall(html):
-        if not any(h in url for h in HOSTS_PERMITIDOS):
-            achados.append(f"externo: recurso de terceiro nao permitido — {url[:90]}")
+        _checar_host(url, achados)
 
     # poster (<video>) e data-video (o lightbox transforma em src) nao ficam
     # presos a TAGS_DE_RECURSO — podem estar em qualquer tag.
     for url in _RE_ATRIBUTO_RECURSO_LIVRE.findall(html):
-        if not any(h in url for h in HOSTS_PERMITIDOS):
-            achados.append(f"externo: recurso de terceiro nao permitido — {url[:90]}")
+        _checar_host(url, achados)
 
     # srcset e uma lista "url descritor, url descritor" — cada URL precisa
     # passar pela mesma checagem de host.
@@ -225,10 +254,8 @@ def verificar(html: str, *, fatia: bool = False) -> list[str]:
             if not partes_srcset:
                 continue
             url = partes_srcset[0]
-            if url.startswith(("http://", "https://", "//")) and not any(
-                h in url for h in HOSTS_PERMITIDOS
-            ):
-                achados.append(f"externo: recurso de terceiro nao permitido — {url[:90]}")
+            if url.startswith(("http://", "https://", "//")):
+                _checar_host(url, achados)
 
     # --- fontes vetadas como ESCOLHA (primeira familia), nao como fallback
     # verifica TODAS as declaracoes do token, nao so a primeira — uma fatia
@@ -306,6 +333,11 @@ def verificar(html: str, *, fatia: bool = False) -> list[str]:
 
     # --- enquadramento incremental
     texto = re.sub(r"<[^>]+>", " ", html).lower()
+    # normaliza espacos multiplos/quebra de linha antes de comparar com a
+    # allowlist — sem isso, um espacamento irregular no texto publicado
+    # (ex.: quebra de linha entre palavras) escaparia da frase permitida e
+    # geraria falso achado.
+    texto = re.sub(r"\s+", " ", texto)
     for frase in FRASES_PERMITIDAS:
         texto = texto.replace(frase.lower(), "")
     for palavra in PALAVRAS_DE_CONCLUSAO:
@@ -356,7 +388,16 @@ def verificar_partes(parts: pathlib.Path) -> list[str]:
             # acima) passar limpo. Qualquer bloco :root numa fatia e achado,
             # ponto — 00-sistema.css e o unico lugar onde :root e legitimo, e
             # ja foi excluido do loop acima.
-            if seletores == ":root":
+            #
+            # ":root" precisa ser comparado por PARTE separada por virgula,
+            # nao pela string inteira — ":root, #hero .card" falha na
+            # igualdade com a string toda, cai direto no laco de prefixo
+            # abaixo, onde ":root" e isento explicitamente, e o token novo
+            # entra sem achado nenhum. Mesma classe do bug do keyframe
+            # percentual: quem compõe um seletor escapa de uma checagem por
+            # igualdade da string inteira.
+            partes_seletor = [p.strip() for p in seletores.split(",")]
+            if ":root" in partes_seletor:
                 achados.append(
                     f"root: {arquivo.name} declara um bloco :root — a fatia so consome "
                     "tokens do contrato, nao cria nem redefine em :root"

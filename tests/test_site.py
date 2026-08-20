@@ -553,3 +553,79 @@ def test_cpf_pontuado_continua_achado_sem_exigir_digito_verificador():
     quem escreve um CPF pontuado esta escrevendo um CPF, valido ou nao."""
     achados = v.verificar("<p>000.000.000-00</p>")
     assert any("CPF" in a for a in achados)
+
+
+# ============================================== rodada 3: bypasses confirmados
+# BYPASS 1 (V5) — seletor composto (":root, #hero .card") escapava do guard
+# de igualdade exata com a string inteira, caindo no laco de prefixo onde
+# ":root" e explicitamente isento.
+def test_root_composto_com_outro_seletor_e_achado(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text(":root, #hero .card{--novo:red}", encoding="utf-8")
+    achados = v.verificar_partes(tmp_path)
+    assert any(a.startswith("root:") for a in achados)
+
+
+def test_root_composto_ordem_invertida_e_achado(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text("#hero .card, :root{--novo:red}", encoding="utf-8")
+    achados = v.verificar_partes(tmp_path)
+    assert any(a.startswith("root:") for a in achados)
+
+
+def test_root_puro_ainda_e_achado(tmp_path):
+    """Regressao: :root sozinho (sem composicao) continua achado."""
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text(":root{--novo:red}", encoding="utf-8")
+    achados = v.verificar_partes(tmp_path)
+    assert any(a.startswith("root:") for a in achados)
+
+
+def test_seletor_prefixado_sem_root_nao_e_achado(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text("#hero .card{color:red}", encoding="utf-8")
+    assert v.verificar_partes(tmp_path) == []
+
+
+# BYPASS 2 (V7) — a allowlist casava por substring solto ("vem pronto
+# para"), entao qualquer frase nova que reaproveitasse esse trecho escapava
+# do veto, mesmo sem ser a frase humana-aprovada.
+def test_frase_publicada_completa_continua_sem_achado():
+    html = "<p>O que já vem pronto para outro órgão adotar: licença MIT</p>"
+    assert not any("incremental" in a for a in v.verificar(html))
+
+
+def test_frase_nova_reaproveitando_vem_pronto_para_e_achado():
+    achados = v.verificar("<p>O projeto vem pronto para uso, nada mais a fazer</p>")
+    assert any("incremental" in a for a in achados)
+
+
+def test_frase_permitida_com_espacamento_irregular_e_caixa_diferente_nao_e_achado():
+    html = "<p>VEM   PRONTO PARA\noutro   ÓRGÃO  adotar</p>"
+    assert not any("incremental" in a for a in v.verificar(html))
+
+
+# MENOR 1 — id em bloco HTML comentado nao pode contar como duplicata: a
+# copia comentada nao esta na pagina renderizada.
+def test_id_em_comentario_html_nao_conta_como_duplicata():
+    html = '<!-- <section id="hero"></section> --><section id="hero"></section>'
+    achados = v.verificar(html)
+    assert not any(a.startswith("id:") for a in achados)
+
+
+def test_ancora_para_id_que_so_existe_em_comentario_ainda_e_achado():
+    html = '<!-- <section id="hero"></section> --><a href="#hero">x</a>'
+    achados = v.verificar(html)
+    assert any("ancora" in a for a in achados)
+
+
+# MENOR 2 — as dez sequencias de digito repetido passam no modulo 11 mas
+# sao notoriamente invalidas; toda biblioteca de referencia as exclui.
+def test_cpf_sem_pontuacao_com_digitos_repetidos_nao_e_achado():
+    achados = v.verificar("<p>11111111111</p>")
+    assert not any("CPF" in a for a in achados)
+
+
+def test_cpf_sem_pontuacao_todos_zeros_nao_e_achado():
+    achados = v.verificar("<p>00000000000</p>")
+    assert not any("CPF" in a for a in achados)
