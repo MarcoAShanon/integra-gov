@@ -18,3 +18,30 @@ de um base64 do HTML, entao nao tem card no showcase.
 | `img-08-6ad7082f.jpg` | 114.3 | Frame-poster do vídeo de execução do "INTEGRA Exante" (`data-video="/media/exante.mp4"`) — janela "INTEGRA EXANTE" sobreposta ao SEI (colaboragov), com a árvore de processos e os números de processo do SEI borrados/pixelizados de propósito (alt: "dados pessoais ocultados"); o e-mail de login exibido é do autor do projeto, já público no `<meta name="author">` da página, não de um servidor/processo real. Seção `#feito-com`, quinto e último card do showcase. |
 | `img-09-4d87ec95.png` | 53.5 | Logo de rodapé — variante clara do cubo "CGPAG" com a marca "PROJETO INTEGRA — I.A. & Automação" abaixo, sobre fundo escuro. Aparece no `.foot .note` ao final da seção `#feito-com` (rodapé da página). |
 | `og-image.png` | 149.1 | Imagem de compartilhamento social (`og:image`/`twitter:image`) baixada de `https://projeto.govintegra.com.br/og-image.png` (Step 3). Sera refeita na Task 9 — mantida aqui so para nao perder a versao atual. |
+
+## Assets acrescentados na decisao do logo (20/08/2026)
+
+O logo do cabecalho da pagina no ar estava marcado no proprio HTML como
+"LOGO PROVISORIA — trocar pela logo oficial do INTEGRA" (`img-02`, o cubo
+pelado, 148x140). Os arquivos oficiais foram buscados em
+`painelsei.govintegra.com.br/static/images/` e **medidos**:
+
+- `logoweb.png` — lockup real (cubo + "Projeto INTEGRA / I.A. & AUTOMACAO" +
+  icone do Python), 283x393. O wordmark embutido tem luminancia media
+  **241,5/255**: praticamente branco, feito so para fundo escuro.
+- `logoMfundoescuro.png` — **outra marca**, 1024x1024: um ornamento branco, sem
+  cubo e sem wordmark. Nao e a versao escura do lockup. **Nao usar.**
+
+Como a landing tem fundo ecru claro, nenhum dos dois serve inteiro. Decisao do
+usuario: **o cubo vira imagem, o wordmark vira TEXTO** na fonte de display do
+contrato — funciona nos dois temas, fica nitido em qualquer tela, dispensa
+86 KB de PNG e herda a tipografia do redesign.
+
+| arquivo | KB | origem |
+|---|---|---|
+| `logo-integra-claro.png` | 85.8 | Lockup oficial baixado de `painelsei.govintegra.com.br/static/images/logoweb.png`. Mantido como **procedencia** do recorte; NAO usar direto na pagina (wordmark branco some no fundo claro). |
+| `cubo-integra.png` | 68.7 | **O asset do cabecalho.** Cubo recortado do lockup por `site/recortar_cubo.py`, 283x268, sem wordmark. Quase o dobro da resolucao do `img-02` que a pagina usava. Colorido com contornos pretos: funciona sobre fundo claro e escuro. |
+
+`img-02-69ed929c.png` (cubo pelado 148x140) e `img-09-4d87ec95.png` (lockup de
+rodape, wordmark branco) ficam no repositorio como registro do que a pagina
+usava, mas **nao entram no redesign**.

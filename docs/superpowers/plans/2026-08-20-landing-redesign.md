@@ -953,6 +953,17 @@ inventa a sua e a página montada fica com costuras visíveis:
 
 ENTREGUE EXATAMENTE QUATRO ARQUIVOS:
 
+O LOGO — decidido pelo usuário em 20/08/2026, não é sua escolha:
+O cabeçalho usa `assets/cubo-integra.png` (283x268, o cubo colorido sem
+wordmark) COMO IMAGEM, e o wordmark "PROJETO INTEGRA" mais o descritor
+"I.A. & AUTOMAÇÃO" são compostos por você em TEXTO, na fonte de display do
+contrato. Não use `logo-integra-claro.png` nem `img-09` na página: o wordmark
+embutido neles tem luminância medida de ~242/255 — é branco, e some no fundo
+ecru. Compor o wordmark em texto resolve isso, fica nítido em qualquer tela e
+faz o nome do projeto herdar a tipografia que você escolher, que é o que a
+direção estética pede. Trate essa composição — cubo + wordmark tipográfico —
+como uma primitiva do contrato, para que a fatia 1 apenas a use.
+
 1. site/parts/contrato.md — o contrato em prosa, em português. Deve conter:
    a paleta com cada cor nomeada, seu papel e a razão de contraste medida
    contra o fundo em que será usada; o par de fontes com a justificativa da
@@ -1125,7 +1136,10 @@ REQUISITOS ESTRUTURAIS (outras fatias dependem deles):
 - Dentro dele, um elemento com id="conteudo" — é o alvo do skip link.
 - A navegação tem âncoras para #prova, #contexto, #oferta, #conversao, nesta
   ordem, mais o repositório (https://github.com/MarcoAShanon/integra-gov).
-- O logo é assets/<o arquivo identificado como logo no site/assets/MAPA.md>.
+- O logo é a primitiva do contrato: assets/cubo-integra.png como imagem, mais o
+  wordmark "PROJETO INTEGRA" em TEXTO na fonte de display. Não invente outra
+  composição e não use logo-integra-claro.png nem img-09 — o wordmark embutido
+  nesses dois é branco (luminância medida ~242/255) e some no fundo claro.
 
 O QUE O HERO PRECISA FAZER: dizer, numa frase, o que o INTEGRA é e para quem —
 a um servidor de outro órgão que nunca ouviu falar disso. Molde: o hero da
