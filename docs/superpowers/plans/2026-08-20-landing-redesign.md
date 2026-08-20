@@ -54,7 +54,11 @@ Valem para **toda** tarefa e para **todo** subagente. Copiadas da spec §4.
     sessão CCD `local_e6758524-2d3f-4bab-b139-e7b1243ebf2d`, no mesmo
     diretório, via `mcp__ccd_session_mgmt__send_message`. Ela é o portão que
     aprova; o crítico cego por subagente **permanece** como camada anterior, e
-    a redundância é intencional (ver spec §7). Nenhuma tarefa avança para a
+    a redundância é intencional (ver spec §7). A evidência empírica veio na
+    Task 1: as duas camadas chegaram ao mesmo bug de keyframe percentual de
+    forma **independente**, sem uma ver o parecer da outra — e cada uma achou
+    defeitos que a outra não viu. Camadas redundantes pegam classes diferentes
+    de erro; não é desperdício. Nenhuma tarefa avança para a
     seguinte com achado aberto em qualquer das duas.
 
 ### BLOCO-CONTRATO
