@@ -55,14 +55,18 @@
 }
 
 /* --- os tres cartoes ------------------------------------------------
-   .card ja traz --surface, o fio de 1px e o raio; aqui so o ritmo
-   interno. h3 em --t-5: e um degrau da escala (5.5), escolhido porque
-   --t-6 dentro de um cartao de 5 colunas competiria com o h2 da faixa. */
-#conversao .card{
-  display:flex;
-  flex-direction:column;
-  gap:var(--e-4);
-}
+   .card ja traz --surface, o fio de 1px e o raio.
+
+   NAO HA MAIS gap AQUI, e a ausencia e o conserto do A8: o cartao era
+   um flex de gap:--e-4, e esses 20px eram o meu numero para
+   h3 -> paragrafo. Agora quem fixa o segundo nivel e a primitiva .sub
+   (12px do h3 ao seu paragrafo, 32px ate o conteudo, 62ch de medida).
+   Manter o gap somaria os 20px do cartao aos 32px da primitiva. O que
+   sobrou de espacamento local sao as margens dos paragrafos de fecho,
+   que nao sao subsecao nenhuma — sao remate de cartao.
+
+   h3 em --t-5: e um degrau da escala (5.5), escolhido porque --t-6
+   dentro de um cartao de 5 colunas competiria com o h2 da faixa. */
 #conversao .card h3{font-size:var(--t-5)}
 #conversao .card ul{font-size:var(--t-3)}
 
@@ -75,6 +79,7 @@
 
 /* a ressalva de dado pessoal, apartada por fio — nao e passo da lista. */
 #conversao .aviso{
+  margin-top:var(--e-4);
   padding-top:var(--e-4);
   border-top:1px solid var(--border);
   font-size:var(--t-2);
@@ -85,10 +90,12 @@
    --text-soft) DE PROPOSITO: e a frase que desarma a expectativa de
    acompanhamento, e apagar justamente ela seria o defeito. */
 #conversao .fecha{
+  margin-top:var(--e-4);
   font-size:var(--t-3);
   color:var(--text-soft);
 }
 #conversao .limite{
+  margin-top:var(--e-4);
   padding-top:var(--e-4);
   border-top:1px solid var(--border);
   font-size:var(--t-3);
@@ -97,14 +104,14 @@
 
 /* --- as objecoes derrubadas pelo nome -------------------------------
    .lista-ok e a primitiva das garantias (8.3-h); o texto dos itens fica
-   em --text, que e o padrao — o gliffo em --ok so e sinal contra
+   em --text, que e o padrao — o glifo em --ok so e sinal contra
    --text. Duas colunas no desktop: nao usa .grid, por isso o colapso
-   abaixo de 768px e escrito aqui. */
-#conversao .garantias{
-  display:flex;
-  flex-direction:column;
-  gap:var(--e-5);
-}
+   abaixo de 768px e escrito aqui.
+
+   O bloco .garantias nao tem regra nenhuma: era um flex de gap:--e-5, e
+   aqueles 32px eram o extremo que a revisao mediu. Quem da o respiro
+   agora e o margin-bottom da .sub — mesmo valor, so que uma vez, no
+   sistema, e valendo para as quatro fatias. */
 #conversao .lista-ok{
   grid-template-columns:repeat(2,minmax(0,1fr));
   column-gap:var(--e-5);
@@ -150,11 +157,13 @@
    preenchimento ambar do .btn-p, que nenhum outro botao da pagina tem.
    Botao igual ao resto da pagina, entao. */
 
-#conversao .fuga{
-  max-width:70ch;
-  font-size:var(--t-3);
-  color:var(--text);
-}
+/* 62ch e --t-4 (o corpo, que e o default) porque este paragrafo era um
+   dos tres que a revisao mediu com bordas direitas diferentes: os 70ch
+   em --t-3 davam 603px. Na medida e no tamanho de letra da .sub ele
+   passa a partilhar a borda direita com os paragrafos de subsecao —
+   que e exatamente o que o 8.3-m pede. As outras duas declaracoes
+   sairam: --t-4 e --text ja sao o padrao do corpo. */
+#conversao .fuga{max-width:62ch}
 
 /* --- o rodape institucional -----------------------------------------
    .rodape ja e flex, com fio no topo, --t-2 e --text-soft. */
