@@ -13,6 +13,19 @@
    inteiro esta acima da dobra (contrato 8.9).
    ===================================================================== */
 
+/* --- a navegacao ----------------------------------------------------
+   Uma regra so, e o prefixo "header" e legitimo: verificar.py concede
+   esse prefixo APENAS a 01-hero.css, porque nav.html e desta fatia e o
+   montador o poe dentro do <header>, fora do #hero.
+
+   .topo e um space-between: quando marca + nav nao cabem, o flexbox
+   encolhe AS DUAS. A .marca aguenta encolher 8px antes de "PROJETO
+   INTEGRA" quebrar em duas linhas — medido a 800px: a caixa fecha em
+   155px para um wordmark que precisa de 165px. Um wordmark partido ao
+   meio e pior que um menu em duas linhas, e a .nav ja sabe quebrar
+   (flex-wrap). flex:none decide qual dos dois cede. */
+header .marca{flex:none}
+
 /* --- o empilhamento do topo da faixa -------------------------------
    .wrap vira coluna para que rotulo, h1 e grade tenham um so ritmo.
    O alinhamento fica em "stretch" (o padrao) DE PROPOSITO: com
@@ -64,32 +77,12 @@
 #hero .nota .prompt{margin-right:var(--e-1)}
 
 /* --- coluna da direita: a ficha ------------------------------------
-   .card ja traz --surface, o fio de 1px e o raio. Aqui so o conteudo. */
+   Aqui so a largura. Todo o resto — a regua entre pares, o rotulo em
+   mono e o valor em corpo — saiu deste arquivo quando a .ficha virou
+   primitiva do sistema (contrato 8.3-k, promovida desta fatia). Manter
+   a copia prefixada seria pior que redundancia: com especificidade
+   maior, ela venceria em silencio qualquer correcao futura do sistema. */
 #hero .ficha{grid-column:span 5}
-#hero .ficha dl{margin:0}
-#hero .ficha dl > div{
-  display:flex;
-  flex-direction:column;
-  gap:var(--e-1);
-  padding-block:var(--e-3);
-  border-bottom:1px solid var(--border);
-}
-#hero .ficha dl > div:first-child{padding-top:0}
-#hero .ficha dl > div:last-child{padding-bottom:0;border-bottom:0}
-#hero .ficha dt{
-  font-family:var(--font-mono);
-  font-size:var(--t-1);
-  font-weight:500;
-  letter-spacing:.11em;
-  text-transform:uppercase;
-  color:var(--text-soft);
-}
-#hero .ficha dd{
-  margin:0;
-  font-size:var(--t-3);
-  color:var(--text);
-  line-height:var(--lh-corpo);
-}
 
 /* =====================================================================
    BREAKPOINTS — so 1080px e 768px, em max-width, nesta ordem.
