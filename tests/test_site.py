@@ -629,3 +629,46 @@ def test_cpf_sem_pontuacao_com_digitos_repetidos_nao_e_achado():
 def test_cpf_sem_pontuacao_todos_zeros_nao_e_achado():
     achados = v.verificar("<p>00000000000</p>")
     assert not any("CPF" in a for a in achados)
+
+
+# ============================================== rodada 4: bypass de host
+# H1 — _checar_host aceitava um host permitido em QUALQUER LUGAR da string
+# (substring), nao so como o hostname de verdade. Isso abre caminho pra
+# subdominio forjado (fonts.googleapis.com.evil.com), host permitido
+# escondido no PATH, ou na QUERY string.
+def test_host_permitido_no_path_de_url_maliciosa_e_achado():
+    html = '<script src="https://evil.com/fonts.googleapis.com/x.js"></script>'
+    achados = v.verificar(html)
+    assert any("externo" in a for a in achados)
+
+
+def test_subdominio_forjado_e_achado():
+    html = '<script src="https://fonts.googleapis.com.evil.com/x.js"></script>'
+    achados = v.verificar(html)
+    assert any("externo" in a for a in achados)
+
+
+def test_host_permitido_na_query_de_url_maliciosa_e_achado():
+    html = '<img src="https://evil.com/a.png?from=fonts.googleapis.com" alt="">'
+    achados = v.verificar(html)
+    assert any("externo" in a for a in achados)
+
+
+def test_google_fonts_de_verdade_continua_permitido():
+    html = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces">'
+    assert not any("externo" in a for a in v.verificar(html))
+
+
+def test_protocolo_relativo_de_host_permitido_continua_permitido():
+    html = '<script src="//fonts.gstatic.com/s/x.woff2"></script>'
+    assert not any("externo" in a for a in v.verificar(html))
+
+
+def test_proprio_dominio_canonical_continua_permitido():
+    html = '<link rel="canonical" href="https://projeto.govintegra.com.br/">'
+    assert not any("externo" in a for a in v.verificar(html))
+
+
+def test_host_permitido_em_caixa_alta_continua_permitido():
+    html = '<link rel="stylesheet" href="https://FONTS.GOOGLEAPIS.COM/css2?family=X">'
+    assert not any("externo" in a for a in v.verificar(html))

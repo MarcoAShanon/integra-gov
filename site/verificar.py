@@ -19,6 +19,7 @@ from __future__ import annotations
 import pathlib
 import re
 import sys
+from urllib.parse import urlsplit
 
 RAIZ = pathlib.Path(__file__).resolve().parent
 
@@ -134,12 +135,27 @@ def _familia_do_shorthand(valor: str) -> str | None:
 
 
 def _checar_host(url: str, achados: list[str]) -> None:
-    """Registra achado de 'externo' se o host de `url` nao estiver na
-    allowlist. Um so lugar pra decidir a regra de host — chamado dos
-    quatro pontos que descobrem uma URL de recurso (tag src/href,
-    @import/url() em CSS, atributo livre poster/data-video, e cada entrada
-    de srcset). O dia em que a regra de host mudar, so mexe aqui."""
-    if not any(h in url for h in HOSTS_PERMITIDOS):
+    """Registra achado de 'externo' se o HOSTNAME de `url` nao estiver na
+    allowlist, por IGUALDADE EXATA. Um so lugar pra decidir a regra de
+    host — chamado dos quatro pontos que descobrem uma URL de recurso (tag
+    src/href, @import/url() em CSS, atributo livre poster/data-video, e
+    cada entrada de srcset). O dia em que a regra de host mudar, so mexe
+    aqui.
+
+    NAO faz "host permitido in url" (substring): isso deixava passar
+    "https://evil.com/fonts.googleapis.com/x.js" (host permitido no PATH),
+    "https://fonts.googleapis.com.evil.com/x.js" (subdominio forjado — um
+    dominio de outra pessoa) e "https://evil.com/a.png?from=fonts.
+    googleapis.com" (host permitido na QUERY). Nenhum subdominio e
+    legitimo aqui — os tres hosts da allowlist sao fechados, por isso a
+    comparacao e igualdade exata do hostname, nao "termina com" nem
+    "contem"."""
+    alvo = url
+    if alvo.startswith("//"):
+        # protocol-relative: urlsplit devolve hostname vazio sem esquema.
+        alvo = "https:" + alvo
+    hostname = (urlsplit(alvo).hostname or "").lower()
+    if hostname not in HOSTS_PERMITIDOS:
         achados.append(f"externo: recurso de terceiro nao permitido — {url[:90]}")
 
 
