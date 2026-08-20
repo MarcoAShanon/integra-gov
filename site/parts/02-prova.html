@@ -1,0 +1,165 @@
+<!-- Fatia 02 — a prova: reconhecimento, indicadores e as series do historico.
+
+     Sem link e sem botao DE PROPOSITO: esta faixa e de evidencia, nao de
+     acao (o CTA e da fatia 05). Consequencia pratica: nao ha alvo de
+     toque para medir a 375px, e a ordem de foco desta secao e vazia.
+
+     Sem JavaScript a secao continua inteira: os .rise nascem visiveis
+     (a regra que esconde e ".js .rise") e cada barra tem o seu valor
+     escrito ao lado, em .num — o grafico degrada para uma lista de
+     numeros legivel, que e o que o contrato 9.1 pede.
+
+     Nenhum numero desta faixa esta fora da lista de provas autorizadas.
+     Duas ausencias sao deliberadas e estao no relatorio da fatia: o total
+     "15.440" (nao fecha com a soma das barras que ele encima) e o ranking
+     dos demais colocados do edital (notas fora da lista autorizada). -->
+<section id="prova" class="faixa alt">
+  <div class="wrap">
+
+    <div class="abertura rise">
+      <span class="pill"><span class="ponto"></span>Resultados · medidos</span>
+      <h2>Na unidade que administra <span class="num">~200 mil</span> vidas, o passivo de exercícios anteriores caiu de <span class="num">~4.800</span> para <span class="num">~800</span> processos.</h2>
+      <p class="lede">Aconteceu na CGPAG/DECIPEX, entre <span class="num">mai/2023</span> e <span class="num">jan/2024</span>. Os números desta seção saem do histórico de movimentações do SEI e dos registros agregados da unidade — sem informação pessoal — e cada um traz a sua fonte.</p>
+    </div>
+
+    <!-- Os tres indicadores. A metrica e o titulo do cartao; o contexto
+         vem embaixo, em corpo pequeno; a fonte fecha o cartao, separada
+         por fio. Tres, e nao quatro. -->
+    <div class="indicadores grid">
+
+      <div class="card ind rise" data-atraso="1">
+        <span class="num-g">−90%</span>
+        <p class="ind-ctx">no tempo de cada processo: de <span class="num">~32 min</span> à mão para <span class="num">~3,5 min</span> com a automação.</p>
+        <p class="ind-fonte">Revista <cite>Gestão de Pessoas em Ação</cite> (MGI), vol.&nbsp;<span class="num">3</span>, <span class="num">jun/2025</span>.</p>
+      </div>
+
+      <div class="card ind rise" data-atraso="2">
+        <span class="num-g">+6.500</span>
+        <p class="ind-ctx">processos administrativos concluídos pela área no período.</p>
+        <p class="ind-fonte">Revista <cite>Gestão de Pessoas em Ação</cite> (MGI), vol.&nbsp;<span class="num">3</span>, <span class="num">jun/2025</span>.</p>
+      </div>
+
+      <div class="card ind rise" data-atraso="3">
+        <span class="num-g">8 → 4</span>
+        <p class="ind-ctx">técnicos na rotina de exercícios anteriores — a outra metade da equipe foi redirecionada para outras frentes.</p>
+        <p class="ind-fonte">Revista <cite>Gestão de Pessoas em Ação</cite> (MGI), vol.&nbsp;<span class="num">3</span>, <span class="num">jun/2025</span>.</p>
+      </div>
+
+    </div>
+
+    <!-- O reconhecimento. A foto entra pela primitiva .figura, com a
+         legenda FORA da imagem (contrato 6.4). -->
+    <div class="premio grid rise">
+
+      <div class="premio-txt">
+        <h3><span class="num">1º lugar</span> nacional em Experiências Inspiradoras em Gestão de Pessoas.</h3>
+        <p class="premio-p">A experiência da CGPAG/DECIPEX foi selecionada pelo MGI / Secretaria de Gestão de Pessoas e depois publicada como caso na revista da pasta.</p>
+
+        <div class="card ficha">
+          <dl>
+            <div>
+              <dt>Média final</dt>
+              <dd><span class="num">93,83</span></dd>
+            </div>
+            <div>
+              <dt>Edital</dt>
+              <dd>Edital nº <span class="num">1/2025</span> — Seleção de Experiências Inspiradoras em Gestão de Pessoas no Setor Público, MGI / Secretaria de Gestão de Pessoas</dd>
+            </div>
+            <div>
+              <dt>Experiência inscrita</dt>
+              <dd>“Automação Robótica de Processos na CGPAG/DECIPEX: Inovação e Aprendizado Organizacional na Gestão de Pessoas”</dd>
+            </div>
+            <div>
+              <dt>Publicação</dt>
+              <dd>Revista <cite>Gestão de Pessoas em Ação</cite> (MGI), vol.&nbsp;<span class="num">3</span>, <span class="num">jun/2025</span></dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <figure class="figura premio-foto">
+        <img src="assets/img-03-eb0db43e.jpg" width="400" height="266"
+             alt="Equipe da CGPAG/DECIPEX no palco, recebendo o prêmio de 1º lugar em Experiências Inspiradoras em Gestão de Pessoas, com o telão da cerimônia ao fundo"
+             loading="lazy" decoding="async">
+        <figcaption>Entrega do prêmio à equipe, em cerimônia do MGI / Secretaria de Gestão de Pessoas, em <span class="num">2025</span>.</figcaption>
+      </figure>
+
+    </div>
+
+    <!-- As series. Cada .col e filha DIRETA de uma .trilha (contrato 9.2):
+         a trilha e a pista de altura definida, e os rotulos ficam fora
+         dela — dentro, a porcentagem que o script escreve passaria a
+         contar a linha do valor e a do eixo, e a barra maxima
+         transbordaria. -->
+    <div class="series">
+      <h3>O histórico por trás dos indicadores.</h3>
+
+      <div class="graficos grid">
+
+        <div class="card grafico rise" data-atraso="1">
+          <h4>Processos de exercícios anteriores recebidos na unidade</h4>
+          <p class="g-nota">Registros agregados da unidade, por ano de entrada.</p>
+
+          <div class="bars" data-max="8000">
+            <div class="barra">
+              <span class="num valor">7.139</span>
+              <div class="trilha"><div class="col" data-h="7139"></div></div>
+              <span class="num eixo">2023</span>
+            </div>
+            <div class="barra">
+              <span class="num valor">3.609</span>
+              <div class="trilha"><div class="col" data-h="3609"></div></div>
+              <span class="num eixo">2024</span>
+            </div>
+            <div class="barra">
+              <span class="num valor">3.462</span>
+              <div class="trilha"><div class="col" data-h="3462"></div></div>
+              <span class="num eixo">2025</span>
+            </div>
+            <div class="barra parcial">
+              <span class="num valor">1.993</span>
+              <div class="trilha"><div class="col" data-h="1993"></div></div>
+              <span class="num eixo">2026*</span>
+            </div>
+          </div>
+
+          <p class="g-pe">* <span class="num">2026</span> é ano parcial. As barras de período incompleto são as mais claras, e trazem o asterisco.</p>
+        </div>
+
+        <div class="card grafico rise" data-atraso="2">
+          <h4>Valores lançados de forma controlada no SIAPE</h4>
+          <p class="g-nota">Em R$ milhões, por mês de lançamento. Total de <span class="num">R$ 12,11 mi</span> em <span class="num">304</span> processos, <span class="num">abr–jul/2026</span>.</p>
+
+          <div class="bars" data-max="5">
+            <div class="barra">
+              <span class="num valor">3,88</span>
+              <div class="trilha"><div class="col" data-h="3.88"></div></div>
+              <span class="num eixo">abr/26</span>
+            </div>
+            <div class="barra">
+              <span class="num valor">4,18</span>
+              <div class="trilha"><div class="col" data-h="4.18"></div></div>
+              <span class="num eixo">mai/26</span>
+            </div>
+            <div class="barra parcial">
+              <span class="num valor">2,69</span>
+              <div class="trilha"><div class="col" data-h="2.69"></div></div>
+              <span class="num eixo">jun/26*</span>
+            </div>
+            <div class="barra parcial">
+              <span class="num valor">1,35</span>
+              <div class="trilha"><div class="col" data-h="1.35"></div></div>
+              <span class="num eixo">jul/26*</span>
+            </div>
+          </div>
+
+          <p class="g-pe">* mês parcial. As barras de período incompleto são as mais claras, e trazem o asterisco.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <p class="fontes rise"><b>Fontes.</b> Indicadores: artigo “Inovações Silenciosas em Gestão de Pessoas: automatizando atividades de trabalho repetitivas da DECIPEX”, revista <cite>Gestão de Pessoas em Ação</cite> (MGI), vol.&nbsp;<span class="num">3</span>, <span class="num">jun/2025</span>. Séries: registros agregados da unidade. Reconhecimento: Edital nº <span class="num">1/2025</span>, MGI / Secretaria de Gestão de Pessoas. Todos os dados são agregados, sem informação pessoal.</p>
+
+  </div>
+</section>

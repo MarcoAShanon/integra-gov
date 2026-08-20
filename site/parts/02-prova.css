@@ -1,0 +1,210 @@
+/* =====================================================================
+   02-prova — reconhecimento, indicadores e as series do historico.
+
+   Todo seletor comeca por "#prova". Nenhum token novo, nenhum :root,
+   nenhuma box-shadow, nenhum outline, nenhum z-index cru, nenhum
+   font-size fora dos oito degraus, nenhum respiro fora da escala de
+   Fibonacci. As cores sao so as da tabela 6.2 e da rampa 6.6.
+
+   O que esta faixa NAO faz, e e proposital:
+   - nao declara padding vertical nem background na <section> (e da .faixa);
+   - nao da altura fixa a .col (isso desenharia um grafico que mente);
+   - nao escreve .rise{opacity:0} (quem esconde e ".js .rise", do sistema);
+   - nao usa --col-N em lugar nenhum, entao nao ha como a medida resolver
+     contra o bloco errado.
+   ===================================================================== */
+
+/* --- ritmo interno da faixa ----------------------------------------
+   Os cinco blocos (abertura, indicadores, premio, series, fontes) sao
+   irmaos diretos do .wrap, separados por --e-6, que e a distancia entre
+   blocos DENTRO de uma secao. O passo entre faixas continua sendo da
+   .faixa; aqui so o de dentro. */
+#prova .wrap{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-6);
+}
+
+/* nenhum numero desta faixa quebra no meio. Medido a 375px: o mais
+   largo e "abr-jul/2026" (~94px) contra ~295px de linha disponivel,
+   entao proibir a quebra nao cria transbordo em lugar nenhum — so
+   impede que "abr-" fique numa linha e "jul/2026" na seguinte. O
+   sistema ja faz o mesmo dentro de .tabela. */
+#prova .num{white-space:nowrap}
+
+/* =====================================================================
+   OS TRES INDICADORES
+   ===================================================================== */
+
+/* .grid traz align-items:start; aqui os tres cartoes precisam da MESMA
+   altura para que a linha de fonte de cada um caia na mesma altura —
+   e por isso que o margin-top:auto do .ind-fonte funciona. */
+#prova .indicadores{align-items:stretch}
+
+#prova .ind{
+  grid-column:span 4;
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-3);
+}
+
+/* o contexto e corpo pequeno em --text (17,49:1 sobre o cartao). NAO em
+   --text-soft: o .num-g logo acima e --acento-ink, e --acento-ink dentro
+   de um bloco em --text-soft mede 1,07:1 contra o texto vizinho
+   (contrato 6.2-b). Contra --text ele mede 3,05:1 e se separa. */
+#prova .ind-ctx{
+  font-size:var(--t-3);
+  color:var(--text);
+}
+
+/* a fonte do numero, colada no pe do cartao e separada por fio. E a
+   vantagem desta faixa sobre o molde: cada metrica carrega a origem. */
+#prova .ind-fonte{
+  margin-top:auto;
+  padding-top:var(--e-3);
+  border-top:1px solid var(--border);
+  font-size:var(--t-2);
+  color:var(--text-soft);
+}
+
+/* =====================================================================
+   O RECONHECIMENTO
+   ===================================================================== */
+#prova .premio-txt{
+  grid-column:span 7;
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-4);
+}
+
+#prova .premio-p{
+  font-size:var(--t-4);
+  color:var(--text);
+  max-width:64ch;
+}
+
+/* a foto nasce 400x266; em 5 colunas do .wrap ela fica em torno de
+   440px, ou seja, praticamente na resolucao nativa. */
+#prova .premio-foto{grid-column:span 5}
+
+/* =====================================================================
+   AS SERIES
+   ===================================================================== */
+#prova .series{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-4);
+}
+
+/* .grid traz align-items:start, e com titulos de alturas diferentes os
+   dois cartoes de grafico terminavam em alturas diferentes. Stretch
+   iguala os dois, e o margin-top:auto do .g-pe encosta as duas notas de
+   rodape no mesmo pe. */
+#prova .graficos{align-items:stretch}
+
+#prova .grafico{
+  grid-column:span 6;
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-3);
+}
+
+#prova .g-nota,
+#prova .g-pe{
+  font-size:var(--t-2);
+  color:var(--text-soft);
+}
+
+#prova .g-pe{margin-top:auto}
+
+/* --- as barras ------------------------------------------------------
+   .bars e a linha; cada .barra e uma coluna com valor, trilha e eixo. A
+   .col e filha DIRETA da .trilha, que e a unica caixa de altura
+   definida — e o que impede a porcentagem escrita pelo script de
+   resolver contra os rotulos e transbordar (contrato 9.2).
+
+   O vao de --e-3 entre barras nao e so respiro: a razao WCAG mede cada
+   cor contra o FUNDO, nunca contra a vizinha, entao duas colunas de
+   mesma cor encostadas leriam como um bloco unico. O fundo do cartao
+   entre elas e o que as separa. */
+#prova .bars{
+  display:flex;
+  align-items:flex-end;
+  gap:var(--e-3);
+  margin-block:var(--e-3);
+}
+
+#prova .barra{
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:var(--e-2);
+}
+
+#prova .valor{
+  font-size:var(--t-2);
+  color:var(--text);
+}
+
+/* o fio da linha de base: sem JavaScript a .col fica em altura zero, e
+   este fio e o que mantem o grafico legivel como eixo em vez de virar
+   um vazio. --border e decorativo, e uma regua e exatamente o uso que o
+   contrato 6.3 autoriza para ele. */
+#prova .trilha{border-bottom:1px solid var(--border)}
+
+/* altura ZERO no CSS: quem da altura e o script, a partir de data-h. Dar
+   altura fixa aqui desenharia todas as barras do mesmo tamanho. */
+#prova .col{
+  flex:1;
+  height:0;
+  background:var(--dado);
+}
+
+/* periodo parcial: o degrau mais claro da rampa. --dado x --dado-fraco
+   mede 3,09:1, o minimo da WCAG entre objetos graficos vizinhos — e as
+   duas se separam em LUMINANCIA, nao em matiz, entao a distincao
+   sobrevive ao daltonismo e a impressao em preto e branco. Mesmo assim
+   a cor nunca e o unico sinal: a barra parcial tem asterisco no eixo e
+   nota de rodape. */
+#prova .barra.parcial .col{background:var(--dado-fraco)}
+
+#prova .eixo{
+  font-size:var(--t-1);
+  color:var(--text-soft);
+}
+
+/* =====================================================================
+   A NOTA DE FONTES
+   ===================================================================== */
+#prova .fontes{
+  font-size:var(--t-2);
+  color:var(--text-soft);
+  max-width:78ch;
+}
+
+/* =====================================================================
+   BREAKPOINTS — so 768px, em max-width.
+
+   Nao ha bloco de 1080px porque nao ha o que corrigir la: medido, os
+   tres indicadores em 4 colunas e os dois graficos em 6 colunas cabem
+   ate 769px, e abaixo disso o proprio sistema colapsa a .grid para uma
+   coluna com !important — nenhum span:N precisa ser desfeito aqui.
+   ===================================================================== */
+@media (max-width:768px){
+  /* no celular o cartao ganha densidade: --e-4 no lugar de --e-5. */
+  #prova .card{padding:var(--e-4)}
+  #prova .wrap{gap:var(--e-5)}
+}
+
+/* =====================================================================
+   MOVIMENTO — a barra sobe apenas para quem nao pediu movimento
+   reduzido. O sistema ja tem a rede final com !important; declarar
+   dentro de no-preference deixa a regra correta na origem, e nao so
+   corrigida depois. A ausencia da animacao nao esconde informacao
+   nenhuma: o valor de cada barra esta escrito ao lado, em .num.
+   ===================================================================== */
+@media (prefers-reduced-motion:no-preference){
+  #prova .col{transition:height var(--tempo-lento) var(--curva)}
+}
