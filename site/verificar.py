@@ -26,9 +26,17 @@ FONTES_VETADAS = {
     "inter", "roboto", "arial", "system-ui", "-apple-system",
     "blinkmacsystemfont", "segoe ui", "helvetica neue", "space grotesk",
 }
-HOSTS_PERMITIDOS = ("fonts.googleapis.com", "fonts.gstatic.com")
-TAGS_DE_RECURSO = ("link", "script", "img", "source", "iframe", "video", "audio")
+HOSTS_PERMITIDOS = ("fonts.googleapis.com", "fonts.gstatic.com", "projeto.govintegra.com.br")
+TAGS_DE_RECURSO = ("link", "script", "img", "source", "iframe", "video", "audio", "embed", "use")
 PALAVRAS_DE_CONCLUSAO = ("completo", "pronto", "finalizado", "fecha o ciclo")
+# Frases EXATAS em que uma palavra de conclusao tem outro sentido no contexto
+# ja publicado da pagina ("vem pronto para" = *incluido*, nao "o projeto
+# acabou"). Cada frase aqui foi revisada e aprovada por humano — e a valvula
+# de escape do veto, NAO um espaco pra um agente futuro engordar a lista
+# sozinho ate o portao passar. Toda adicao exige decisao humana.
+FRASES_PERMITIDAS = (
+    "vem pronto para",
+)
 
 _RE_CPF = re.compile(r"\b\d{3}\.\d{3}\.\d{3}-\d{2}\b")
 # CPF sem pontuacao: 11 digitos isolados — nem colados a outros digitos, nem
@@ -52,6 +60,28 @@ _RE_CSS_RECURSO = re.compile(
 # TERMINA em "%", nao comeca, e um seletor de verdade tambem pode conter "%"
 # (atributo, calc()) sem ser um passo de keyframe.
 _RE_PASSO_KEYFRAMES = re.compile(r"^(?:from|to|\d+(?:\.\d+)?%)$", re.I)
+# ids e ancoras internas: pega href="#x" quebrado (sem id="x" correspondente)
+# e id duplicado. href="#" puro/vazio fica pra _RE_HREF_MORTO (regra antiga).
+# "(?<=\s)" em vez de "\b": com \b, "data-id=" tambem batia (boundary logo
+# apos o hifen), tratando um atributo de gancho de JS como se fosse o id de
+# verdade. Exigir espaco imediatamente antes garante que e um atributo
+# proprio, nao o sufixo de outro.
+_RE_ID = re.compile(r'(?<=\s)id\s*=\s*"([^"]+)"', re.I)
+_RE_HREF_ANCORA = re.compile(r'href\s*=\s*"#([^"#]+)"', re.I)
+# font-family/font: crus em qualquer regra do CSS — nao so nos 3 tokens do
+# sistema. "(?<!-)" e "(?!-)" evitam colidir com "--font-family-x" (custom
+# property hipotetica) e com font-size/font-weight/font-style/etc.
+_RE_FONT_FAMILY = re.compile(r"(?<!-)\bfont-family\s*:\s*([^;}\"']+)", re.I)
+_RE_FONT_SHORTHAND = re.compile(r"\bfont(?!-)\s*:\s*([^;}\"']+)", re.I)
+# a familia importada por uma URL do Google Fonts pode ser vetada mesmo com
+# o HOST permitido — precisa olhar o parametro family= por dentro.
+_RE_GOOGLE_FONTS_LINK = re.compile(r'href\s*=\s*"([^"]*fonts\.googleapis\.com[^"]*)"', re.I)
+_RE_GOOGLE_FONTS_FAMILY = re.compile(r"family=([^&\"]+)", re.I)
+# poster (video) e data-video (o lightbox transforma em src) nao ficam presos
+# a TAGS_DE_RECURSO — podem aparecer em qualquer tag.
+_RE_ATRIBUTO_RECURSO_LIVRE = re.compile(r'\b(?:poster|data-video)\s*=\s*"((?:https?:)?//[^"]+)"', re.I)
+# srcset e uma lista separada por virgula de "url descritor" (1x, 480w...).
+_RE_SRCSET = re.compile(r'\bsrcset\s*=\s*"([^"]+)"', re.I)
 
 
 def _sem_comentarios(css: str) -> str:
@@ -68,6 +98,44 @@ def _e_passo_keyframes(seletores: str) -> bool:
     bloco volta a ser verificado como seletor normal."""
     partes = [p.strip() for p in seletores.split(",")]
     return bool(partes) and all(_RE_PASSO_KEYFRAMES.match(p) for p in partes)
+
+
+def _primeira_familia(valor: str) -> str:
+    """Primeira familia de uma lista `font-family` separada por virgula."""
+    return valor.split(",")[0].strip().strip("'\"").lower()
+
+
+def _familia_do_shorthand(valor: str) -> str | None:
+    """Extrai a lista de familias de um `font:` shorthand: tudo apos o
+    ULTIMO token que contem digito (tamanho, weight numerico, line-height).
+    Heuristica suficiente pro CSS desta pagina — nao e um parser CSS
+    completo, mas cobre `font:600 1rem Inter,serif`."""
+    tokens = valor.split()
+    idx_ultimo_numerico = None
+    for i, tok in enumerate(tokens):
+        if re.search(r"\d", tok):
+            idx_ultimo_numerico = i
+    if idx_ultimo_numerico is None:
+        return None
+    resto = " ".join(tokens[idx_ultimo_numerico + 1 :]).strip()
+    return resto or None
+
+
+def _cpf_valido(digitos: str) -> bool:
+    """Valida os dois digitos verificadores de um CPF de 11 digitos (modulo
+    11). Um CPF real tem o 10o e o 11o digito calculaveis a partir dos 9
+    primeiros; um telefone ou outro numero de 11 digitos quase nunca
+    satisfaz isso — e mais honesto que uma heuristica de formato."""
+    nums = [int(c) for c in digitos]
+
+    def _dv(fatia: list[int], peso_inicial: int) -> int:
+        soma = sum(d * peso for d, peso in zip(fatia, range(peso_inicial, 1, -1)))
+        resto = (soma * 10) % 11
+        return resto if resto < 10 else 0
+
+    dv1 = _dv(nums[:9], 10)
+    dv2 = _dv(nums[:9] + [dv1], 11)
+    return dv1 == nums[9] and dv2 == nums[10]
 
 
 def verificar(html: str, *, fatia: bool = False) -> list[str]:
@@ -105,6 +173,21 @@ def verificar(html: str, *, fatia: bool = False) -> list[str]:
     if _RE_HREF_MORTO.search(html):
         achados.append('links: existe href="#" ou href="" — link que nao leva a lugar nenhum')
 
+    # --- ids duplicados (roda nos DOIS modos) e ancora interna quebrada (so
+    # na pagina inteira — uma fatia isolada legitimamente aponta pra ancoras
+    # de outras fatias que ainda nao existem na previa dela).
+    ids = _RE_ID.findall(html)
+    for id_dup in sorted({i for i in ids if ids.count(i) > 1}):
+        achados.append(f"id: {id_dup!r} aparece mais de uma vez no documento")
+
+    if not fatia:
+        id_set = set(ids)
+        for alvo_ancora in _RE_HREF_ANCORA.findall(html):
+            if alvo_ancora not in id_set:
+                achados.append(
+                    f'ancora: href="#{alvo_ancora}" nao tem id="{alvo_ancora}" correspondente'
+                )
+
     # --- imagens sem alt
     for tag in _RE_IMG.findall(html):
         if not re.search(r"\balt\s*=", tag, re.I):
@@ -128,14 +211,59 @@ def verificar(html: str, *, fatia: bool = False) -> list[str]:
         if not any(h in url for h in HOSTS_PERMITIDOS):
             achados.append(f"externo: recurso de terceiro nao permitido — {url[:90]}")
 
+    # poster (<video>) e data-video (o lightbox transforma em src) nao ficam
+    # presos a TAGS_DE_RECURSO — podem estar em qualquer tag.
+    for url in _RE_ATRIBUTO_RECURSO_LIVRE.findall(html):
+        if not any(h in url for h in HOSTS_PERMITIDOS):
+            achados.append(f"externo: recurso de terceiro nao permitido — {url[:90]}")
+
+    # srcset e uma lista "url descritor, url descritor" — cada URL precisa
+    # passar pela mesma checagem de host.
+    for valor_srcset in _RE_SRCSET.findall(html):
+        for entrada in valor_srcset.split(","):
+            partes_srcset = entrada.strip().split()
+            if not partes_srcset:
+                continue
+            url = partes_srcset[0]
+            if url.startswith(("http://", "https://", "//")) and not any(
+                h in url for h in HOSTS_PERMITIDOS
+            ):
+                achados.append(f"externo: recurso de terceiro nao permitido — {url[:90]}")
+
     # --- fontes vetadas como ESCOLHA (primeira familia), nao como fallback
     # verifica TODAS as declaracoes do token, nao so a primeira — uma fatia
     # pode redeclarar a fonte dentro de um @media e escapar da guarda.
     for prop in ("--font-display", "--font-corpo", "--font-mono"):
         for m in re.finditer(re.escape(prop) + r"\s*:\s*([^;}]+)", html, re.I):
-            primeira = m.group(1).split(",")[0].strip().strip("'\"").lower()
+            primeira = _primeira_familia(m.group(1))
             if primeira in FONTES_VETADAS:
                 achados.append(f"fonte vetada: {prop} escolhe {primeira!r} como primeira familia")
+
+    # a checagem acima so olha os 3 tokens do sistema — varre tambem toda
+    # declaracao font-family:/font: crua em qualquer regra do CSS (ex.:
+    # #prova{font-family:Inter}, que passava limpo antes).
+    for m in _RE_FONT_FAMILY.finditer(html):
+        primeira = _primeira_familia(m.group(1))
+        if primeira in FONTES_VETADAS:
+            achados.append(f"fonte vetada: font-family escolhe {primeira!r} como primeira familia")
+
+    for m in _RE_FONT_SHORTHAND.finditer(html):
+        familias = _familia_do_shorthand(m.group(1))
+        if familias:
+            primeira = _primeira_familia(familias)
+            if primeira in FONTES_VETADAS:
+                achados.append(f"fonte vetada: font (shorthand) escolhe {primeira!r} como primeira familia")
+
+    # o HOST do Google Fonts e permitido, mas a FAMILIA importada dentro da
+    # URL (?family=Inter:wght@400) pode ser vetada mesmo assim.
+    for url_link in _RE_GOOGLE_FONTS_LINK.findall(html):
+        for fam_param in _RE_GOOGLE_FONTS_FAMILY.findall(url_link):
+            for familia in fam_param.split("|"):
+                nome = familia.split(":")[0].replace("+", " ").strip().lower()
+                if nome in FONTES_VETADAS:
+                    achados.append(
+                        f"fonte vetada: Google Fonts importa {nome!r} (family={familia})"
+                    )
 
     # --- skip link (so na pagina inteira — quem emite e o montador, nao a fatia)
     if not fatia:
@@ -163,13 +291,23 @@ def verificar(html: str, *, fatia: bool = False) -> list[str]:
         achados.append("reduced-motion: ha movimento sem @media (prefers-reduced-motion)")
 
     # --- privacidade
+    # formato PONTUADO: nao exige digito verificador — quem escreve um CPF
+    # pontuado esta escrevendo um CPF, valido ou nao, e e isso que a
+    # restricao de privacidade quer pegar.
     for cpf in _RE_CPF.findall(html):
         achados.append(f"CPF: padrao de CPF encontrado no HTML — {cpf}")
+    # SEM pontuacao: 11 digitos corridos tambem casam com telefone (DDD + 9 +
+    # 8 digitos) e outros numeros de 11 digitos. Exigir digito verificador
+    # valido elimina praticamente todo falso positivo sem enfraquecer a
+    # checagem — e mais honesto que uma heuristica de formato.
     for cpf in _RE_CPF_SEM_PONTUACAO.findall(html):
-        achados.append(f"CPF: padrao de CPF sem pontuacao encontrado no HTML — {cpf}")
+        if _cpf_valido(cpf):
+            achados.append(f"CPF: padrao de CPF sem pontuacao encontrado no HTML — {cpf}")
 
     # --- enquadramento incremental
     texto = re.sub(r"<[^>]+>", " ", html).lower()
+    for frase in FRASES_PERMITIDAS:
+        texto = texto.replace(frase.lower(), "")
     for palavra in PALAVRAS_DE_CONCLUSAO:
         if re.search(r"\b" + re.escape(palavra) + r"\b", texto):
             achados.append(
@@ -210,6 +348,19 @@ def verificar_partes(parts: pathlib.Path) -> list[str]:
         for bloco in re.finditer(r"([^{}]+)\{", css):
             seletores = bloco.group(1).strip()
             if not seletores or seletores.startswith("@") or _e_passo_keyframes(seletores):
+                continue
+            # a fatia CONSOME os tokens do contrato; nao cria nem redefine em
+            # :root. A checagem de prefixo (abaixo) sempre permitiu ":root"
+            # explicitamente — o que deixava uma fatia criar um token NOVO
+            # (nao so redefinir um existente, que ja e pego por "redefine"
+            # acima) passar limpo. Qualquer bloco :root numa fatia e achado,
+            # ponto — 00-sistema.css e o unico lugar onde :root e legitimo, e
+            # ja foi excluido do loop acima.
+            if seletores == ":root":
+                achados.append(
+                    f"root: {arquivo.name} declara um bloco :root — a fatia so consome "
+                    "tokens do contrato, nao cria nem redefine em :root"
+                )
                 continue
             for seletor in seletores.split(","):
                 seletor = seletor.strip()

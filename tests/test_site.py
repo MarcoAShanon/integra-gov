@@ -369,8 +369,11 @@ def test_link_morto_com_aspas_simples_e_achado():
 
 # MENOR 2: CPF sem pontuacao deve ser reconhecido, sem gerar falso positivo
 # em numeros grandes formatados (contagens, valores em reais, datas).
+# "11144477735" tem digitos verificadores validos (V10 exige isso agora —
+# o exemplo antigo, "12345678900", NAO tem, entao deixou de ser achado; essa
+# e exatamente a mudanca de comportamento que V10 pede).
 def test_cpf_sem_pontuacao_e_achado():
-    achados = v.verificar("<p>12345678900</p>")
+    achados = v.verificar("<p>11144477735</p>")
     assert any("CPF" in a for a in achados)
 
 
@@ -382,3 +385,171 @@ def test_numero_grande_formatado_nao_e_falso_positivo_de_cpf():
 def test_sequencia_de_mais_de_onze_digitos_nao_e_falso_positivo_de_cpf():
     achados = v.verificar("<p>123456789012</p>")
     assert not any("CPF" in a for a in achados)
+
+
+# --------------------------------- lote consolidado (rodada 2): V2, V3, V4,
+# V5, V6, V7, V10. V1, V9 e M1 ja foram tratados no commit anterior; V8 e
+# so documentacao, ja anexada ao docstring de verificar().
+
+# V2 — ancora interna quebrada e id duplicado
+def test_ancora_interna_sem_id_correspondente_e_achado():
+    achados = v.verificar('<a href="#modulos">x</a>')
+    assert any("ancora" in a for a in achados)
+
+
+def test_ancora_interna_com_id_correspondente_nao_e_achado():
+    html = '<a href="#modulos">x</a><section id="modulos"></section>'
+    assert not any("ancora" in a for a in v.verificar(html))
+
+
+def test_id_duplicado_e_achado():
+    html = '<section id="hero"></section><div id="hero"></div>'
+    achados = v.verificar(html)
+    assert any(a.startswith("id:") for a in achados)
+
+
+def test_href_vazio_continua_achado_pela_regra_antiga():
+    achados = v.verificar('<a href="#">x</a>')
+    assert any("href" in a for a in achados)
+
+
+def test_fatia_nao_verifica_ancora_quebrada():
+    """Uma fatia legitimamente aponta para ancoras de outras fatias."""
+    achados = v.verificar('<a href="#outra-fatia">x</a>', fatia=True)
+    assert not any("ancora" in a for a in achados)
+
+
+def test_fatia_ainda_verifica_id_duplicado():
+    html = '<section id="x"></section><div id="x"></div>'
+    achados = v.verificar(html, fatia=True)
+    assert any(a.startswith("id:") for a in achados)
+
+
+def test_data_id_nao_e_confundido_com_id_de_verdade():
+    """data-id e um gancho de JS, nao o atributo id — nao pode contar pra
+    deteccao de duplicata nem virar alvo de ancora."""
+    html = '<div data-id="123"><section id="123"></section></div>'
+    achados = v.verificar(html)
+    assert not any(a.startswith("id:") for a in achados)
+
+
+# V3 — font-family/font crus, e a familia dentro da URL do Google Fonts
+def test_font_family_crua_vetada_e_achado():
+    achados = v.verificar("<style>#prova{font-family:Inter}</style>")
+    assert any("vetada" in a for a in achados)
+
+
+def test_font_family_crua_permitida_nao_e_achado():
+    html = "<style>#prova{font-family:Fraunces,Arial,sans-serif}</style>"
+    assert not any("vetada" in a for a in v.verificar(html))
+
+
+def test_font_shorthand_vetada_e_achado():
+    achados = v.verificar("<style>.x{font:600 1rem Inter,serif}</style>")
+    assert any("vetada" in a for a in achados)
+
+
+def test_google_fonts_url_com_familia_vetada_e_achado():
+    html = (
+        '<link rel="stylesheet" '
+        'href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700">'
+    )
+    achados = v.verificar(html)
+    assert any("vetada" in a for a in achados)
+
+
+def test_google_fonts_url_com_familia_permitida_nao_e_achado():
+    html = (
+        '<link rel="stylesheet" '
+        'href="https://fonts.googleapis.com/css2?family=Fraunces:opsz@9..144">'
+    )
+    achados = v.verificar(html)
+    assert not any("vetada" in a for a in achados)
+
+
+# V4 — recurso externo fora de src/href
+def test_poster_externo_e_achado():
+    html = '<video poster="https://cdn.exemplo.com/poster.jpg"></video>'
+    assert any("externo" in a for a in v.verificar(html))
+
+
+def test_srcset_externo_e_achado():
+    html = '<img srcset="https://cdn.exemplo.com/a.jpg 1x, /img/b.jpg 2x" src="/img/b.jpg" alt="">'
+    assert any("externo" in a for a in v.verificar(html))
+
+
+def test_srcset_so_local_nao_e_achado():
+    html = '<img srcset="/img/a.jpg 1x, /img/b.jpg 2x" src="/img/b.jpg" alt="">'
+    assert not any("externo" in a for a in v.verificar(html))
+
+
+def test_data_video_externo_e_achado():
+    html = '<button data-video="https://cdn.exemplo.com/v.mp4">play</button>'
+    assert any("externo" in a for a in v.verificar(html))
+
+
+def test_embed_externo_e_achado():
+    assert any("externo" in a for a in v.verificar('<embed src="https://cdn.exemplo.com/x.svg">'))
+
+
+def test_use_href_externo_e_achado():
+    html = '<svg><use href="https://cdn.exemplo.com/sprite.svg#icon"></use></svg>'
+    assert any("externo" in a for a in v.verificar(html))
+
+
+# V5 — token novo criado por uma fatia em :root
+def test_fatia_cria_token_novo_em_root_e_achado(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text(":root{--meu-token:#fff}", encoding="utf-8")
+    achados = v.verificar_partes(tmp_path)
+    assert any(a.startswith("root:") for a in achados)
+
+
+def test_root_em_00_sistema_nao_e_achado(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--meu-token:#fff}", encoding="utf-8")
+    assert v.verificar_partes(tmp_path) == []
+
+
+# V6 — o proprio dominio nao e "terceiro"
+def test_proprio_dominio_nao_e_achado_de_externo():
+    html = '<link rel="canonical" href="https://projeto.govintegra.com.br/">'
+    assert not any("externo" in a for a in v.verificar(html))
+
+
+# V7 — allowlist de frases exatas pro veto de conclusao
+def test_frase_permitida_vem_pronto_para_nao_e_achado():
+    html = "<p>O que já vem pronto para outro órgão adotar: licença MIT</p>"
+    assert not any("incremental" in a for a in v.verificar(html))
+
+
+def test_projeto_esta_pronto_continua_achado():
+    achados = v.verificar("<p>o projeto está pronto</p>")
+    assert any("incremental" in a for a in achados)
+
+
+def test_sistema_completo_continua_achado():
+    achados = v.verificar("<p>sistema completo</p>")
+    assert any("incremental" in a for a in achados)
+
+
+def test_fecha_o_ciclo_continua_achado():
+    achados = v.verificar("<p>fecha o ciclo</p>")
+    assert any("incremental" in a for a in achados)
+
+
+# V10 — CPF sem pontuacao: validar digito verificador (nao confundir com telefone)
+def test_telefone_de_onze_digitos_nao_e_falso_positivo_de_cpf():
+    achados = v.verificar("<p>61999998888</p>")
+    assert not any("CPF" in a for a in achados)
+
+
+def test_nup_sei_nao_e_falso_positivo_de_cpf():
+    achados = v.verificar("<p>19975.009280/2025-99</p>")
+    assert not any("CPF" in a for a in achados)
+
+
+def test_cpf_pontuado_continua_achado_sem_exigir_digito_verificador():
+    """O formato PONTUADO continua achado sem validar o digito verificador —
+    quem escreve um CPF pontuado esta escrevendo um CPF, valido ou nao."""
+    achados = v.verificar("<p>000.000.000-00</p>")
+    assert any("CPF" in a for a in achados)
