@@ -23,24 +23,18 @@
 
 /* cada bloco abre com um fio de cabelo. --border e decorativo (1,27:1 a
    1,43:1) e aqui ele so separa — nao identifica controle nenhum, que e
-   o unico uso que o contrato 6.3 lhe proibe. */
+   o unico uso que o contrato 6.3 lhe proibe.
+
+   O bloco NAO tem mais display:flex nem gap proprio, e nao ha regra de
+   medida de leitura aqui: o h3 e o paragrafo dele agora sao uma .sub do
+   sistema (12px entre os dois, 32px ate o que vem depois, 62ch de
+   medida). Tres regras locais sairam daqui — a cascata do #contexto
+   venceria em silencio qualquer correcao futura da primitiva, que e o
+   mesmo motivo pelo qual a fatia 1 apagou as suas 22 linhas de .ficha. */
 #contexto .bloco{
-  display:flex;
-  flex-direction:column;
-  gap:var(--e-4);
   padding-top:var(--e-5);
   border-top:1px solid var(--border);
 }
-
-/* 20px do gap + 12px daqui = 32px = --e-5 entre o texto e a grade. */
-#contexto .bloco .grid{width:100%;margin-top:var(--e-3)}
-
-/* medida de leitura em ch: nao depende de onde o bloco esta na grade
-   (contrato 7.1). Cor: o padrao do corpo, --text — deliberadamente NAO
-   --text-soft, porque estes paragrafos carregam o argumento e porque o
-   <code> e o fio ambar de .posicao ficariam a 1,07:1 do texto vizinho
-   se ele fosse secundario (contrato 6.2-b). */
-#contexto .intro{max-width:66ch}
 
 /* --- a comparacao ---------------------------------------------------
    As duas colunas sao IDENTICAS no desenho, de proposito: dar realce a
@@ -61,8 +55,8 @@
    ambar de 2px e o unico realce de cor do bloco; o texto ao lado dele e
    --text, contra o qual --acento-ink mede 3,05:1. */
 #contexto .posicao{
-  margin-top:var(--e-3);
-  max-width:66ch;
+  margin-top:var(--e-5);
+  max-width:62ch;
   padding-left:var(--e-4);
   border-left:2px solid var(--acento-ink);
 }
@@ -112,9 +106,21 @@
   stroke-width:1;
   vector-effect:non-scaling-stroke;
 }
-/* o no destacado se separa por PREENCHIMENTO, nao so por cor de traco:
-   em escala de cinza e para quem enxerga mal, o que distingue e a
-   mancha clara, nao o matiz do fio. */
+/* O no destacado, com os numeros MEDIDOS em vez de supostos — a versao
+   anterior deste comentario dizia que o preenchimento sobrevivia a
+   escala de cinza, e nao sobrevive:
+
+     --acento-soft x --surface (o fundo da figura): 1,18:1 no claro,
+     1,07:1 no escuro — o preenchimento e ornamento, nao sinal.
+     --acento-ink x --text-soft (o traco dos outros nos): 1,07:1 no
+     claro, 1,19:1 no escuro — mesmo caso da lei da vizinhanca.
+
+   O que de fato distingue este no em escala de cinza sao dois canais
+   NAO cromaticos: o traco de 2px contra os de 1px e a caixa 4 unidades
+   mais alta. E, acima dos dois, o rotulo escrito dentro dela — nenhuma
+   informacao do diagrama e portada so por cor. Contra o FUNDO, que e o
+   que a WCAG cobra de objeto grafico, o traco mede 5,73:1 no claro e
+   8,58:1 no escuro. */
 #contexto .fluxo .no-integra{
   fill:var(--acento-soft);
   stroke:var(--acento-ink);
@@ -145,13 +151,10 @@
    contra --text e 1,05:1 contra --text-soft (contrato 8.3-h). */
 #contexto .lista-ok li > span{display:block;max-width:62ch}
 #contexto .lista-ok b{display:block;margin-bottom:var(--e-1)}
-/* DEFEITO DA FATIA 0, contornado aqui e RELATADO, nao consertado no
-   arquivo alheio: em 00-sistema.css o content de .lista-ok li::before
-   esta gravado como os bytes C2 93 (um caractere de controle invisivel)
-   em vez de E2 9C 93 — ou seja, o "visto" nao aparece. Reescrever o
-   glifo por escape CSS resolve dentro do meu prefixo e e imune a
-   codificacao de arquivo. A cor continua vindo da primitiva. */
-#contexto .lista-ok li::before{content:"\2713"}
+/* O contorno do "visto" corrompido SAIU daqui: a primitiva foi
+   consertada (a causa era um escape \2713 dentro de uma string Python,
+   onde \271 e octal). Manter a copia prefixada seria deixar o #contexto
+   vencendo em silencio qualquer correcao futura da primitiva. */
 
 #contexto .escopo{grid-column:span 5}
 #contexto .escopo p{margin-top:var(--e-3)}
