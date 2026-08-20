@@ -153,22 +153,31 @@ comerciais, que não citam nada.
 
 ## 7. Ciclo de revisão
 
-Cada fatia atravessa quatro passos, e nenhuma entra na página final sem o
-quarto:
+Cada etapa atravessa **cinco** portões, e nenhuma entra na página final sem
+o quinto. As duas camadas de revisão são deliberadamente redundantes: o
+crítico cego pegou, na Task 1, um defeito crítico que o autor do plano não
+viu — e que teria bloqueado as cinco fatias seguintes.
 
 1. **Construtor** — subagente com `frontend-design`, o contrato e o texto
    atual da seção.
-2. **Crítico cego** — outro subagente recebe o HTML **sem saber quem fez nem o
+2. **Verificação mecânica** — `site/verificar.py`. Barata e implacável; roda
+   antes de qualquer revisor humano ou agente, para que ninguém gaste atenção
+   com o que a máquina pega sozinha.
+3. **Crítico cego** — outro subagente recebe o HTML **sem saber quem fez nem o
    que foi pedido além do contrato**. Audita: aderência ao contrato (nenhum
    token redefinido, nenhuma fonte fora do par), acessibilidade, restrição
    estática, e as regras do §4. Mesmo padrão de gauntlet usado no leitor de
    ficha financeira.
-3. **Montagem e demonstração** — a fatia é montada e exibida no navegador,
-   com captura em claro e escuro.
-4. **Aprovação do usuário.** Reprovada, volta **ao construtor** com o parecer
-   — não é reescrita por cima pelo orquestrador.
+4. **Sessão Revisão** — sessão CCD dedicada, `local_e6758524-2d3f-4bab-b139-e7b1243ebf2d`,
+   no mesmo diretório do projeto. É **o portão que aprova**, e recebe cada
+   etapa com contexto próprio, sem depender da sessão de execução. Envio por
+   `mcp__ccd_session_mgmt__send_message`. Achado dela volta ao construtor.
+5. **Aprovação do usuário** — nas etapas de design, com a fatia montada e
+   exibida no navegador, captura em claro e escuro. Reprovada, volta **ao
+   construtor** com o parecer — não é reescrita por cima pelo orquestrador.
 
-O trabalho só se encerra quando todas as fatias estiverem aprovadas.
+O trabalho só se encerra quando **todas** as etapas tiverem passado pela
+sessão Revisão e todas as fatias estiverem aprovadas pelo usuário.
 
 ## 8. Validação de usabilidade
 

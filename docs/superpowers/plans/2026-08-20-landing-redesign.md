@@ -49,6 +49,12 @@ Valem para **toda** tarefa e para **todo** subagente. Copiadas da spec §4.
    `rsync` ou `ssh` de escrita. O comando é preparado; quem manda é o usuário.
 9. **Idioma:** todo texto visível em pt-BR. Comentários de código em pt-BR sem
    acentuação obrigatória (segue o padrão do repositório).
+10. **Toda etapa passa pela sessão Revisão** antes de ser dada por concluída —
+    sessão CCD `local_e6758524-2d3f-4bab-b139-e7b1243ebf2d`, no mesmo
+    diretório, via `mcp__ccd_session_mgmt__send_message`. Ela é o portão que
+    aprova; o crítico cego por subagente **permanece** como camada anterior, e
+    a redundância é intencional (ver spec §7). Nenhuma tarefa avança para a
+    seguinte com achado aberto em qualquer das duas.
 
 ### BLOCO-CONTRATO
 
