@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+"""Checagens estaticas da landing montada e das partes que a compoem.
+
+Nao altera nada. Devolve uma lista de achados; lista vazia significa integro.
+Roda antes de qualquer revisao humana, para que o revisor gaste atencao com o
+que so um humano ve.
+
+Uso:
+    python site/verificar.py                            # a pagina inteira
+    python site/verificar.py site/preview-01-hero.html  # a previa de uma fatia
+"""
+from __future__ import annotations
+
+import pathlib
+import re
+import sys
+
+RAIZ = pathlib.Path(__file__).resolve().parent
+
+FONTES_VETADAS = {
+    "inter", "roboto", "arial", "system-ui", "-apple-system",
+    "blinkmacsystemfont", "segoe ui", "helvetica neue", "space grotesk",
+}
+HOSTS_PERMITIDOS = ("fonts.googleapis.com", "fonts.gstatic.com")
+TAGS_DE_RECURSO = ("link", "script", "img", "source", "iframe", "video", "audio")
+PALAVRAS_DE_CONCLUSAO = ("completo", "pronto", "finalizado", "fecha o ciclo")
+
+_RE_CPF = re.compile(r"\b\d{3}\.\d{3}\.\d{3}-\d{2}\b")
+_RE_TITULO = re.compile(r"<h([1-6])\b", re.I)
+_RE_IMG = re.compile(r"<img\b[^>]*>", re.I)
+_RE_HREF_MORTO = re.compile(r'href\s*=\s*"(#|)"', re.I)
+_RE_TOKEN = re.compile(r"(--[a-z0-9-]+)\s*:", re.I)
+
+
+def _sem_comentarios(css: str) -> str:
+    return re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+
+
+def _titulos(html: str) -> list[int]:
+    return [int(m.group(1)) for m in _RE_TITULO.finditer(html)]
+
+
+def verificar(html: str) -> list[str]:
+    """Achados no HTML montado."""
+    achados: list[str] = []
+    niveis = _titulos(html)
+
+    # --- hierarquia de titulos
+    qtd_h1 = niveis.count(1)
+    if qtd_h1 != 1:
+        achados.append(f"h1: a pagina tem {qtd_h1} elementos <h1>; deve ter exatamente 1")
+    anterior = None
+    for n in niveis:
+        if anterior is not None and n > anterior + 1:
+            achados.append(f"titulos: h{anterior} seguido de h{n} pula degrau da hierarquia")
+            break
+        anterior = n
+
+    # --- links mortos
+    if _RE_HREF_MORTO.search(html):
+        achados.append('links: existe href="#" ou href="" — link que nao leva a lugar nenhum')
+
+    # --- imagens sem alt
+    for tag in _RE_IMG.findall(html):
+        if not re.search(r"\balt\s*=", tag, re.I):
+            achados.append(f"alt: <img> sem atributo alt — {tag[:80]}")
+
+    # --- recursos externos (ancoras <a> nao contam: sao navegacao, nao recurso)
+    padrao = re.compile(
+        r"<(" + "|".join(TAGS_DE_RECURSO) + r")\b[^>]*?\b(?:src|href)\s*=\s*\"(https?://[^\"]+)\"",
+        re.I,
+    )
+    for _tag, url in padrao.findall(html):
+        if not any(h in url for h in HOSTS_PERMITIDOS):
+            achados.append(f"externo: recurso de terceiro nao permitido — {url[:90]}")
+
+    # --- fontes vetadas como ESCOLHA (primeira familia), nao como fallback
+    for prop in ("--font-display", "--font-corpo", "--font-mono"):
+        m = re.search(re.escape(prop) + r"\s*:\s*([^;}]+)", html, re.I)
+        if not m:
+            continue
+        primeira = m.group(1).split(",")[0].strip().strip("'\"").lower()
+        if primeira in FONTES_VETADAS:
+            achados.append(f"fonte vetada: {prop} escolhe {primeira!r} como primeira familia")
+
+    # --- skip link
+    if "<body" in html.lower() or "<h1" in html.lower():
+        if 'class="skip"' not in html:
+            achados.append("skip: falta o skip link para o conteudo principal")
+
+    # --- movimento reduzido
+    if re.search(r"\b(transition|animation)\s*:", html, re.I) and "reduced-motion" not in html:
+        achados.append("reduced-motion: ha movimento sem @media (prefers-reduced-motion)")
+
+    # --- privacidade
+    for cpf in _RE_CPF.findall(html):
+        achados.append(f"CPF: padrao de CPF encontrado no HTML — {cpf}")
+
+    # --- enquadramento incremental
+    texto = re.sub(r"<[^>]+>", " ", html).lower()
+    for palavra in PALAVRAS_DE_CONCLUSAO:
+        if re.search(r"\b" + re.escape(palavra) + r"\b", texto):
+            achados.append(
+                f"incremental: a palavra {palavra!r} aparece no texto visivel; "
+                "o projeto e publicado modulo a modulo"
+            )
+
+    return achados
+
+
+def verificar_partes(parts: pathlib.Path) -> list[str]:
+    """Achados nos CSS das fatias: redefinicao de token e vazamento de seletor."""
+    achados: list[str] = []
+    sistema = parts / "00-sistema.css"
+    if not sistema.exists():
+        return [f"partes: {sistema} nao existe"]
+
+    tokens = set(_RE_TOKEN.findall(_sem_comentarios(sistema.read_text(encoding="utf-8"))))
+
+    for arquivo in sorted(parts.glob("*.css")):
+        if arquivo.name == "00-sistema.css":
+            continue
+        css = _sem_comentarios(arquivo.read_text(encoding="utf-8"))
+        ident = "#" + arquivo.stem.split("-", 1)[1]
+
+        for token in _RE_TOKEN.findall(css):
+            if token in tokens:
+                achados.append(f"redefine: {arquivo.name} redefine o token {token} do contrato")
+
+        for bloco in re.finditer(r"([^{}@]+)\{", css):
+            seletores = bloco.group(1).strip()
+            if not seletores or seletores.startswith(("@", "from", "to", "%")):
+                continue
+            for seletor in seletores.split(","):
+                seletor = seletor.strip()
+                if seletor and not seletor.startswith(ident) and not seletor.startswith(":root"):
+                    achados.append(
+                        f"prefixo: {arquivo.name} tem seletor {seletor!r} sem o prefixo {ident} — vaza"
+                    )
+    return achados
+
+
+def main() -> int:
+    achados: list[str] = []
+    alvo = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else RAIZ / "index.html"
+    if alvo.exists():
+        achados += verificar(alvo.read_text(encoding="utf-8"))
+    else:
+        achados.append(f"{alvo} nao existe — rode montar.py antes")
+    achados += verificar_partes(RAIZ / "parts")
+
+    if not achados:
+        print(f"verificar: sem achados ({alvo.name})")
+        return 0
+    print(f"verificar: {len(achados)} achado(s)")
+    for a in achados:
+        print(f"  - {a}")
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

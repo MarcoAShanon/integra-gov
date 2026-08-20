@@ -54,3 +54,8 @@ nul
 
 # Fichas financeiras reais (referencia local) - NUNCA versionar
 fichas/
+
+# landing: o video do Exante (5,9 MB) vive na VPS, nao no repositorio
+site/media/
+# previas por fatia — artefato de trabalho; so o index.html e versionado
+site/preview-*.html
