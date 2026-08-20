@@ -1,0 +1,125 @@
+<!-- Fatia 05 — conversao (piloto assistido) + rodape institucional.
+     E o destino do CTA do hero (href="#conversao").
+
+     Faixa de TINTA: os quinze tokens estao reescopados pela .faixa.tinta
+     (contrato 4.2), entao aqui nao ha um unico hexadecimal — o mesmo
+     var(--text) / .card / .btn-p das outras fatias se inverte sozinho.
+
+     Sem dependencia de JavaScript: os .rise so ficam invisiveis se o
+     head.html conseguiu marcar <html class="js"> (a regra e ".js .rise").
+     Com JS bloqueado — filtro de orgao, robo de previa — a secao nasce
+     inteira. Nenhum numero, nenhum link e nenhum botao daqui e gerado por
+     script.
+
+     A PROMESSA: conversa inicial e orientacao pontual. O h2 define
+     "assistido" e limita o escopo na primeira frase, e o cartao "O que
+     acontece depois do e-mail" fecha a porta por escrito. Nao ha
+     formulario, newsletter, WhatsApp, prazo, fila nem acompanhamento. -->
+<section id="conversao" class="faixa tinta">
+  <div class="wrap">
+
+    <div class="abertura rise">
+      <span class="pill"><span class="ponto"></span>Piloto assistido no arranque</span>
+      <h2>Assistido no arranque — não na implantação.</h2>
+      <p class="lede">“Assistido” aqui quer dizer uma conversa de diagnóstico e a indicação do caminho: quais módulos servem para o seu caso, o que o seu órgão precisa ter antes de começar e onde isso costuma travar. Quem implanta, testa e opera depois é a sua equipe.</p>
+    </div>
+
+    <div class="grid">
+
+      <div class="card ficha pedido rise" data-atraso="1">
+        <h3>O que mandar no e-mail.</h3>
+        <p class="intro">Não há formulário nesta página, e não vai haver. O que faz a conversa render é o e-mail já chegar com estas seis coisas — em texto corrido mesmo, na ordem que você quiser.</p>
+        <dl>
+          <div>
+            <dt>O gargalo</dt>
+            <dd>Qual tarefa repetitiva consome a sua unidade hoje, em uma frase: o que entra, o que sai e quantas telas existem no meio.</dd>
+          </div>
+          <div>
+            <dt>O volume</dt>
+            <dd>Quantos processos, ofícios ou lançamentos por mês, quantas pessoas fazem isso e quanto leva um caso típico. Estimativa serve — não precisa levantar dado novo para escrever.</dd>
+          </div>
+          <div>
+            <dt>Os sistemas</dt>
+            <dd>Quais estão no fluxo e em que versão: SEI (o nosso é o <span class="num">4.1.5</span>), SIAPE pelo terminal <span class="num">3270</span>, Sigepe, planilha, e-mail. Diga também se as máquinas da equipe são Windows — o <span class="num">3270</span> só roda lá.</dd>
+          </div>
+          <div>
+            <dt>O acesso que você já tem</dt>
+            <dd>Quais transações do SIAPE o seu perfil alcança e em quais unidades do SEI você atua. É isso que define o que dá para automatizar sem pedir habilitação nova a ninguém.</dd>
+          </div>
+          <div>
+            <dt>O que já tentaram</dt>
+            <dd>Macro, planilha, força-tarefa, robô contratado. Saber o que não funcionou aí dentro poupa metade da conversa.</dd>
+          </div>
+          <div>
+            <dt>Quem vai tocar</dt>
+            <dd>Se há aí alguém que programe em Python — ou que topa aprender — e quem assina a decisão na sua unidade. Como a implantação é do seu órgão, essa é a resposta que mais pesa.</dd>
+          </div>
+        </dl>
+        <p class="aviso">Não mande dado pessoal: nem CPF, nem matrícula, nem número de processo real. Descreva o caso com valores fictícios — é a mesma regra que vale dentro do repositório.</p>
+      </div>
+
+      <div class="lateral">
+
+        <div class="card rise" data-atraso="2">
+          <h3>Faz sentido escrever se você…</h3>
+          <ul>
+            <li>…vê a mesma tarefa manual entre o SEI e o SIAPE se repetir na sua unidade, mês após mês;</li>
+            <li>…programa, ou tem aí alguém que programe, e quer saber o que reaproveitar antes de escrever código do zero;</li>
+            <li>…chefia uma área e pode autorizar um piloto dentro da própria unidade, sem depender de projeto institucional.</li>
+          </ul>
+          <p class="fecha">Não precisa ser da área de TI. Precisa ter o problema e ter o acesso.</p>
+        </div>
+
+        <div class="card rise" data-atraso="3">
+          <h3>O que acontece depois do e-mail.</h3>
+          <ul>
+            <li>Começa pelo seu e-mail, escrito com os seis itens da lista.</li>
+            <li>Uma videoconferência de diagnóstico, para olhar o seu fluxo e dizer o que dá e o que não dá.</li>
+            <li>A indicação do caminho: quais módulos servem, o que o órgão precisa ter antes de começar e onde os outros costumam travar.</li>
+          </ul>
+          <p class="limite">Termina aí. Não há acompanhamento depois dessa conversa, não há prazo combinado e ninguém do INTEGRA implanta, configura ou opera nada dentro do seu órgão. Do outro lado do e-mail há um servidor público com o próprio trabalho para tocar, não uma central de atendimento.</p>
+        </div>
+
+      </div>
+
+    </div>
+
+    <hr class="hairline">
+
+    <div class="garantias rise">
+      <h3>O que você não precisa ter para começar.</h3>
+      <ul class="lista-ok">
+        <li><span><b>Sem contrato.</b> Não há nada para assinar entre órgãos, nem termo de cooperação, nem adesão.</span></li>
+        <li><span><b>Sem fornecedor.</b> Não há empresa por trás, nada para contratar e nada para renovar depois.</span></li>
+        <li><span><b>Sem licitação.</b> O núcleo é código aberto sob licença MIT: baixar e usar não é aquisição.</span></li>
+        <li><span><b>Sem senha embutida no código.</b> A credencial é parâmetro de quem executa — nunca versionada, nunca em log.</span></li>
+        <li><span><b>Sem habilitação especial.</b> Roda com o acesso que o próprio servidor já tem, pela interface dos sistemas: não burla autenticação nem captcha.</span></li>
+      </ul>
+    </div>
+
+    <div class="fecho rise">
+      <p class="endereco">marco.aurelio-silva@gestao.gov.br</p>
+      <div class="acoes">
+        <a class="btn btn-p" href="mailto:marco.aurelio-silva@gestao.gov.br?subject=INTEGRA%20%E2%80%94%20piloto%20assistido">Escrever o e-mail</a>
+        <a class="btn btn-s" href="https://github.com/MarcoAShanon/integra-gov">Abrir o repositório</a>
+      </div>
+      <p class="fuga">O link abre o seu programa de e-mail com o assunto preenchido; acrescente nele a sigla do seu órgão. E se você prefere não escrever para ninguém, o caminho não depende disso: o núcleo está no GitHub sob licença MIT, com documentação e exemplos — clonar, ler e testar não passa por conversa nenhuma.</p>
+    </div>
+
+    <div class="rodape">
+      <div class="inst">
+        <p><b>INTEGRA</b> — iniciativa de servidores da <b>Coordenação-Geral de Pagamentos (CGPAG)</b> — MGI / SGP / DECIPEX.</p>
+        <p>Caso publicado na revista <b>Gestão de Pessoas em Ação</b> (MGI), vol. <span class="num">3</span>, <span class="num">jun/2025</span>.</p>
+        <p>Ferramentas de apoio às unidades — não constituem aplicações institucionais.</p>
+        <p>Em construção · licença MIT · sem dados pessoais no repositório.</p>
+      </div>
+      <div class="contato">
+        <p><span class="rot">site</span> projeto.govintegra.com.br</p>
+        <p><span class="rot">repositório</span> <a href="https://github.com/MarcoAShanon/integra-gov">github.com/MarcoAShanon/integra-gov</a></p>
+        <p><span class="rot">contato</span> Marco Aurélio Silva</p>
+        <p><a href="mailto:marco.aurelio-silva@gestao.gov.br">marco.aurelio-silva@gestao.gov.br</a></p>
+      </div>
+    </div>
+
+  </div>
+</section>

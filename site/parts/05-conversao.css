@@ -1,0 +1,185 @@
+/* =====================================================================
+   05-conversao — o piloto assistido e o rodape institucional.
+
+   NENHUM HEXADECIMAL NESTE ARQUIVO, de proposito. A .faixa.tinta
+   reescopa os quinze tokens de cor (contrato 4.2), entao aqui se escreve
+   exatamente o mesmo var(--text) / var(--surface) / .btn-p das fatias
+   claras e a inversao acontece sozinha. Se aparecer um "#" de cor aqui,
+   o contrato foi rompido.
+
+   Regra de vizinhanca (contrato 6.2-b) aplicada a risca. Recalculei os
+   dois pares DENTRO da escala da faixa de tinta, pela formula WCAG, a
+   partir dos tokens da .faixa.tinta: --acento-ink contra --text-soft da
+   1,19:1 e --ok contra --text-soft da 1,14:1 — tao indistinguiveis
+   quanto no tema claro. Por isso NAO existe .link, nem glifo em --ok,
+   dentro de nenhum bloco em --text-soft desta fatia: nem no .lede, nem
+   no .intro, nem no .aviso, nem no .rodape. Os links do rodape se
+   distinguem por SUBLINHADO, herdando a cor do paragrafo — o unico
+   jeito honesto de marcar link em texto secundario aqui.
+
+   (Registro do que o contrato NAO cobre, os dois recalculados aqui:
+   dentro da tinta --acento-ink contra --text mede 1,68:1, nao os 3,05:1
+   da tabela 6.2-b, que e do tema claro; e o glifo --ok da .lista-ok
+   mede 1,76:1 contra --text, nao os 3,00:1 do 8.3-h. Consequencia: esta
+   fatia NAO usa <em> em --acento-ink dentro do h2 — o realce do hero
+   nao se transporta para ca —, e o ambar so aparece onde e fundo ou
+   contorno (.pill, .btn-p). O ✓ fica porque e uso sancionado do 8.3-h e
+   porque cada item tambem traz a objecao escrita em negrito: nenhuma
+   informacao da lista depende do glifo.)
+   ===================================================================== */
+
+/* --- o empilhamento da faixa ---------------------------------------
+   um so ritmo (--e-6, "distancia entre blocos dentro de uma secao")
+   entre abertura, grade, fio, garantias, fecho e rodape. */
+#conversao .wrap{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-6);
+}
+
+/* o .rodape ja traz margin-top:var(--e-6) do sistema; com o gap do
+   .wrap isso viraria 104px. O fio e o padding-top dele ficam. */
+#conversao .rodape{margin-top:0}
+
+/* --- a grade: o pedido (7) e a lateral (5) --------------------------
+   abaixo de 768px o sistema colapsa .grid para uma coluna sozinho. */
+#conversao .grid{row-gap:var(--e-5)}
+#conversao .pedido{grid-column:span 7}
+#conversao .lateral{
+  grid-column:span 5;
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-4);
+}
+
+/* --- os tres cartoes ------------------------------------------------
+   .card ja traz --surface, o fio de 1px e o raio; aqui so o ritmo
+   interno. h3 em --t-5: e um degrau da escala (5.5), escolhido porque
+   --t-6 dentro de um cartao de 5 colunas competiria com o h2 da faixa. */
+#conversao .card{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-4);
+}
+#conversao .card h3{font-size:var(--t-5)}
+#conversao .card ul{font-size:var(--t-3)}
+
+/* o paragrafo que apresenta a lista do e-mail. Secundario de proposito:
+   a informacao acionavel esta nos pares abaixo, nao aqui. */
+#conversao .pedido .intro{
+  font-size:var(--t-3);
+  color:var(--text-soft);
+}
+
+/* a ressalva de dado pessoal, apartada por fio — nao e passo da lista. */
+#conversao .aviso{
+  padding-top:var(--e-4);
+  border-top:1px solid var(--border);
+  font-size:var(--t-2);
+  color:var(--text-soft);
+}
+
+/* o fecho de cada cartao lateral. O .limite fica em --text (nao em
+   --text-soft) DE PROPOSITO: e a frase que desarma a expectativa de
+   acompanhamento, e apagar justamente ela seria o defeito. */
+#conversao .fecha{
+  font-size:var(--t-3);
+  color:var(--text-soft);
+}
+#conversao .limite{
+  padding-top:var(--e-4);
+  border-top:1px solid var(--border);
+  font-size:var(--t-3);
+  color:var(--text);
+}
+
+/* --- as objecoes derrubadas pelo nome -------------------------------
+   .lista-ok e a primitiva das garantias (8.3-h); o texto dos itens fica
+   em --text, que e o padrao — o gliffo em --ok so e sinal contra
+   --text. Duas colunas no desktop: nao usa .grid, por isso o colapso
+   abaixo de 768px e escrito aqui. */
+#conversao .garantias{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-5);
+}
+#conversao .lista-ok{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  column-gap:var(--e-5);
+  row-gap:var(--e-4);
+}
+#conversao .lista-ok li{font-size:var(--t-3)}
+
+/* --- o fecho: endereco, botoes e a rota de fuga ---------------------- */
+#conversao .fecho{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-4);
+}
+
+/* o endereco fica em TEXTO, nao em link: quem esta no desktop copia, e
+   quem esta no celular usa o botao logo abaixo. Mono pelo mesmo motivo
+   do .nota do hero — e um trecho literal, para transcrever sem erro. */
+#conversao .endereco{
+  font-family:var(--font-mono);
+  font-size:var(--t-5);
+  color:var(--text);
+  overflow-wrap:anywhere;
+}
+
+/* ALVO DE TOQUE: o .btn do sistema fecha em ~41px de altura
+   (12+12 de padding + 15,04px de linha + 2px de fio), abaixo dos 44px
+   da bateria. --e-4 no eixo vertical leva a ~57px, e --e-5 no
+   horizontal mantem a proporcao. Ambos saem da escala de espacamento. */
+#conversao .btn{padding:var(--e-4) var(--e-5)}
+
+#conversao .fuga{
+  max-width:70ch;
+  font-size:var(--t-3);
+  color:var(--text);
+}
+
+/* --- o rodape institucional -----------------------------------------
+   .rodape ja e flex, com fio no topo, --t-2 e --text-soft. */
+#conversao .rodape > div{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-2);
+}
+#conversao .rodape .inst{max-width:62ch}
+
+/* micro-rotulo do bloco de contato, em mono como o dt da .ficha. */
+#conversao .rodape .rot{
+  font-family:var(--font-mono);
+  font-size:var(--t-1);
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  margin-right:var(--e-2);
+}
+
+/* link em bloco secundario: SEM cor de acento (1,20:1 contra o texto
+   vizinho aqui dentro), so sublinhado permanente. O padding vertical
+   leva o alvo de toque de ~23px para ~31px, acima do minimo de 24px. */
+#conversao .rodape a{
+  display:inline-block;
+  padding-block:var(--e-1);
+  text-decoration:underline;
+  text-underline-offset:.18em;
+  overflow-wrap:anywhere;
+}
+
+/* =====================================================================
+   BREAKPOINTS — so 1080px e 768px, em max-width, nesta ordem.
+   ===================================================================== */
+@media (max-width:1080px){
+  /* com o respiro lateral menor, as duas colunas das garantias ficam
+     apertadas: fecha a calha um degrau. */
+  #conversao .lista-ok{column-gap:var(--e-4)}
+}
+
+@media (max-width:768px){
+  #conversao .card{padding:var(--e-4)}
+  #conversao .lista-ok{grid-template-columns:minmax(0,1fr)}
+  /* a 375px o endereco em --t-5 mede ~412px e estouraria a tela. */
+  #conversao .endereco{font-size:var(--t-3)}
+}
