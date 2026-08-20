@@ -59,3 +59,4 @@ fichas/
 site/media/
 # previas por fatia — artefato de trabalho; so o index.html e versionado
 site/preview-*.html
+site/amostra.html
