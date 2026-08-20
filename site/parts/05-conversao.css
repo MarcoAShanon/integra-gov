@@ -13,9 +13,11 @@
    1,19:1 e --ok contra --text-soft da 1,14:1 — tao indistinguiveis
    quanto no tema claro. Por isso NAO existe .link, nem glifo em --ok,
    dentro de nenhum bloco em --text-soft desta fatia: nem no .lede, nem
-   no .intro, nem no .aviso, nem no .rodape. Os links do rodape se
-   distinguem por SUBLINHADO, herdando a cor do paragrafo — o unico
-   jeito honesto de marcar link em texto secundario aqui.
+   no .intro, nem no .aviso, nem no .rodape. Os links do rodape usam o
+   .link-neutro do sistema: herdam a cor do paragrafo e se marcam pelo
+   sublinhado — a primitiva nasceu deste caso, depois que esta fatia
+   mostrou que as duas saidas do 8.3-c nao cobrem um bloco que e
+   --text-soft POR PRIMITIVA e mesmo assim precisa de links.
 
    (Registro do que o contrato NAO cobre, os dois recalculados aqui:
    dentro da tinta --acento-ink contra --text mede 1,68:1, nao os 3,05:1
@@ -127,11 +129,15 @@
   overflow-wrap:anywhere;
 }
 
-/* ALVO DE TOQUE: o .btn do sistema fecha em ~41px de altura
-   (12+12 de padding + 15,04px de linha + 2px de fio), abaixo dos 44px
-   da bateria. --e-4 no eixo vertical leva a ~57px, e --e-5 no
-   horizontal mantem a proporcao. Ambos saem da escala de espacamento. */
-#conversao .btn{padding:var(--e-4) var(--e-5)}
+/* ALVO DE TOQUE DO BOTAO: nao ha regra aqui, DE PROPOSITO.
+   Esta fatia chegou a sobrescrever o padding do .btn para levar a altura
+   de ~41px a 57px, porque a primitiva nao garantia os 44px da bateria.
+   A fatia 0 passou a garantir (min-height:44px no .btn), e o override
+   virou a unica divergencia de altura da pagina: quatro faixas com
+   botao de 44px e o CTA principal com 57px. Sobra nao e hierarquia — a
+   enfase do CTA ja vem da inversao de valor da faixa de tinta e do
+   preenchimento ambar do .btn-p, que nenhum outro botao da pagina tem.
+   Botao igual ao resto da pagina, entao. */
 
 #conversao .fuga{
   max-width:70ch;
@@ -148,23 +154,35 @@
 }
 #conversao .rodape .inst{max-width:62ch}
 
-/* micro-rotulo do bloco de contato, em mono como o dt da .ficha. */
+/* o bloco de contato empilha rotulo sobre valor, como o dt/dd da
+   .ficha. Nao e enfeite: com o rotulo em linha, o link ficava preso a
+   um rotulo de outra altura e nao dava para dar caixa a ele sem torcer
+   a linha de base. Empilhado, cada valor tem uma linha so sua. */
+#conversao .rodape .contato p{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-1);
+}
 #conversao .rodape .rot{
   font-family:var(--font-mono);
   font-size:var(--t-1);
   letter-spacing:.11em;
   text-transform:uppercase;
-  margin-right:var(--e-2);
 }
 
-/* link em bloco secundario: SEM cor de acento (1,20:1 contra o texto
-   vizinho aqui dentro), so sublinhado permanente. O padding vertical
-   leva o alvo de toque de ~23px para ~31px, acima do minimo de 24px. */
-#conversao .rodape a{
-  display:inline-block;
-  padding-block:var(--e-1);
-  text-decoration:underline;
-  text-underline-offset:.18em;
+/* ALVO DE TOQUE DO LINK DE RODAPE: a area cresce pela CAIXA, nao pela
+   letra — a licao que a fatia 0 tirou ao consertar a navegacao. O texto
+   continua em --t-2 (linha de ~23px); quem sobe para os 44px da bateria
+   e o bloco. O .val, que nao e link, recebe a mesma caixa so para as
+   quatro linhas do bloco terem o mesmo ritmo.
+   A COR do link vem do .link-neutro do sistema — primitiva que nasceu
+   deste caso: aqui dentro --acento-ink mede 1,19:1 contra o texto
+   vizinho, entao o link se marca pelo sublinhado e herda a cor. */
+#conversao .rodape .val,
+#conversao .rodape .contato a{
+  display:flex;
+  align-items:center;
+  min-height:44px;
   overflow-wrap:anywhere;
 }
 
