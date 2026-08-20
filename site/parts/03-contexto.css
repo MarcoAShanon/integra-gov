@@ -1,0 +1,176 @@
+/* =====================================================================
+   03-contexto — o problema, a comparacao honesta, a mecanica e a
+   governanca.
+
+   Regras que este arquivo respeita e que nao aparecem sozinhas na
+   leitura: todo seletor comeca por "#contexto"; nenhum token novo,
+   nenhum bloco :root; nenhuma box-shadow; nenhum outline (o do sistema
+   usa :where() e qualquer regra prefixada o venceria); nenhum z-index
+   cru; @media so em 1080px e 768px, em max-width, nesta ordem.
+
+   O bloco NAO tem elemento clicavel — a acao e da fatia 05. Por isso
+   nao ha nada aqui para medir contra os 44px de alvo de toque.
+   ===================================================================== */
+
+/* --- ritmo interno --------------------------------------------------
+   O .wrap empilha os quatro blocos com --e-6. O padding vertical e o
+   fundo da <section> continuam sendo da .faixa (contrato 4). */
+#contexto .wrap{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-6);
+}
+
+/* cada bloco abre com um fio de cabelo. --border e decorativo (1,27:1 a
+   1,43:1) e aqui ele so separa — nao identifica controle nenhum, que e
+   o unico uso que o contrato 6.3 lhe proibe. */
+#contexto .bloco{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-4);
+  padding-top:var(--e-5);
+  border-top:1px solid var(--border);
+}
+
+/* 20px do gap + 12px daqui = 32px = --e-5 entre o texto e a grade. */
+#contexto .bloco .grid{width:100%;margin-top:var(--e-3)}
+
+/* medida de leitura em ch: nao depende de onde o bloco esta na grade
+   (contrato 7.1). Cor: o padrao do corpo, --text — deliberadamente NAO
+   --text-soft, porque estes paragrafos carregam o argumento e porque o
+   <code> e o fio ambar de .posicao ficariam a 1,07:1 do texto vizinho
+   se ele fosse secundario (contrato 6.2-b). */
+#contexto .intro{max-width:66ch}
+
+/* --- a comparacao ---------------------------------------------------
+   As duas colunas sao IDENTICAS no desenho, de proposito: dar realce a
+   coluna da automacao seria decidir a comparacao pelo estilo, que e o
+   contrario de uma comparacao honesta. Os rotulos das seis linhas sao
+   os mesmos nas duas, na mesma ordem, para o olho varrer na horizontal.
+   Cada valor cabe em UMA linha (ate ~50 caracteres): e o que mantem as
+   linhas das duas fichas alinhadas sem nenhuma trava de layout. */
+#contexto .via{grid-column:span 6}
+
+#contexto .via h4{
+  padding-bottom:var(--e-3);
+  margin-bottom:var(--e-3);
+  border-bottom:1px solid var(--border);
+}
+
+/* a tomada de posicao, depois de as duas colunas terem falado. O fio
+   ambar de 2px e o unico realce de cor do bloco; o texto ao lado dele e
+   --text, contra o qual --acento-ink mede 3,05:1. */
+#contexto .posicao{
+  margin-top:var(--e-3);
+  max-width:66ch;
+  padding-left:var(--e-4);
+  border-left:2px solid var(--acento-ink);
+}
+
+/* --- a mecanica ----------------------------------------------------- */
+#contexto .mecanica{
+  grid-column:span 7;
+  list-style:none;
+  margin:0;
+  padding:0;
+}
+#contexto .mecanica li{
+  margin:0;
+  padding-block:var(--e-4);
+  border-top:1px solid var(--border);
+}
+#contexto .mecanica li:first-child{padding-top:0;border-top:0}
+#contexto .mecanica li:last-child{padding-bottom:0}
+#contexto .mecanica p{margin-top:var(--e-2);max-width:62ch}
+
+/* trecho de codigo dentro de texto corrido: mono e um realce de linha
+   em --acento-soft. O texto continua --text, que mede 14,80:1 sobre
+   --acento-soft no claro e 13,50:1 no escuro. */
+#contexto .mecanica code{
+  font-family:var(--font-mono);
+  font-size:var(--t-3);
+  background:var(--acento-soft);
+  border-radius:var(--raio-s);
+  padding:0 var(--e-1);
+}
+
+/* --- o diagrama -----------------------------------------------------
+   SVG inline, sem biblioteca. Duas consequencias do viewBox de 320
+   unidades: (a) o texto e declarado na escala tipografica do contrato,
+   entao ele encolhe e cresce junto com a caixa; (b) a caixa menor em
+   que o diagrama aparece e a coluna do celular a 375px — ali o rotulo
+   de 0,82rem renderiza a ~12px, e por isso o passo do viewBox e 320 e
+   nao 420. Nenhuma cor fixa: tudo sai dos tokens, entao ele vira no
+   tema escuro sozinho. */
+#contexto .fluxo{grid-column:span 5}
+#contexto .fluxo .tela{padding:var(--e-4)}
+#contexto .fluxo svg{display:block;width:100%;height:auto}
+
+#contexto .fluxo rect{
+  fill:none;
+  stroke:var(--text-soft);
+  stroke-width:1;
+  vector-effect:non-scaling-stroke;
+}
+/* o no destacado se separa por PREENCHIMENTO, nao so por cor de traco:
+   em escala de cinza e para quem enxerga mal, o que distingue e a
+   mancha clara, nao o matiz do fio. */
+#contexto .fluxo .no-integra{
+  fill:var(--acento-soft);
+  stroke:var(--acento-ink);
+  stroke-width:2;
+}
+#contexto .fluxo path{
+  fill:none;
+  stroke:var(--text-soft);
+  stroke-width:1;
+  vector-effect:non-scaling-stroke;
+}
+#contexto .fluxo polygon{fill:var(--text-soft);stroke:none}
+#contexto .fluxo text{
+  font-family:var(--font-corpo);
+  font-size:var(--t-2);
+  fill:var(--text);
+}
+#contexto .fluxo .sis{
+  font-family:var(--font-mono);
+  font-size:var(--t-1);
+  letter-spacing:.11em;
+  fill:var(--text-soft);
+}
+
+/* --- governanca ----------------------------------------------------- */
+#contexto .lista-ok{grid-column:span 7}
+/* O texto dos itens fica em --text (o padrao): o glifo mede 3,00:1
+   contra --text e 1,05:1 contra --text-soft (contrato 8.3-h). */
+#contexto .lista-ok li > span{display:block;max-width:62ch}
+#contexto .lista-ok b{display:block;margin-bottom:var(--e-1)}
+/* DEFEITO DA FATIA 0, contornado aqui e RELATADO, nao consertado no
+   arquivo alheio: em 00-sistema.css o content de .lista-ok li::before
+   esta gravado como os bytes C2 93 (um caractere de controle invisivel)
+   em vez de E2 9C 93 — ou seja, o "visto" nao aparece. Reescrever o
+   glifo por escape CSS resolve dentro do meu prefixo e e imune a
+   codificacao de arquivo. A cor continua vindo da primitiva. */
+#contexto .lista-ok li::before{content:"\2713"}
+
+#contexto .escopo{grid-column:span 5}
+#contexto .escopo p{margin-top:var(--e-3)}
+
+/* =====================================================================
+   BREAKPOINTS — so 1080px e 768px, em max-width, nesta ordem.
+   ===================================================================== */
+@media (max-width:1080px){
+  /* com a calha ainda em 24px e o respiro lateral menor, a coluna do
+     diagrama fica estreita antes das outras; uma coluna a mais devolve
+     a ele a largura em que o rotulo nao aperta. */
+  #contexto .mecanica{grid-column:span 6}
+  #contexto .fluxo{grid-column:span 6}
+}
+
+@media (max-width:768px){
+  /* o sistema ja colapsa a .grid e forca todo filho a 1 / -1; aqui so
+     se ajusta o respiro interno, que fica apertado a 375px. */
+  #contexto .via{padding:var(--e-4)}
+  #contexto .escopo{padding:var(--e-4)}
+  #contexto .fluxo .tela{padding:var(--e-3)}
+}

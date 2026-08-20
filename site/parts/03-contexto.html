@@ -1,0 +1,140 @@
+<!-- Fatia 03 — contexto: o problema, a comparacao honesta, a mecanica e a
+     governanca. E a fatia do "isto nao e gambiarra".
+
+     Sem metrica: os numeros de resultado sao da fatia 02. Os unicos digitos
+     daqui sao factuais (o ano do SIAPE, o ano do SEI, o terminal 3270, a
+     versao do SEI em que cada modulo e conferido) e todos vao em .num.
+
+     Nao ha nenhum elemento clicavel nesta fatia — de proposito: a acao mora
+     na fatia 05, e sem alvo de toque nao ha alvo abaixo de 44px.
+
+     Sem dependencia de JavaScript: o unico gancho usado e .rise, cuja regra
+     de esconder mora em ".js .rise" (contrato 9.1). Com JS bloqueado a secao
+     nasce inteira e visivel, inclusive o diagrama, que e SVG inline. -->
+<section id="contexto" class="faixa">
+  <div class="wrap">
+
+    <div class="abertura rise">
+      <span class="pill"><span class="ponto"></span>Contexto · como funciona</span>
+      <h2>Dois sistemas que não se falam — e um deles nasceu em <span class="num">1989</span>.</h2>
+      <p class="lede">O SEI tramita documentos na web desde <span class="num">2009</span>. O SIAPE guarda os dados funcionais numa emulação de terminal de mainframe — a tela preta <span class="num">3270</span>. Entre os dois fica o servidor: copiando, digitando e conferindo matrícula por matrícula.</p>
+    </div>
+
+    <!-- ---------- a comparacao honesta ---------- -->
+    <div class="bloco rise">
+      <h3>Os dois caminhos cobram alguma coisa.</h3>
+      <p class="intro">Na ponta, o cenário é o típico do serviço público: demanda alta, equipe pequena e o mesmo ritual manual repetido à exaustão. Diante disso há dois caminhos, e nenhum deles é de graça. Quem for propor a automação à chefia precisa saber o preço dela antes de ser perguntado.</p>
+
+      <div class="grid vias">
+        <div class="card ficha via">
+          <h4>Continuar à mão</h4>
+          <dl>
+            <div><dt>Para começar</dt><dd>Nada. A equipe já sabe fazer.</dd></div>
+            <div><dt>A repetição</dt><dd>Fica com a pessoa, a cada processo.</dd></div>
+            <div><dt>Erro de digitação</dt><dd>Só aparece quando o lançamento trava.</dd></div>
+            <div><dt>Caso fora da regra</dt><dd>A pessoa vê e resolve na hora.</dd></div>
+            <div><dt>Se a tela mudar</dt><dd>O servidor se adapta no mesmo dia.</dd></div>
+            <div><dt>Manutenção</dt><dd>Nenhuma. Não há código para manter.</dd></div>
+          </dl>
+        </div>
+
+        <div class="card ficha via">
+          <h4>Automatizar com o INTEGRA</h4>
+          <dl>
+            <div><dt>Para começar</dt><dd>Alguém da equipe lê e ajusta Python.</dd></div>
+            <div><dt>A repetição</dt><dd>Sai da mão: o roteiro executa os passos.</dd></div>
+            <div><dt>Erro de digitação</dt><dd>Conferido contra o registro do SIAPE.</dd></div>
+            <div><dt>Caso fora da regra</dt><dd>Volta para a mesa do servidor.</dd></div>
+            <div><dt>Se a tela mudar</dt><dd>O roteiro quebra e precisa de conserto.</dd></div>
+            <div><dt>Manutenção</dt><dd>Do órgão que adotou, daí em diante.</dd></div>
+          </dl>
+        </div>
+      </div>
+
+      <p class="posicao">A CGPAG escolheu o segundo caminho com esse preço à vista: trocou um custo de repetição, que não termina nunca, por um custo de manutenção, que aparece quando um dos dois sistemas muda de tela. A troca vale onde o volume é alto e a regra é estável. Onde cada caso é diferente do anterior, ela não vale — e dizer isso antes do piloto custa menos do que descobrir depois.</p>
+    </div>
+
+    <!-- ---------- a mecanica: por que nao e gambiarra ---------- -->
+    <div class="bloco rise">
+      <h3>Por que isto não é gambiarra.</h3>
+      <p class="intro">A automação reproduz a interação do servidor na interface dos sistemas: não abre o banco de dados por trás, não pede integração privilegiada e não recebe credencial própria. É por isso que funciona em qualquer órgão, sem depender de habilitação institucional.</p>
+
+      <div class="grid">
+        <ul class="mecanica">
+          <li>
+            <h4>Usa a sessão que você já abriu</h4>
+            <p>Roda sobre a mesma sessão logada do servidor. Nenhuma credencial de sistema, nenhuma liberação especial — o mesmo acesso de sempre, sem o trabalho braçal.</p>
+          </li>
+          <li>
+            <h4>Injeção direta na API, não robô cego</h4>
+            <p>Fala com a API do editor de texto do SEI e busca arquivos por <code>fetch</code> dentro da sessão, em vez de simular mouse e teclado às cegas. É mais rápido e, sobretudo, previsível.</p>
+          </li>
+          <li>
+            <h4>Provado em produção, não só em teste</h4>
+            <p>Cada módulo é conferido num SEI real — versão <span class="num">4.1.5</span> — antes de ser publicado: processo criado, documento assinado, valor lançado. Só então entra no repositório.</p>
+          </li>
+          <li>
+            <h4>Aponta o que o humano erra</h4>
+            <p>Compara o que foi digitado com o registro oficial do SIAPE e aponta a divergência — como a matrícula trocada que antes travava o processamento.</p>
+          </li>
+        </ul>
+
+        <figure class="figura fluxo">
+          <div class="tela">
+            <svg viewBox="0 0 320 268" role="img" aria-labelledby="ctx-fluxo-titulo ctx-fluxo-desc">
+              <title id="ctx-fluxo-titulo">Onde a automação se encaixa</title>
+              <desc id="ctx-fluxo-desc">O servidor entra no sistema e autentica. A sessão fica aberta no navegador dele. O INTEGRA trabalha dentro dessa mesma sessão e, por ela, alcança o SEI e o SIAPE. Não existe credencial própria da automação, nem caminho paralelo até o banco de dados.</desc>
+
+              <rect x="4" y="4" width="312" height="44" rx="6"></rect>
+              <text x="160" y="31" text-anchor="middle">O servidor entra e autentica</text>
+              <path d="M160 48 V64"></path>
+              <polygon points="155,64 165,64 160,72"></polygon>
+
+              <rect x="4" y="76" width="312" height="44" rx="6"></rect>
+              <text x="160" y="103" text-anchor="middle">A sessão fica aberta no navegador</text>
+              <path d="M160 120 V136"></path>
+              <polygon points="155,136 165,136 160,144"></polygon>
+
+              <rect class="no-integra" x="4" y="148" width="312" height="48" rx="6"></rect>
+              <text x="160" y="177" text-anchor="middle">O INTEGRA usa essa sessão</text>
+
+              <path d="M160 196 V208"></path>
+              <path d="M70 208 H250"></path>
+              <path d="M70 208 V216"></path>
+              <polygon points="65,216 75,216 70,224"></polygon>
+              <path d="M250 208 V216"></path>
+              <polygon points="245,216 255,216 250,224"></polygon>
+
+              <rect x="10" y="228" width="120" height="32" rx="6"></rect>
+              <text class="sis" x="70" y="248" text-anchor="middle">SEI</text>
+              <rect x="190" y="228" width="120" height="32" rx="6"></rect>
+              <text class="sis" x="250" y="248" text-anchor="middle">SIAPE</text>
+            </svg>
+          </div>
+          <figcaption>O acesso é o do próprio servidor. A automação não tem porta própria e não alcança o banco de dados por trás.</figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <!-- ---------- governanca ---------- -->
+    <div class="bloco rise">
+      <h3>Rastreável por princípio, não por acaso.</h3>
+      <p class="intro">Automação em serviço público só se sustenta com segurança e transparência. Os pontos abaixo são regra do projeto, não recomendação.</p>
+
+      <div class="grid">
+        <ul class="lista-ok">
+          <li><span><b>Não burla autenticação nem captcha</b>Automatiza o acesso que o próprio usuário já possui — nada de contornar controle.</span></li>
+          <li><span><b>Você é quem autoriza</b>A senha é parâmetro de quem executa: nunca embutida no código, nunca registrada em log.</span></li>
+          <li><span><b>Cada operação sob o seu usuário</b>As ações ficam registradas sob o servidor que roda a automação — auditáveis, como qualquer ato dele.</span></li>
+          <li><span><b>Nenhum dado pessoal no repositório</b>CPF, nome, número de processo: nada real é versionado, e os exemplos usam valores fictícios.</span></li>
+        </ul>
+
+        <div class="card escopo">
+          <h4>Responsabilidade e escopo</h4>
+          <p>O INTEGRA oferece os blocos — a automação é de quem a executa. As rotinas montadas com os módulos do pacote são de inteira responsabilidade de seus executores: cada órgão observa as suas próprias regras de negócio, e a execução deve ser sempre acompanhada. São ferramentas de apoio ao andamento das unidades, e não constituem aplicações institucionais.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
