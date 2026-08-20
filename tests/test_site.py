@@ -76,6 +76,24 @@ def test_montar_css_do_sistema_vem_antes_do_css_das_fatias():
     )
 
 
+# ------------------------------------------------ M1: skip link morto
+@completo
+def test_montar_envolve_corpo_em_main_com_id_conteudo():
+    """O skip link aponta para #conteudo; sem <main id="conteudo"> ele e um
+    link morto por construcao. O <a class="skip"> fica FORA do <main> — ele
+    aponta pra dentro."""
+    html = m.montar()
+    assert '<main id="conteudo">' in html
+    assert html.index('<a class="skip"') < html.index('<main id="conteudo">')
+    assert "</main>" in html
+
+
+@completo
+def test_montar_so_uma_fatia_tambem_envolve_em_main():
+    html = m.montar(so="01-hero")
+    assert '<main id="conteudo">' in html
+
+
 # ------------------------------------------------------------- verificar
 def test_h1_duplicado_e_achado():
     achados = v.verificar("<h1>a</h1><h1>b</h1>")
@@ -148,6 +166,43 @@ def test_cpf_no_html_e_achado():
 def test_palavra_de_conclusao_e_achado():
     achados = v.verificar("<p>O projeto está completo.</p>")
     assert any("incremental" in a for a in achados)
+
+
+# ------------------------------------- V1 (BLOQUEANTE): modo fatia
+def test_fatia_com_h2_e_sem_h1_nao_e_achado():
+    achados = v.verificar("<h2>a</h2>", fatia=True)
+    assert not any(a.startswith("h1") for a in achados)
+
+
+def test_fatia_com_dois_h1_ainda_e_achado():
+    achados = v.verificar("<h1>a</h1><h1>b</h1>", fatia=True)
+    assert any(a.startswith("h1") for a in achados)
+
+
+def test_fatia_com_h2_seguido_de_h4_ainda_e_achado():
+    achados = v.verificar("<h2>a</h2><h4>b</h4>", fatia=True)
+    assert any("degrau" in a for a in achados)
+
+
+def test_pagina_inteira_sem_h1_continua_achado():
+    achados = v.verificar("<h2>a</h2>")
+    assert any(a.startswith("h1") for a in achados)
+
+
+def test_fatia_nao_exige_skip_link():
+    achados = v.verificar("<body><h2>a</h2></body>", fatia=True)
+    assert not any("skip" in a for a in achados)
+
+
+# ------------------------------------- V9: longhand nao pode casar custom property
+def test_custom_property_transition_speed_nao_e_falso_positivo_de_reduced_motion():
+    achados = v.verificar(":root{--transition-speed:200ms}")
+    assert not any("reduced-motion" in a for a in achados)
+
+
+def test_transition_duration_sem_media_ainda_e_achado():
+    achados = v.verificar("<style>.x{transition-duration:1s}</style>")
+    assert any("reduced-motion" in a for a in achados)
 
 
 # ------------------------------------------------- verificar_partes

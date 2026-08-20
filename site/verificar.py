@@ -8,6 +8,11 @@ que so um humano ve.
 Uso:
     python site/verificar.py                            # a pagina inteira
     python site/verificar.py site/preview-01-hero.html  # a previa de uma fatia
+
+O modo (pagina inteira x fatia isolada) e inferido pelo NOME do arquivo: um
+alvo cujo nome comeca com "preview-" e verificado em modo fatia (ver
+verificar()) — casa com o preview-<fatia>.html que montar.py --so gera. Sem
+flag pra um agente esquecer de passar.
 """
 from __future__ import annotations
 
@@ -65,14 +70,29 @@ def _e_passo_keyframes(seletores: str) -> bool:
     return bool(partes) and all(_RE_PASSO_KEYFRAMES.match(p) for p in partes)
 
 
-def verificar(html: str) -> list[str]:
-    """Achados no HTML montado."""
+def verificar(html: str, *, fatia: bool = False) -> list[str]:
+    """Achados no HTML montado.
+
+    `fatia=True` verifica a previa de UMA fatia isolada (ex.:
+    `preview-02-prova.html`), nao a pagina inteira. O CLI infere o modo pelo
+    nome do arquivo: um alvo cujo nome comeca com "preview-" e tratado como
+    fatia automaticamente. Nesse modo:
+    - o <h1> pode faltar (pertence ao hero, fatia 1); zero e o caso normal.
+      Mais de um <h1> continua sendo achado.
+    - a hierarquia de titulos pode comecar num nivel != h1 sem ser "pular
+      degrau"; dentro da fatia, o degrau continua valendo.
+    - nao se exige skip link nem <main id="conteudo"> — quem emite os dois
+      e o montador, na pagina inteira, nao a fatia isolada.
+    """
     achados: list[str] = []
     niveis = _titulos(html)
 
     # --- hierarquia de titulos
     qtd_h1 = niveis.count(1)
-    if qtd_h1 != 1:
+    if fatia:
+        if qtd_h1 > 1:
+            achados.append(f"h1: a fatia tem {qtd_h1} elementos <h1>; no maximo 1 (o h1 e do hero)")
+    elif qtd_h1 != 1:
         achados.append(f"h1: a pagina tem {qtd_h1} elementos <h1>; deve ter exatamente 1")
     anterior = None
     for n in niveis:
@@ -117,15 +137,27 @@ def verificar(html: str) -> list[str]:
             if primeira in FONTES_VETADAS:
                 achados.append(f"fonte vetada: {prop} escolhe {primeira!r} como primeira familia")
 
-    # --- skip link
-    if "<body" in html.lower() or "<h1" in html.lower():
-        if 'class="skip"' not in html:
-            achados.append("skip: falta o skip link para o conteudo principal")
+    # --- skip link (so na pagina inteira — quem emite e o montador, nao a fatia)
+    if not fatia:
+        if "<body" in html.lower() or "<h1" in html.lower():
+            if 'class="skip"' not in html:
+                achados.append("skip: falta o skip link para o conteudo principal")
 
     # --- movimento reduzido (shorthand transition/animation E as longhand:
-    # animation-name, animation-duration, transition-property etc)
+    # animation-name, animation-duration, transition-property etc). O
+    # "(?<!-)" exclui a declaracao de uma CUSTOM PROPERTY: sem ele,
+    # "--transition-speed:200ms" batia no regex por causa do "\b" logo apos
+    # o segundo hifen, e um token de tempo (exatamente o tipo de coisa que
+    # 00-sistema.css declara) acusava reduced-motion sem existir movimento
+    # nenhum na pagina.
+    #
+    # LIMITE HONESTO: isto e uma checagem de "a string existe em algum lugar
+    # do documento" — nao prova que TODO trecho com movimento esta dentro de
+    # um @media (prefers-reduced-motion). Quem prova isso de verdade e a
+    # bateria de navegador do plano (secao 8); nao confie neste verificador
+    # alem do que ele consegue enxergar aqui.
     if (
-        re.search(r"\b(?:transition|animation)(?:-[a-z]+)?\s*:", html, re.I)
+        re.search(r"(?<!-)\b(?:transition|animation)(?:-[a-z]+)?\s*:", html, re.I)
         and "reduced-motion" not in html
     ):
         achados.append("reduced-motion: ha movimento sem @media (prefers-reduced-motion)")
@@ -191,8 +223,9 @@ def verificar_partes(parts: pathlib.Path) -> list[str]:
 def main() -> int:
     achados: list[str] = []
     alvo = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else RAIZ / "index.html"
+    fatia = alvo.name.startswith("preview-")
     if alvo.exists():
-        achados += verificar(alvo.read_text(encoding="utf-8"))
+        achados += verificar(alvo.read_text(encoding="utf-8"), fatia=fatia)
     else:
         achados.append(f"{alvo} nao existe — rode montar.py antes")
     achados += verificar_partes(RAIZ / "parts")
