@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import pathlib
+import re
 import sys
 
 import pytest
@@ -9,6 +10,7 @@ import pytest
 SITE = pathlib.Path(__file__).resolve().parents[1] / "site"
 sys.path.insert(0, str(SITE))
 
+import auditar_contrato as a  # noqa: E402
 import montar as m  # noqa: E402
 import verificar as v  # noqa: E402
 
@@ -737,3 +739,67 @@ def test_verificar_partes_modo_fatia_sem_css_proprio_nao_e_achado(tmp_path):
     (tmp_path / "03-contexto.css").write_text(".vaza{color:red}", encoding="utf-8")
     achados = v.verificar_partes(tmp_path, somente="01-hero")
     assert achados == []
+
+
+# ------------------------------------------------- auditor do contrato
+# A classe de erro "numero declarado em vez de calculado" pegou o contrato
+# de design tres vezes (ver a docstring de site/auditar_contrato.py). Estes
+# testes provam que o auditor reprova o que tem de reprovar — senao ele vira
+# um carimbo verde que da falsa seguranca, que e pior que nao existir.
+CSS_SISTEMA = (SITE / "parts" / "00-sistema.css").read_text(encoding="utf-8")
+CONTRATO = (SITE / "parts" / "contrato.md").read_text(encoding="utf-8")
+
+
+def test_auditor_aprova_o_contrato_real():
+    """O estado versionado tem que passar limpo — se este quebrar, ou o CSS
+    mudou sem o contrato acompanhar, ou o contrario."""
+    assert a.auditar(CSS_SISTEMA, CONTRATO) == []
+
+
+def test_auditor_recalcula_e_nao_confia_no_texto():
+    """Numero afirmado no contrato que o CSS nao produz vira achado.
+
+    E o caso da esmeralda (3,3:1 afirmado, 2,91:1 real) e o das sete celulas
+    que ficaram para tras quando --fundo-alt mudou.
+    """
+    # 16,75:1 e --text sobre --bg no tema claro; trocado, perde o lastro.
+    adulterado = CONTRATO.replace("16,75:1", "9,99:1")
+    assert adulterado != CONTRATO, "o numero de referencia sumiu do contrato"
+    achados = a.auditar(CSS_SISTEMA, adulterado)
+    assert any("sem lastro" in achado for achado in achados)
+    assert any("--text sobre --bg" in achado for achado in achados)
+
+
+def test_auditor_acusa_par_abaixo_de_aa():
+    """Token de texto que deixa de passar 4,5:1 vira achado, mesmo que o
+    contrato continue afirmando o numero antigo."""
+    cinza_fraco = CSS_SISTEMA.replace("--text-soft:#6A6055", "--text-soft:#C9C4BC", 1)
+    assert cinza_fraco != CSS_SISTEMA
+    achados = a.auditar(cinza_fraco, CONTRATO)
+    assert any(achado.startswith("piso:") and "--text-soft" in achado for achado in achados)
+
+
+def test_auditor_acusa_rampa_de_dados_achatada():
+    """Regressao do defeito real: as tres cores de grafico separadas por
+    matiz, nao por intensidade. Estas SAO as cores antigas — davam 1,02:1
+    entre si e viravam uma massa so em escala de cinza."""
+    achatado = CSS_SISTEMA
+    for token, antigo in (
+        ("--dado", "#C0770B"),
+        ("--dado-neutro", "#8C8377"),
+        ("--dado-fraco", "#9C8256"),
+    ):
+        achatado = re.sub(
+            rf"{token}:#[0-9A-Fa-f]{{6}};", f"{token}:{antigo};", achatado, count=1
+        )
+    achados = a.auditar(achatado, CONTRATO)
+    assert any(achado.startswith("rampa:") for achado in achados)
+
+
+def test_auditor_le_a_faixa_alt_clara_e_nao_a_escura():
+    """O seletor .faixa.alt existe nos dois temas. Ler o do tema errado faz
+    o auditor auditar texto claro sobre superficie escura e acusar seis
+    falhas que nao existem — foi o primeiro defeito dele."""
+    escopos = a.paletas(CSS_SISTEMA)
+    assert escopos["claro/faixa par"]["--surface"] == "#F8F6F1"
+    assert escopos["escuro/faixa par"]["--surface"] == "#2D2720"
