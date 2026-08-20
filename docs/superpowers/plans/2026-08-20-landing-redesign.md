@@ -1100,6 +1100,12 @@ Além da lista do bloco acima, verifique especificamente:
    listener que vaza ou algum querySelector que pode dar null e quebrar?
 7. head.html: contém a tag <head> (não deveria — só o conteúdo dela)? Os
    textos de OG batem com os de site/original/index-slim.html?
+8. FONTE NA RAIZ: `--font-corpo` está aplicada em `html` E `body`, ou só num
+   contêiner? Este achado surgiu DEPOIS de o construtor começar, então ele não
+   o recebeu no prompt — é achado legítimo se estiver faltando, e não desatenção
+   dele. Medido na página no ar em 20/08/2026: `html` e `body` computam
+   `Times New Roman` porque a fonte mora num `.wrap`. Qualquer elemento fora do
+   contêiner renderiza serifado no meio de uma página sans-serif.
 ```
 
 - [ ] **Step 4: Aplicar o parecer**
@@ -1761,10 +1767,23 @@ Peça ao usuário que deixe o painel Browser visível. Rode, na página **inteir
    leva à seção certa.
 7. Lightbox do Exante: abre, `Escape` fecha, foco volta ao poster.
    O vídeo vive **só na VPS** e não é versionado, então a prévia local não o
-   tem. Antes desta bateria, baixe-o uma vez para o diretório gitignorado:
-   `curl -sS --create-dirs -o site/media/exante.mp4 https://projeto.govintegra.com.br/media/exante.mp4`
-   (5,9 MB). Sem isso, o passo 7 testa um lightbox que abre um vídeo inexistente
-   e passa sem provar nada.
+   tem. **Passo obrigatório e verificável antes desta bateria:**
+
+   ```bash
+   curl -sS --create-dirs -o site/media/exante.mp4 -w "HTTP %{http_code}  %{size_download} bytes\n" https://projeto.govintegra.com.br/media/exante.mp4
+   ```
+
+   Esperado: `HTTP 200  5963603 bytes`. Confirme depois que o servidor local o
+   serve — um `fetch("/media/exante.mp4", {method:"HEAD"})` na página deve
+   devolver **200**, não 404. Sem isso, o passo 7 testa um lightbox que abre um
+   vídeo inexistente e passa sem provar nada.
+
+   *Retificação:* o commit `6ea0338` afirmou na mensagem que o caminho absoluto
+   do vídeo "resolve como em produção". No momento daquele commit ele respondia
+   **404** no servidor local, porque o arquivo ainda não tinha sido baixado — a
+   alegação de teste não tinha lastro, e o achado é da sessão Revisão. O vídeo
+   foi baixado e verificado depois: HTTP 200, 5.963.603 bytes, marcador `ftyp`
+   íntegro.
 8. Rolagem completa procurando estouro horizontal:
    `document.documentElement.scrollWidth <= document.documentElement.clientWidth`
    → `true` em 375, 768 e 1280.

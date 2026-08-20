@@ -97,6 +97,12 @@ Um subagente, com a skill `frontend-design`, produz:
   (display com caráter + mono para todos os números), ambas no Google Fonts,
   com fallback;
 - grid de 12 colunas em custom properties (molde Oxide);
+- `--font-corpo` aplicada em `html` **e** `body`, nunca só num contêiner.
+  Medido na página no ar em 20/08/2026: `html` e `body` computam
+  `Times New Roman` — o serifado padrão do navegador — porque a fonte só é
+  aplicada num `.wrap` mais abaixo. Hoje ninguém vê, porque todo texto está
+  dentro do contêiner; mas qualquer elemento que caia fora renderiza serifado
+  no meio de uma página sans-serif;
 - primitivas: botão primário/secundário, card, pill, hairline, faixa de seção;
 - regras de movimento (reaproveitando o `IntersectionObserver` já existente).
 
