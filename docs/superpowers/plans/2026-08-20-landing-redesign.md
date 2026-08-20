@@ -105,7 +105,7 @@ Se a seção precisar de JavaScript, descreva o comportamento no relatório
 final; NÃO escreva no script.js (ele é montado por outra tarefa).
 
 VERIFICAÇÃO ANTES DE ENTREGAR: rode
-  python site/montar.py --so <NN-nome> && python site/verificar.py
+  python site/montar.py --so <NN-nome> && python site/verificar.py site/preview-<NN-nome>.html
 e só entregue quando a saída não tiver nenhum achado. Se tiver, conserte.
 
 Seu texto final é um RELATÓRIO curto: o que você decidiu e por quê, o que
@@ -279,6 +279,22 @@ def test_montar_so_rejeita_fatia_inexistente():
 
 
 @completo
+def test_caminho_saida_da_pagina_inteira_e_o_index():
+    assert m.caminho_saida(None).name == "index.html"
+
+
+def test_caminho_saida_de_uma_fatia_e_isolado():
+    assert m.caminho_saida("02-prova").name == "preview-02-prova.html"
+
+
+def test_cada_fatia_grava_num_caminho_distinto():
+    """Fatias construidas em paralelo nao podem sobrescrever a previa uma da outra."""
+    caminhos = {m.caminho_saida(fatia) for fatia in m.FATIAS}
+    assert len(caminhos) == len(m.FATIAS)
+    assert m.caminho_saida(None) not in caminhos
+
+
+@completo
 def test_montar_css_do_sistema_vem_antes_do_css_das_fatias():
     html = m.montar()
     assert html.index("/* ===== 00-sistema ===== */") < html.index(
@@ -420,6 +436,15 @@ def _ler(nome: str) -> str:
     return (PARTS / nome).read_text(encoding="utf-8").strip()
 
 
+def caminho_saida(so: str | None) -> pathlib.Path:
+    """index.html para a pagina inteira; preview-<fatia>.html para uma fatia so.
+
+    Cada fatia grava num arquivo proprio para que varios agentes possam
+    trabalhar em paralelo sem sobrescrever a previa um do outro.
+    """
+    return SAIDA if so is None else RAIZ / f"preview-{so}.html"
+
+
 def montar(so: str | None = None) -> str:
     """Devolve o HTML completo. `so` limita a uma fatia, para revisao isolada."""
     if so is not None and so not in FATIAS:
@@ -463,8 +488,9 @@ def main() -> None:
     ap.add_argument("--so", metavar="FATIA", help=f"monta so uma fatia: {', '.join(FATIAS)}")
     args = ap.parse_args()
     html = montar(so=args.so)
-    SAIDA.write_text(html, encoding="utf-8", newline="\n")
-    print(f"{SAIDA} — {len(html.encode('utf-8')) / 1024:.1f} KB")
+    destino = caminho_saida(args.so)
+    destino.write_text(html, encoding="utf-8", newline="\n")
+    print(f"{destino} — {len(html.encode('utf-8')) / 1024:.1f} KB")
 
 
 if __name__ == "__main__":
@@ -482,7 +508,8 @@ Roda antes de qualquer revisao humana, para que o revisor gaste atencao com o
 que so um humano ve.
 
 Uso:
-    python site/verificar.py      # verifica site/index.html e site/parts/
+    python site/verificar.py                            # a pagina inteira
+    python site/verificar.py site/preview-01-hero.html  # a previa de uma fatia
 """
 from __future__ import annotations
 
@@ -617,15 +644,15 @@ def verificar_partes(parts: pathlib.Path) -> list[str]:
 
 def main() -> int:
     achados: list[str] = []
-    indice = RAIZ / "index.html"
-    if indice.exists():
-        achados += verificar(indice.read_text(encoding="utf-8"))
+    alvo = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else RAIZ / "index.html"
+    if alvo.exists():
+        achados += verificar(alvo.read_text(encoding="utf-8"))
     else:
-        achados.append(f"{indice} nao existe — rode montar.py antes")
+        achados.append(f"{alvo} nao existe — rode montar.py antes")
     achados += verificar_partes(RAIZ / "parts")
 
     if not achados:
-        print("verificar: sem achados")
+        print(f"verificar: sem achados ({alvo.name})")
         return 0
     print(f"verificar: {len(achados)} achado(s)")
     for a in achados:
@@ -661,6 +688,8 @@ Acrescente ao final de `.gitignore`:
 ```
 # landing: o video do Exante (5,9 MB) vive na VPS, nao no repositorio
 site/media/
+# previas por fatia — artefato de trabalho; so o index.html e versionado
+site/preview-*.html
 ```
 
 - [ ] **Step 7: Rodar a suíte inteira para garantir que nada regrediu**
@@ -1011,8 +1040,12 @@ git commit -m "feat(site): contrato de design da landing (fatia 0)"
 
 As cinco seguem **a mesma mecânica de sete passos**. Ela está escrita por
 inteiro na Task 4; as Tasks 5 a 8 repetem a mecânica e trazem só o que muda.
-Podem ser despachadas em paralelo entre si (todas dependem apenas da Task 3),
-mas cada uma tem o seu próprio portão de usuário.
+**Despacho em paralelo, aprovação em série** (decidido com o usuário em
+20/08/2026). As cinco dependem apenas da Task 3 e escrevem arquivos disjuntos,
+então constroem ao mesmo tempo. A corrida que existiria no `site/index.html`
+foi eliminada na Task 1: `montar.py --so <fatia>` grava em
+`site/preview-<fatia>.html`, um arquivo por fatia. Cada uma continua com o seu
+próprio portão de usuário, atravessado um de cada vez.
 
 ### Task 4: Fatia 1 — Hero e navegação
 
@@ -1064,7 +1097,7 @@ nenhum vídeo de fundo; nenhum gradiente roxo.
 - [ ] **Step 2: Montar e verificar**
 
 ```bash
-C:/Users/Thelemarco/PycharmProjects/integra-publico/.venv/Scripts/python.exe site/montar.py --so 01-hero && C:/Users/Thelemarco/PycharmProjects/integra-publico/.venv/Scripts/python.exe site/verificar.py
+C:/Users/Thelemarco/PycharmProjects/integra-publico/.venv/Scripts/python.exe site/montar.py --so 01-hero && C:/Users/Thelemarco/PycharmProjects/integra-publico/.venv/Scripts/python.exe site/verificar.py site/preview-01-hero.html
 ```
 
 Esperado: `verificar: sem achados`. Qualquer achado volta ao construtor antes
@@ -1096,7 +1129,8 @@ literal. Repita Steps 2–4 até `SEM ACHADOS BLOQUEANTES`.
 Peça ao usuário que **deixe o painel Browser visível na tela** — sem isso não
 há captura. Então:
 
-1. `preview_start` com `url` apontando para o `site/index.html` montado.
+1. `preview_start` com `url` apontando para `site/preview-01-hero.html`
+   (a Task 9 usa `site/index.html`, a página inteira).
 2. `resize_window` 1280×800, tema claro → `computer screenshot`.
 3. `resize_window` 1280×800, `colorScheme: dark` → `computer screenshot`.
 4. `resize_window` preset `mobile` (375) → recarregar → `computer screenshot`.
