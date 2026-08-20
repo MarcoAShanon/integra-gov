@@ -255,7 +255,7 @@ algarismos inequívocos (zero cortado, 1 e 7 distintos) e um calor humanista que
 impede a tabela de números de ficar clínica. Foi escolhida em cima de
 alternativas mais chamativas (Azeret Mono, Martian Mono) por um motivo
 específico deste projeto: aqui o mesmo mono precisa servir a três tamanhos
-muito diferentes — o indicador gigante (`−90%`), o rótulo de eixo de 11px e a
+muito diferentes — o indicador gigante (`−89%`), o rótulo de eixo de 11px e a
 pílula em caixa alta — e as mais largas quebram no segundo caso. **Archivo**
 entra como voz neutra do corpo, porque nem Bricolage nem Plex Mono aguentam
 parágrafos de 60 caracteres sem cansar.
@@ -293,7 +293,7 @@ ranking, datas e intervalos. Inclui o número dentro de uma frase.
 
 ```html
 <p>de <span class="num">~32 min</span> para <span class="num">~3,5 min</span></p>
-<span class="num-g">−90%</span>
+<span class="num-g">−89%</span>
 ```
 
 **Exceção, e é uma só: número dentro de uma `.pill`.** A pílula já é mono
@@ -307,6 +307,25 @@ dentro de um `<h2>`. Na dúvida: mono.
 
 `.num` e `.num-g` já trazem `font-variant-numeric:tabular-nums` e o zero
 cortado. Não redeclare.
+
+### 5.3-b O indicador é −89%, e isso não se "conserta"
+
+O número que a página inteira usa como manchete é **−89%**, não −90%.
+`(32 − 3,5)/32` = **−89,06%**, e o −90% que estava no ar era arredondamento
+para **cima**. A decisão de arredondar para baixo é do usuário, e o argumento é
+o mesmo que sustenta a página: numa peça cujo apelo é que os números são
+medidos e citam a fonte, ganhar um ponto percentual por arredondamento custa
+mais do que vale.
+
+Onde ele aparece: nas três descrições do `head.html` (`description`,
+`og:description`, `twitter:description`) e no indicador visível da fatia 02. Os
+quatro têm de bater.
+
+Consequência que precisa ficar escrita: os textos de OG são preservados
+palavra por palavra do `site/original/index-slim.html` **com esta única
+exceção deliberada**. Quem comparar os dois vai encontrar a divergência — ela
+é intencional, está registrada aqui, no comentário do `head.html`, na spec § 6
+e no plano. **Não restaure o −90%.**
 
 ### 5.4-b Onde mais o mono entra, e onde não entra
 
