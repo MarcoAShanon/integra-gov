@@ -976,6 +976,28 @@ faz o nome do projeto herdar a tipografia que você escolher, que é o que a
 direção estética pede. Trate essa composição — cubo + wordmark tipográfico —
 como uma primitiva do contrato, para que a fatia 1 apenas a use.
 
+TRÊS REGRAS DA MARCA, exigidas na revisão e que você precisa cumprir:
+
+1. O CUBO É DECORATIVO. Como o nome do projeto está em texto real ao lado dele,
+   a imagem não acrescenta informação: use alt="" e aria-hidden="true" no cubo,
+   SEMPRE. O nome acessível do link da marca vem do texto. A armadilha é pôr
+   alt="INTEGRA" no cubo e fazer o leitor de tela anunciar "INTEGRA INTEGRA".
+2. ESCOLHA O FALLBACK OLHANDO O WORDMARK. Se a fonte do Google não carregar, a
+   marca cai para a pilha de fallback — e continua legível e clicável, o que é
+   estritamente melhor que uma imagem quebrada. Mas escolha a família de
+   fallback comparando x-height e peso com a fonte de display, para a queda não
+   desfigurar a marca. Use font-display:swap; a piscada do primeiro load é
+   aceitável.
+3. A MARCA É PRIMITIVA DO SISTEMA, não da fatia. Defina `.marca` no
+   00-sistema.css com o letter-spacing, o peso e o tamanho relativo FIXADOS.
+   Só o hero a usa hoje, mas a definição mora no sistema — cinco fatias não
+   podem compor a marca cada uma do seu jeito.
+
+E registre uma linha no contrato.md dizendo que a marca da landing fica
+TIPOGRAFICAMENTE DIFERENTE do lockup oficial usado na revista e no painelsei.
+É divergência consciente, decidida pelo usuário porque o wordmark oficial é
+branco e some no fundo claro — está escrito para ninguém "consertar" depois.
+
 1. site/parts/contrato.md — o contrato em prosa, em português. Deve conter:
    a paleta com cada cor nomeada, seu papel e a razão de contraste medida
    contra o fundo em que será usada; o par de fontes com a justificativa da
@@ -1921,8 +1943,15 @@ em HTML, usando os próprios tokens do contrato, e fotografá-la headless.
 Create `site/parts/og.html` — página autônoma de exatamente 1200×630, com
 `<style>` inline que importa as mesmas fontes e replica as mesmas cores do
 `00-sistema.css` (o `og.html` não passa pelo montador; ele é standalone).
-Conteúdo: o logo, o nome INTEGRA, a proposição em uma linha e o 1º lugar.
-Nada de texto pequeno — em miniatura no WhatsApp e no Teams, some.
+Conteúdo: o cubo (`assets/cubo-integra.png`), o nome INTEGRA composto em texto
+como manda o contrato, a proposição em uma linha e o 1º lugar. Nada de texto
+pequeno — em miniatura no WhatsApp e no Teams, some.
+
+**Dependência explícita, levantada na revisão:** a decisão de compor o wordmark
+em texto vale para a *página*; o compartilhamento social continua exigindo a
+marca como **imagem**, e é este `og.html` renderizado que a produz. Se o
+contrato mudar a fonte de display, este arquivo precisa ser regerado — não é
+opcional, é o que mantém a marca do link igual à marca da página.
 
 Create `site/gerar_og.py`:
 
