@@ -373,8 +373,15 @@ bloco de `--surface`, nunca sobreposta.
 
 O `#10A87E` **sai da paleta de acento** e sobrevive apenas como **sinal de
 estado positivo**, nos tokens `--ok` / `--ok-soft` (recalibrados para
-`#0A7355` / `#E3F1EA` no claro e `#45CBA0` / `#10271E` no escuro, porque o
-`#10A87E` original media 3,3:1 sobre o ecru e reprovava em texto).
+`#0A7355` / `#E3F1EA` no claro e `#45CBA0` / `#10271E` no escuro).
+
+A recalibração não é gosto: o `#10A87E` original **reprova como texto sobre os
+três fundos claros da página**, medido pela mesma fórmula do resto da tabela —
+**2,91:1** sobre `--bg` (`#FBFAF7`), 3,03:1 sobre `--surface` (`#FFFFFF`) e
+2,69:1 sobre `--fundo-alt` (`#F4F1E9`), contra o mínimo de 4,5:1. O número de
+referência desta página é o **2,91:1 sobre `--bg`**, que é o fundo em que a
+esmeralda de fato aparecia. O `#0A7355` que entra no lugar mede 5,59:1 sobre o
+mesmo ecru.
 
 Motivo: "âmbar como acento único" é a regra da direção estética, e um segundo
 acento de mesma força faz a página perder o eixo — foi o que aconteceu com a
@@ -573,15 +580,22 @@ Marcação **exata**:
 </span>
 ```
 
-Três coisas não negociáveis:
+Quatro coisas não negociáveis:
 
 1. **O cubo é decorativo**: `alt=""` **e** `aria-hidden="true"`, sempre. O nome
    acessível vem do texto ao lado. A armadilha é pôr `alt="INTEGRA"` no cubo e
    fazer o leitor de tela anunciar "INTEGRA INTEGRA".
-2. **A marca não é link.** `href="#"` é reprovado pelo verificador e um link
-   para o topo da própria página não serve para nada. Se um dia virar link, terá
-   que apontar para um `id` real ou para fora.
-3. `assets/cubo-integra.png` (283×268) é **o** asset da marca.
+2. **A marca não leva `aria-label`.** Nem no `<span>`, nem num futuro `<a>`.
+   Medido na página no ar: o `aria-label="INTEGRA"` que está lá hoje
+   **sobrescreve** o conteúdo interno, então o leitor de tela anuncia só
+   "INTEGRA" e o usuário de leitor perde o "I.A. & Automação" que o vidente lê.
+   O `alt=""` no cubo mais o texto visível já produzem o nome acessível certo e
+   **completo** — qualquer `aria-label` aqui só pode empobrecê-lo.
+3. **A marca não é link.** O `href="#"` que o `verificar.py` vinha acusando na
+   página no ar é justamente o link do logo: um link que não navega para lugar
+   nenhum é pior que um logo que não é link. Se um dia virar link, terá que
+   apontar para um `id` que existe ou para fora do site — nunca `href="#"`.
+4. `assets/cubo-integra.png` (283×268) é **o** asset da marca.
    `logo-integra-claro.png` e `img-09-…png` **não entram na página**: o
    wordmark embutido neles tem luminância medida de ~242/255 — é branco, e
    some no ecru.
@@ -589,6 +603,13 @@ Três coisas não negociáveis:
 O `.marca-nome` já traz `text-transform:uppercase`, peso 800 e
 `letter-spacing:.055em` fixados; o `.marca-desc` já traz mono, `--t-1` e
 `letter-spacing:.16em`. **Não sobrescreva nenhum dos dois.**
+
+Registro, para ninguém descrever isto como novidade: a página no ar **já**
+compõe o cabeçalho como cubo-imagem mais wordmark em texto. O comentário "LOGO
+PROVISÓRIA" que está no HTML dela é sobre o cubo do CGPAG ser provisório
+enquanto marca, não sobre o wordmark ser imagem. O que muda aqui é o cubo
+(passa a ser o `cubo-integra.png`, 283×268, quase o dobro da resolução) e a
+tipografia do wordmark — não a técnica.
 
 > **Divergência consciente, registrada para ninguém "consertar" depois:** a
 > marca desta landing fica **tipograficamente diferente** do lockup oficial
@@ -732,6 +753,7 @@ E confira à mão, item por item:
 - [ ] nenhuma `box-shadow` de elevação
 - [ ] nenhum texto sobre gradiente ou sobre imagem
 - [ ] toda `<img>` tem `alt` (vazio **e** `aria-hidden` se for decorativa)
+- [ ] a marca, se a sua fatia a usa, não tem `aria-label` (§8.11)
 - [ ] nenhum `href="#"`; toda âncora aponta para um `id` existente
 - [ ] a hierarquia de títulos não pula degrau
 - [ ] você olhou a seção nos dois temas, claro e escuro

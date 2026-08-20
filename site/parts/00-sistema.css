@@ -150,7 +150,16 @@
    ===================================================================== */
 *,*::before,*::after{box-sizing:border-box}
 
-html{background:var(--bg);scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+/* a fonte fica em html E em body — nunca so num conteiner. A pagina no
+   ar aplica a familia num .wrap, e por isso html e body computam
+   "Times New Roman": qualquer texto que escape do conteiner cai no
+   serifado do navegador. */
+html{
+  background:var(--bg);
+  font-family:var(--font-corpo);
+  scroll-behavior:smooth;
+  -webkit-text-size-adjust:100%;
+}
 
 body{
   margin:0;
