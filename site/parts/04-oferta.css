@@ -71,8 +71,14 @@
 /* =====================================================================
    BLOCO 1 — os blocos que o pacote publica
    ===================================================================== */
+/* Quatro modulos em duas linhas. O PADRAO vem primeiro (span 6) e as duas
+   excecoes o sobrescrevem: assim um quinto cartao entra com largura sensata
+   em vez de espremido numa coluna de 66px, que foi o que aconteceu quando
+   estas regras eram :first-child/:last-child e a lista cresceu de 2 para 4.
+   Regra posicional que so cobre as pontas quebra em silencio no meio. */
+#oferta .mods .modulo{grid-column:span 6}
 #oferta .mods .modulo:first-child{grid-column:span 7}
-#oferta .mods .modulo:last-child{grid-column:span 5}
+#oferta .mods .modulo:first-child + .modulo{grid-column:span 5}
 
 #oferta .modulo{
   display:flex;
