@@ -54,9 +54,13 @@ memória.
 
 **Direção estética escolhida: rigor técnico quente.** A estrutura da Oxide
 (grid, hairlines, números em mono, densidade controlada) sobre a base quente
-que a página já tem: fundo ecru, âmbar como acento único, esmeralda aposentada
-ou reduzida a sinal de estado. Instrumento de precisão feito por gente — nem
-startup fria, nem portal.
+que a página já tem: fundo ecru, âmbar como acento único. Instrumento de
+precisão feito por gente — nem startup fria, nem portal.
+
+A esmeralda (`--brand2`) **sai da paleta de acento** e sobrevive apenas como
+sinal de estado positivo (ex.: "em produção"), se a Fatia 0 julgar que há uso
+para isso; caso contrário, sai de vez. A decisão é da Fatia 0, fica escrita no
+contrato, e as demais fatias não a reabrem.
 
 ## 4. Restrições duras (repassadas literalmente a todo subagente)
 
@@ -86,7 +90,7 @@ Jogar N subagentes num arquivo único faz com que se atropelem. A solução é
 Um subagente, com a skill `frontend-design`, produz:
 
 - paleta completa em custom properties, claro e escuro, derivada da direção
-  "rigor técnico quente";
+  "rigor técnico quente", **com o destino da esmeralda decidido e justificado**;
 - escala tipográfica com número de degraus declarado, e o **par de fontes**
   (display com caráter + mono para todos os números), ambas no Google Fonts,
   com fallback;
