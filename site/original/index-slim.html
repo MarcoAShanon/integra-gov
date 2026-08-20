@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>INTEGRA — automação do SEI e do SIAPE, feita por servidores</title>
+<meta name="description" content="Automação que conecta o SEI e o SIAPE usando o acesso do próprio servidor — sem burlar nada. 1º lugar em Experiências Inspiradoras em Gestão de Pessoas (MGI/SGP, 2025), −90% no tempo por processo. Núcleo open-source (MIT).">
+<meta name="author" content="Marco Aurélio Silva — CGPAG · MGI/SGP/DECIPEX">
+<link rel="icon" type="image/png" href="assets/img-01-fe4b5613.png">
+<meta name="theme-color" content="#0E1826">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Projeto INTEGRA">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:url" content="https://projeto.govintegra.com.br/">
+<meta property="og:title" content="INTEGRA — automação do SEI e do SIAPE, feita por servidores">
+<meta property="og:description" content="Automação que conecta o SEI e o SIAPE usando o acesso do próprio servidor — sem burlar nada. 1º lugar em Experiências Inspiradoras em Gestão de Pessoas (MGI/SGP, 2025), −90% no tempo por processo. Núcleo open-source (MIT).">
+<meta property="og:image" content="https://projeto.govintegra.com.br/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="INTEGRA — automação do SEI e do SIAPE, feita por servidores">
+<meta name="twitter:description" content="Automação que conecta o SEI e o SIAPE usando o acesso do próprio servidor — sem burlar nada. 1º lugar em Experiências Inspiradoras em Gestão de Pessoas (MGI/SGP, 2025), −90% no tempo por processo. Núcleo open-source (MIT).">
+<meta name="twitter:image" content="https://projeto.govintegra.com.br/og-image.png">
+<style>html,body{margin:0}html{background:#FBFAF7}@media(prefers-color-scheme:dark){html{background:#0F1420}}</style>
+<style>
+  :root{
+    /* ---- light (default): bright, warm, approachable ---- */
+    --bg:#FBFAF7;
+    --bg-soft:#F2F5F3;
+    --surface:#FFFFFF;
+    --text:#1A2130;
+    --text-soft:#5A6274;
+    --border:#EAE7DF;
+    --brand:#E7920D;         /* amber fill */
+    --brand-ink:#A5650B;     /* amber text on light */
+    --brand-soft:#FBF1DE;    /* amber tint bg */
+    --brand2:#10A87E;        /* emerald fill */
+    --brand2-ink:#0B7D5E;    /* emerald text on light */
+    --brand2-soft:#E0F4EE;   /* emerald tint bg */
+    --data-blue:#3B7DE0;
+    --on-brand:#20160A;      /* text on amber */
+    --shadow:0 1px 2px rgba(20,25,40,.04), 0 10px 30px -14px rgba(20,25,40,.14);
+    --shadow-lg:0 2px 4px rgba(20,25,40,.05), 0 30px 60px -24px rgba(20,25,40,.22);
+
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif;
+    --font-mono:ui-monospace,"SF Mono","Cascadia Code","JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace;
+
+    --maxw:1120px;
+    --r:22px;
+    --r-sm:14px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0F1420;--bg-soft:#141B29;--surface:#18202F;--text:#EDECE6;--text-soft:#9AA1B2;
+      --border:#26304400;--border:#273042;
+      --brand:#F5B23E;--brand-ink:#F5B23E;--brand-soft:#2A2314;
+      --brand2:#34C99B;--brand2-ink:#34C99B;--brand2-soft:#12291F;
+      --data-blue:#5E92E6;--on-brand:#1A130A;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 34px -16px rgba(0,0,0,.6);
+      --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 34px 70px -26px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#FBFAF7;--bg-soft:#F2F5F3;--surface:#FFFFFF;--text:#1A2130;--text-soft:#5A6274;--border:#EAE7DF;
+    --brand:#E7920D;--brand-ink:#A5650B;--brand-soft:#FBF1DE;--brand2:#10A87E;--brand2-ink:#0B7D5E;--brand2-soft:#E0F4EE;
+    --data-blue:#3B7DE0;--on-brand:#20160A;
+    --shadow:0 1px 2px rgba(20,25,40,.04), 0 10px 30px -14px rgba(20,25,40,.14);
+    --shadow-lg:0 2px 4px rgba(20,25,40,.05), 0 30px 60px -24px rgba(20,25,40,.22);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0F1420;--bg-soft:#141B29;--surface:#18202F;--text:#EDECE6;--text-soft:#9AA1B2;--border:#273042;
+    --brand:#F5B23E;--brand-ink:#F5B23E;--brand-soft:#2A2314;--brand2:#34C99B;--brand2-ink:#34C99B;--brand2-soft:#12291F;
+    --data-blue:#5E92E6;--on-brand:#1A130A;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 34px -16px rgba(0,0,0,.6);
+    --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 34px 70px -26px rgba(0,0,0,.7);
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0}
+  .page{background:var(--bg);color:var(--text);font-family:var(--font-sans);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  h1,h2,h3{margin:0;font-weight:800;letter-spacing:-.025em;text-wrap:balance;line-height:1.08}
+  h2{font-size:clamp(1.9rem,4vw,2.9rem)}
+  h3{font-size:1.16rem;letter-spacing:-.015em;line-height:1.25}
+  p{margin:0}
+  a{color:inherit;text-decoration:none}
+
+  .pill{display:inline-flex;align-items:center;gap:.55em;font-family:var(--font-mono);font-size:.73rem;font-weight:600;
+    letter-spacing:.06em;text-transform:uppercase;padding:7px 13px;border-radius:999px;background:var(--brand-soft);color:var(--brand-ink)}
+  .pill.g{background:var(--brand2-soft);color:var(--brand2-ink)}
+  .pill .d{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+  section{padding:clamp(60px,8vw,108px) 0}
+  .lede{color:var(--text-soft);font-size:1.13rem;max-width:60ch}
+  .head{max-width:66ch}
+  .head h2{margin-top:16px}
+  .head .lede{margin-top:16px}
+
+  .btn{font-family:var(--font-sans);font-size:.98rem;font-weight:700;padding:14px 24px;border-radius:999px;
+    display:inline-flex;align-items:center;gap:9px;cursor:pointer;border:1.5px solid transparent;transition:transform .16s ease,box-shadow .2s,background .2s,border-color .2s}
+  .btn:focus-visible{outline:2.5px solid var(--brand);outline-offset:3px}
+  .btn-p{background:var(--brand);color:var(--on-brand);box-shadow:0 8px 20px -8px color-mix(in srgb,var(--brand) 65%,transparent)}
+  .btn-p:hover{transform:translateY(-2px);box-shadow:0 14px 28px -10px color-mix(in srgb,var(--brand) 70%,transparent)}
+  .btn-s{background:var(--surface);color:var(--text);border-color:var(--border)}
+  .btn-s:hover{transform:translateY(-2px);border-color:var(--brand)}
+
+  .rise{opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+  .rise.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){.rise{opacity:1;transform:none;transition:none}}
+
+  /* ---- brand / logo ---- */
+  .logo{display:inline-flex;align-items:center;gap:11px}
+  .logo .mark{height:40px;width:auto;flex:none;display:block}
+  .logo .wm{display:flex;flex-direction:column;line-height:1.05}
+  .logo .wm b{font-weight:800;font-size:1.2rem;letter-spacing:-.02em;color:var(--text)}
+  .logo .wm small{font-family:var(--font-mono);font-weight:600;font-size:.6rem;color:var(--text-soft);letter-spacing:.02em;margin-top:3px;text-transform:uppercase}
+
+  /* ================= HERO ================= */
+  .hero{position:relative;overflow:hidden}
+  .hero::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(680px 420px at 88% -8%, color-mix(in srgb,var(--brand) 26%,transparent), transparent 62%),
+      radial-gradient(560px 380px at 6% 8%, color-mix(in srgb,var(--brand2) 20%,transparent), transparent 60%);}
+  .hero .wrap{position:relative;z-index:1}
+  .nav{display:flex;justify-content:space-between;align-items:center;padding:26px 0 0;gap:16px}
+  .nav .badge{font-family:var(--font-mono);font-size:.76rem;color:var(--text-soft);display:flex;align-items:center;gap:8px}
+  .nav .badge b{color:var(--brand2-ink);font-weight:600}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(30px,5vw,56px);align-items:center;
+    padding:clamp(44px,7vw,76px) 0 clamp(56px,7vw,84px)}
+  @media(max-width:880px){.hero-grid{grid-template-columns:1fr;gap:40px}}
+  .hero h1{font-size:clamp(2.4rem,5.6vw,4rem);margin:20px 0 0}
+  .hero h1 em{font-style:normal;color:var(--brand-ink)}
+  .hero .lede{margin-top:20px;font-size:1.16rem}
+  .hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+  .hero-note{margin-top:22px;display:inline-flex;align-items:center;gap:10px;font-size:.86rem;color:var(--text-soft)}
+  .hero-note .q{font-family:var(--font-mono);color:var(--brand2-ink);font-weight:600}
+
+  /* light terminal/snippet card */
+  .snippet{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-lg);overflow:hidden}
+  .snip-bar{display:flex;align-items:center;gap:7px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg-soft)}
+  .snip-bar i{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .snip-bar .r{background:#EC6A5E}.snip-bar .y{background:#F3BE4F}.snip-bar .g{background:#61C554}
+  .snip-bar span{margin-left:8px;font-family:var(--font-mono);font-size:.75rem;color:var(--text-soft)}
+  .snip-body{padding:20px 20px 22px;font-family:var(--font-mono);font-size:.88rem;line-height:1.95}
+  .snip-body .p{color:var(--brand2-ink);font-weight:600}
+  .snip-body .l{color:var(--text)}
+  .snip-body .ok{color:var(--brand2-ink);font-weight:600}
+  .snip-body .muted{color:var(--text-soft)}
+  .snip-metric{margin-top:16px;padding:16px;border-radius:var(--r-sm);background:linear-gradient(120deg,var(--brand-soft),var(--brand2-soft));
+    display:flex;align-items:center;gap:16px}
+  .snip-metric b{font-size:clamp(2.4rem,7vw,3.2rem);font-weight:800;line-height:1;color:var(--brand-ink);letter-spacing:-.03em}
+  .snip-metric span{font-family:var(--font-sans);font-size:.9rem;color:var(--text);max-width:16ch}
+  .snip-metric .old{color:#C0453B;text-decoration:line-through;text-decoration-color:rgba(192,69,59,.5)}
+  .snip-metric .new{color:var(--brand-ink);font-weight:700}
+  .cur{display:inline-block;width:.55ch;height:1.05em;background:var(--brand2);vertical-align:-.15em;margin-left:1px;border-radius:1px;animation:blink 1.1s step-end infinite}
+  @keyframes blink{50%{opacity:0}}
+  @media (prefers-reduced-motion:reduce){.cur{animation:none}}
+
+  /* ---- credibility strip ---- */
+  .cred{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg-soft)}
+  .cred .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:14px 26px;padding:20px 24px}
+  .cred .t{font-family:var(--font-mono);font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-soft)}
+  .cred .item{font-size:.95rem;color:var(--text)}
+  .cred .item b{color:var(--brand-ink)}
+  .cred .sep{width:1px;height:18px;background:var(--border)}
+
+  /* ---- winner ribbon + award section ---- */
+  .winner{display:inline-flex;align-items:center;gap:10px;margin-top:16px;padding:10px 16px;border-radius:999px;
+    background:linear-gradient(120deg,#F6D77E,#E7920D);color:#3A2A08;font-weight:700;font-size:.9rem;line-height:1.2;
+    box-shadow:0 12px 26px -12px rgba(231,146,13,.75)}
+  .winner .m{font-size:1.2em;line-height:1}
+  .winner small{font-family:var(--font-mono);font-weight:600;font-size:.8em;opacity:.82}
+  .premio{background:var(--bg-soft);border-bottom:1px solid var(--border)}
+  .premio-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,4vw,52px);align-items:center}
+  @media(max-width:880px){.premio-grid{grid-template-columns:1fr;gap:32px}}
+  .medal{display:flex;align-items:flex-end;gap:18px;margin-top:16px}
+  .medal .lugar{font-size:clamp(2.6rem,6vw,3.7rem);font-weight:800;letter-spacing:-.02em;line-height:1.08;
+    display:inline-block;padding:0 .04em .1em 0;
+    background:linear-gradient(120deg,#E7920D,#B5720F);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .medal .score{font-family:var(--font-mono);font-size:.82rem;color:var(--text-soft);line-height:1.3}
+  .medal .score b{color:var(--brand-ink);font-size:1.5rem;display:block;font-variant-numeric:tabular-nums}
+  .premio h2{margin-top:18px}
+  .exp-title{margin-top:16px;font-style:italic;color:var(--text);font-size:1.04rem;border-left:3px solid var(--brand);padding-left:14px}
+  .rank{margin-top:24px;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
+  .rank .row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);font-size:.92rem}
+  .rank .row:last-child{border-bottom:0}
+  .rank .row.win{background:var(--brand-soft)}
+  .rank .pos{font-family:var(--font-mono);font-weight:700;color:var(--text-soft);width:2.2em;flex:none}
+  .rank .row.win .pos{color:var(--brand-ink)}
+  .rank .org{flex:1;color:var(--text)}
+  .rank .pt{font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--text-soft)}
+  .rank .row.win .pt{color:var(--brand-ink);font-weight:700}
+  .photo{border-radius:var(--r);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow-lg);background:var(--surface)}
+  .photo img{display:block;width:100%;height:auto}
+  .photo .ph-slot{aspect-ratio:3/2;display:grid;place-items:center;text-align:center;padding:24px;color:var(--text-soft);
+    font-family:var(--font-mono);font-size:.82rem;line-height:1.7;
+    background:repeating-linear-gradient(135deg,var(--bg-soft),var(--bg-soft) 12px,var(--surface) 12px,var(--surface) 24px)}
+  .photo .cap{padding:14px 16px;font-size:.82rem;color:var(--text-soft);border-top:1px solid var(--border)}
+  .photo .cap b{color:var(--text)}
+
+  /* ================= PROBLEMA ================= */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:clamp(30px,5vw,56px);align-items:center}
+  @media(max-width:860px){.split{grid-template-columns:1fr;gap:34px}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+  .ritual .rt-h{padding:16px 18px;font-family:var(--font-mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--text-soft);display:flex;justify-content:space-between;border-bottom:1px solid var(--border)}
+  .step{display:flex;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid var(--border)}
+  .step .n{font-family:var(--font-mono);font-size:.8rem;color:var(--brand-ink);width:1.4em;flex:none;font-weight:600}
+  .step .t{flex:1;font-size:.97rem}
+  .step .sys{font-family:var(--font-mono);font-size:.68rem;font-weight:700;letter-spacing:.03em;padding:4px 10px;border-radius:999px}
+  .sys.sei{color:var(--brand2-ink);background:var(--brand2-soft)}
+  .sys.siape{color:var(--brand-ink);background:var(--brand-soft)}
+  .rt-f{padding:16px 18px;display:flex;justify-content:space-between;align-items:center;color:var(--text-soft);font-size:.92rem}
+  .rt-f b{font-family:var(--font-mono);color:var(--text);font-size:1.05rem}
+
+  /* ================= RESULTADOS ================= */
+  .results{background:var(--bg-soft);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:42px}
+  @media(max-width:900px){.tiles{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:500px){.tiles{grid-template-columns:1fr}}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:22px 20px;box-shadow:var(--shadow)}
+  .tile .big{font-size:1.95rem;font-weight:800;letter-spacing:-.03em;line-height:1;color:var(--brand-ink);font-variant-numeric:tabular-nums}
+  .tile .big.g{color:var(--brand2-ink)}
+  .tile .cap{margin-top:12px;color:var(--text-soft);font-size:.86rem;line-height:1.45}
+  .tile .cap b{color:var(--text);font-weight:600}
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+  @media(max-width:860px){.charts{grid-template-columns:1fr}}
+  .chart{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;box-shadow:var(--shadow)}
+  .chart .c-h{font-weight:700;font-size:1.04rem;max-width:34ch;letter-spacing:-.01em}
+  .chart .c-total{font-family:var(--font-mono);font-size:.76rem;color:var(--brand2-ink);margin-top:6px;font-weight:600}
+  .bars{display:flex;align-items:flex-end;gap:16px;height:188px;margin-top:24px}
+  .bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:9px}
+  .bar .col{width:100%;border-radius:9px 9px 3px 3px;height:0;transition:height 1.05s cubic-bezier(.2,.7,.2,1)}
+  .bar.blue .col{background:linear-gradient(180deg,#5A93E6,#3B6FC7)}
+  .bar.blue.part .col{background:linear-gradient(180deg,#9FC0EF,#6E93CC)}
+  .bar.grn .col{background:linear-gradient(180deg,var(--brand2),#0C8A66)}
+  .bar.grn.part .col{background:linear-gradient(180deg,#7FD9BB,#4CA98A)}
+  .bar .v{font-family:var(--font-mono);font-size:.82rem;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+  .bar .x{font-family:var(--font-mono);font-size:.72rem;color:var(--text-soft)}
+  @media (prefers-reduced-motion:reduce){.bar .col{transition:none}}
+  .chart .foot{font-family:var(--font-mono);font-size:.68rem;color:var(--text-soft);margin-top:14px}
+  .src{font-size:.82rem;color:var(--text-soft);margin-top:26px;line-height:1.6;max-width:88ch}
+  .src b{color:var(--text)}
+
+  /* ================= MÓDULOS ================= */
+  .mods{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:42px}
+  @media(max-width:860px){.mods{grid-template-columns:1fr}}
+  .mgroup{padding:26px}
+  .g-h{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .g-h .name{font-size:1.28rem;font-weight:800;letter-spacing:-.02em}
+  .g-h .tag{margin-left:auto;font-family:var(--font-mono);font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--text-soft);background:var(--bg-soft);padding:5px 10px;border-radius:999px}
+  .g-sub{color:var(--text-soft);font-size:.93rem;margin-bottom:16px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-family:var(--font-mono);font-size:.79rem;padding:8px 12px;border-radius:9px;background:var(--bg-soft);color:var(--text);transition:background .18s,color .18s}
+  .chip::before{content:"›";color:var(--brand);margin-right:7px;font-weight:800}
+  .chip:hover{background:var(--brand-soft)}
+
+  /* ================= COMO FUNCIONA ================= */
+  .feat{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:40px}
+  @media(max-width:760px){.feat{grid-template-columns:1fr}}
+  .fcard{padding:26px;transition:transform .18s ease,box-shadow .2s}
+  .fcard:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+  .fcard .k{display:inline-flex;font-family:var(--font-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--brand2-ink);background:var(--brand2-soft);padding:5px 11px;border-radius:999px;font-weight:600}
+  .fcard h3{margin:14px 0 8px}
+  .fcard p{color:var(--text-soft);font-size:.96rem}
+  .fcard code{font-family:var(--font-mono);font-size:.88em;background:var(--bg-soft);padding:1px 6px;border-radius:6px}
+
+  /* ================= GOVERNANÇA ================= */
+  .trust{background:var(--bg-soft);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .tlist{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:38px}
+  @media(max-width:760px){.tlist{grid-template-columns:1fr}}
+  .titem{display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--r-sm);padding:20px;box-shadow:var(--shadow)}
+  .titem .ck{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+    background:var(--brand2-soft);color:var(--brand2-ink);font-weight:800;margin-top:1px}
+  .titem b{display:block;margin-bottom:4px}
+  .titem span{color:var(--text-soft);font-size:.94rem}
+  .scopebox{margin-top:16px;background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--brand);
+    border-radius:var(--r-sm);padding:22px 24px;box-shadow:var(--shadow)}
+  .scopebox .sb-k{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--brand-ink);font-weight:600;margin-bottom:10px}
+  .scopebox p{color:var(--text-soft);font-size:.98rem;max-width:82ch}
+  .scopebox b{color:var(--text);font-weight:600}
+
+  /* ================= ECOSSISTEMA ================= */
+  .layers{display:flex;flex-direction:column;gap:12px;margin-top:40px}
+  .layer{padding:22px 24px;display:flex;gap:18px;align-items:center}
+  .layer .lv{font-family:var(--font-mono);font-size:.7rem;color:var(--text-soft);letter-spacing:.06em;text-transform:uppercase;flex:none;width:104px}
+  .layer .lc h3{font-size:1.1rem}
+  .layer .lc p{color:var(--text-soft);font-size:.92rem;margin-top:4px}
+  .layer .bdg{margin-left:auto;flex:none;font-family:var(--font-mono);font-size:.66rem;font-weight:700;letter-spacing:.05em;
+    text-transform:uppercase;padding:6px 11px;border-radius:999px}
+  .bdg.pub{color:var(--brand2-ink);background:var(--brand2-soft)}
+  .bdg.int{color:var(--text-soft);background:var(--bg-soft)}
+  .layer.core{border:1.5px solid color-mix(in srgb,var(--brand) 55%,var(--border));background:linear-gradient(120deg,var(--brand-soft),transparent 60%)}
+
+  /* ================= CTA ================= */
+  .cta-wrap{padding:clamp(60px,8vw,104px) 0}
+  .cta{background:linear-gradient(135deg,#12233A,#0E1826);border-radius:calc(var(--r) + 6px);padding:clamp(36px,6vw,64px);
+    position:relative;overflow:hidden;box-shadow:var(--shadow-lg)}
+  .cta::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(520px 300px at 90% 0%, rgba(231,146,13,.28), transparent 60%),
+               radial-gradient(460px 320px at 0% 110%, rgba(16,168,126,.24), transparent 60%)}
+  .cta > *{position:relative}
+  .cta .pill{background:rgba(245,178,62,.16);color:#F5B23E}
+  .cta h2{color:#F7F6F2;margin-top:16px;max-width:20ch}
+  .cta .lede{color:#B9C1CE;margin-top:16px}
+  .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+  .cta .btn-s{background:transparent;color:#F7F6F2;border-color:rgba(255,255,255,.22)}
+  .cta .btn-s:hover{border-color:#F5B23E}
+  .ph{border-bottom:1.5px dashed #F5B23E;color:#F5B23E;font-family:var(--font-mono);font-size:.92em}
+  .foot{margin-top:36px;padding-top:26px;border-top:1px solid rgba(255,255,255,.12);
+    display:flex;flex-wrap:wrap;gap:18px 44px;justify-content:space-between;
+    font-family:var(--font-mono);font-size:.78rem;color:#9AA6B6;line-height:1.75}
+  .foot b{color:#E7EBF1;font-weight:600}
+  .foot .note{max-width:52ch}
+
+  /* ---- showcase "feito com o integra" ---- */
+  .showcase{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:42px}
+  @media(max-width:900px){.showcase{grid-template-columns:1fr 1fr}}
+  @media(max-width:620px){.showcase{grid-template-columns:1fr}}
+  .proj{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;transition:transform .18s ease,box-shadow .2s}
+  .proj:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+  .poster{position:relative;aspect-ratio:16/10;background:var(--bg-soft);overflow:hidden}
+  .poster img{width:100%;height:100%;object-fit:cover;display:block}
+  .poster .ph-media{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--text-soft);
+    font-family:var(--font-mono);font-size:.8rem;line-height:1.6;padding:16px;
+    background:repeating-linear-gradient(135deg,var(--bg-soft),var(--bg-soft) 12px,var(--surface) 12px,var(--surface) 24px)}
+  .poster .play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:50%;
+    border:0;cursor:pointer;background:rgba(231,146,13,.94);color:#20160A;font-size:1.15rem;display:grid;place-items:center;
+    box-shadow:0 12px 26px -8px rgba(0,0,0,.5);transition:transform .16s}
+  .proj:hover .play{transform:translate(-50%,-50%) scale(1.08)}
+  .play:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+  .proj-body{padding:20px;display:flex;flex-direction:column;gap:10px;flex:1}
+  .proj-body h3{font-size:1.1rem}
+  .proj-body p{color:var(--text-soft);font-size:.94rem}
+  .proj-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+  .ptag{font-family:var(--font-mono);font-size:.68rem;padding:4px 9px;border-radius:999px;background:var(--bg-soft);color:var(--text-soft)}
+  .ptag.mod{background:var(--brand2-soft);color:var(--brand2-ink)}
+  .proj-link{margin-top:auto;font-family:var(--font-mono);font-size:.82rem;font-weight:600;color:var(--brand-ink);align-self:flex-start;cursor:pointer}
+  .proj-note{margin-top:18px;font-family:var(--font-mono);font-size:.74rem;color:var(--text-soft)}
+  .lb{position:fixed;inset:0;background:rgba(8,12,20,.88);display:none;place-items:center;z-index:50;padding:24px}
+  .lb.open{display:grid}
+  .lb video{max-width:min(1000px,94vw);max-height:86vh;border-radius:12px;box-shadow:0 30px 80px -20px rgba(0,0,0,.8);background:#000}
+  .lb .close{position:absolute;top:18px;right:22px;width:44px;height:44px;border-radius:50%;border:0;cursor:pointer;background:rgba(255,255,255,.14);color:#fff;font-size:1.2rem}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ===================== HERO ===================== -->
+  <header class="hero">
+    <div class="wrap">
+      <nav class="nav">
+        <!-- LOGO PROVISÓRIA — trocar pela logo oficial do INTEGRA -->
+        <a class="logo" href="#" aria-label="INTEGRA">
+          <img class="mark" src="assets/img-02-69ed929c.png" alt="" width="283" height="268">
+          <span class="wm"><b>INTEGRA</b><small>I.A. &amp; Automação</small></span>
+        </a>
+        <span class="badge"><b>●</b> núcleo aberto · licença MIT</span>
+      </nav>
+
+      <div class="hero-grid">
+        <div class="rise">
+          <span class="pill"><span class="d"></span>Iniciativa da CGPAG · MGI / SGP / DECIPEX</span>
+          <div class="winner"><span class="m">🥇</span> 1º lugar nacional · Experiências Inspiradoras em Gestão de Pessoas <small>MGI/SGP · 2025</small></div>
+          <h1>O trabalho que tomava <em>a manhã</em> do servidor agora leva <em>segundos</em>.</h1>
+          <p class="lede">O INTEGRA conecta o <b>SEI</b> e o <b>SIAPE</b> usando o acesso que o servidor já tem — sem burlar nada. Nasceu na ponta, virou caso publicado e hoje tem o núcleo em código aberto.</p>
+          <div class="hero-cta">
+            <a class="btn btn-p" href="#resultados">Ver os resultados</a>
+            <a class="btn btn-s" href="https://github.com/MarcoAShanon/integra-gov" target="_blank" rel="noopener">Repositório open-source</a>
+          </div>
+          <div class="hero-note"><span class="q">$</span> feito por quem vive o problema, para quem vive o problema.</div>
+        </div>
+
+        <div class="snippet rise" aria-hidden="true">
+          <div class="snip-bar"><i class="r"></i><i class="y"></i><i class="g"></i><span>exercícios-anteriores · instrução de processo</span></div>
+          <div class="snip-body">
+            <div class="l"><span class="p">$</span> integra instruir --processo</div>
+            <div class="l muted">› gerar tabela de valores <span class="ok">SEI ✓</span></div>
+            <div class="l muted">› lançar no módulo de exercícios anteriores <span class="ok">SIAPE ✓</span></div>
+            <div class="l muted">› conferir matrícula × registro oficial <span class="ok">✓</span></div>
+            <div class="l muted">› inserir comprovante + nota técnica <span class="ok">SEI ✓</span></div>
+            <div class="snip-metric">
+              <b>−90%</b>
+              <span>tempo por processo: de <span class="old">~32&nbsp;min</span> para <span class="new">~3,5&nbsp;min</span><span class="cur"></span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- credibility strip -->
+  <div class="cred">
+    <div class="wrap">
+      <span class="t">Caso publicado</span>
+      <span class="item">Revista <b>Gestão de Pessoas em Ação</b> — MGI</span>
+      <span class="sep" aria-hidden="true"></span>
+      <span class="item">Vol. 3 · jun/2025</span>
+      <span class="sep" aria-hidden="true"></span>
+      <span class="item">Verificado ao vivo em produção · <b>SEI 4.1.5</b></span>
+    </div>
+  </div>
+
+  <!-- ===================== RECONHECIMENTO / PRÊMIO ===================== -->
+  <section id="premio" class="premio">
+    <div class="wrap">
+      <div class="premio-grid">
+        <div class="rise">
+          <span class="pill"><span class="d"></span>Reconhecimento</span>
+          <div class="medal">
+            <span class="lugar">1º lugar</span>
+            <span class="score">média final<b>93,83</b></span>
+          </div>
+          <h2>Selecionado como Experiência Inspiradora do serviço público.</h2>
+          <p class="exp-title">“Automação Robótica de Processos na CGPAG/DECIPEX: Inovação e Aprendizado Organizacional na Gestão de Pessoas”</p>
+          <div class="rank" aria-label="Classificação final do edital">
+            <div class="row win"><span class="pos">1º</span><span class="org">DECIPEX — Automação Robótica de Processos</span><span class="pt">93,83</span></div>
+            <div class="row"><span class="pos">2º</span><span class="org">DNIT — Lidera.SR</span><span class="pt">91,50</span></div>
+            <div class="row"><span class="pos">3º</span><span class="org">UFC — Projeto FazerArte</span><span class="pt">90,67</span></div>
+            <div class="row"><span class="pos">4º</span><span class="org">DNIT — Desenvolvimento de Líderes</span><span class="pt">89,67</span></div>
+            <div class="row"><span class="pos">5º</span><span class="org">MAPA — Espaço Ceres</span><span class="pt">88,67</span></div>
+          </div>
+          <p class="src">Edital nº 1/2025 — Seleção de Experiências Inspiradoras em Gestão de Pessoas no Setor Público · <b>MGI / Secretaria de Gestão de Pessoas</b> · resultado de 25/04/2025 (processo SEI 19975.009280/2025-99).</p>
+        </div>
+
+        <div class="photo rise">
+          <img src="assets/img-03-eb0db43e.jpg" alt="Entrega do premio de 1o lugar em Experiencias Inspiradoras (MGI/SGP, 2025) a equipe da DECIPEX" loading="lazy" decoding="async">
+          <div class="cap"><b>Entrega do prêmio</b> pelo Secretário de Gestão de Pessoas do MGI, José Celso.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PROBLEMA ===================== -->
+  <section id="problema">
+    <div class="wrap">
+      <div class="split">
+        <div class="head rise">
+          <span class="pill g"><span class="d"></span>O problema</span>
+          <h2>Dois sistemas que não se falam — e um deles nasceu em 1989.</h2>
+          <p class="lede">O <b>SEI</b> — desenvolvido pelo Tribunal Regional Federal da 4ª Região (TRF4) e em uso desde 2009 — tramita documentos na web; o <b>SIAPE</b>, criado em 1989, guarda os dados funcionais numa emulação de terminal de mainframe (a tela preta 3270). Entre os dois fica o servidor: copiando, digitando e conferindo matrícula por matrícula.</p>
+          <p class="lede" style="margin-top:16px">Na Coordenação-Geral de Pagamentos da DECIPEX — que administra cerca de <b>200 mil vidas</b> — a área de exercícios anteriores vivia o cenário típico do serviço público: demanda alta, equipe pequena e o mesmo ritual manual, repetido à exaustão.</p>
+        </div>
+
+        <div class="card ritual rise">
+          <div class="rt-h"><span>O ritual, a cada processo</span><span>6 etapas · 2 sistemas</span></div>
+          <div class="step"><span class="n">1</span><span class="t">Gerar tabela de valores para lançamento</span><span class="sys sei">SEI</span></div>
+          <div class="step"><span class="n">2</span><span class="t">Iniciar o processo administrativo</span><span class="sys siape">SIAPE</span></div>
+          <div class="step"><span class="n">3</span><span class="t">Lançar valores no módulo de exercícios anteriores</span><span class="sys siape">SIAPE</span></div>
+          <div class="step"><span class="n">4</span><span class="t">Salvar o comprovante de lançamento</span><span class="sys siape">SIAPE</span></div>
+          <div class="step"><span class="n">5</span><span class="t">Inserir o comprovante no processo</span><span class="sys sei">SEI</span></div>
+          <div class="step"><span class="n">6</span><span class="t">Gerar a nota técnica de exercícios anteriores</span><span class="sys sei">SEI</span></div>
+          <div class="rt-f"><span>Tempo médio, à mão</span><b>~32 minutos</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== RESULTADOS ===================== -->
+  <section id="resultados" class="results">
+    <div class="wrap">
+      <div class="head rise">
+        <span class="pill"><span class="d"></span>Resultados · medidos, não estimados</span>
+        <h2>O que a automação entregou na ponta.</h2>
+        <p class="lede">Números aferidos pelo próprio histórico de movimentações do SEI e pelos registros da unidade — agregados, sem qualquer informação pessoal.</p>
+      </div>
+
+      <div class="tiles">
+        <div class="tile rise"><div class="big">−90%</div><div class="cap">no tempo de cada processo — de <b>~32&nbsp;min</b> para <b>~3,5&nbsp;min</b></div></div>
+        <div class="tile rise"><div class="big g">4.800›800</div><div class="cap">passivo de processos <b>derretido</b> (mai/2023 → jan/2024)</div></div>
+        <div class="tile rise"><div class="big g">+6.500</div><div class="cap">processos administrativos <b>concluídos</b> no período</div></div>
+        <div class="tile rise"><div class="big">8›4</div><div class="cap">técnicos na rotina — <b>metade da equipe</b>, redirecionada</div></div>
+        <div class="tile rise"><div class="big">200 mil</div><div class="cap">vidas sob gestão da DECIPEX — a <b>escala</b> do contexto</div></div>
+      </div>
+
+      <div class="charts">
+        <div class="chart rise">
+          <div class="c-h">Processos de exercícios anteriores recebidos na unidade</div>
+          <div class="c-total">total 2023–2026: 15.440 processos</div>
+          <div class="bars" data-max="8000">
+            <div class="bar blue"><span class="v">7.139</span><div class="col" data-h="7139"></div><span class="x">2023</span></div>
+            <div class="bar blue"><span class="v">3.609</span><div class="col" data-h="3609"></div><span class="x">2024</span></div>
+            <div class="bar blue"><span class="v">3.462</span><div class="col" data-h="3462"></div><span class="x">2025</span></div>
+            <div class="bar blue part"><span class="v">1.993</span><div class="col" data-h="1993"></div><span class="x">2026*</span></div>
+          </div>
+          <div class="foot">* 2026 parcial</div>
+        </div>
+
+        <div class="chart rise">
+          <div class="c-h">Valores lançados de forma controlada no SIAPE (R$ milhões)</div>
+          <div class="c-total">total: R$ 12,11 mi · 304 processos</div>
+          <div class="bars" data-max="5">
+            <div class="bar grn"><span class="v">3,88</span><div class="col" data-h="3.88"></div><span class="x">abr/26</span></div>
+            <div class="bar grn"><span class="v">4,18</span><div class="col" data-h="4.18"></div><span class="x">mai/26</span></div>
+            <div class="bar grn part"><span class="v">2,69</span><div class="col" data-h="2.69"></div><span class="x">jun/26*</span></div>
+            <div class="bar grn part"><span class="v">1,35</span><div class="col" data-h="1.35"></div><span class="x">jul/26*</span></div>
+          </div>
+          <div class="foot">* mês parcial</div>
+        </div>
+      </div>
+
+      <p class="src rise"><b>Fontes:</b> artigo <i>“Inovações Silenciosas em Gestão de Pessoas: automatizando atividades de trabalho repetitivas da DECIPEX”</i>, revista <b>Gestão de Pessoas em Ação</b> (MGI), vol.&nbsp;3, jun/2025 · e registros agregados da unidade (gráficos). Dados agregados, sem informação pessoal.</p>
+    </div>
+  </section>
+
+  <!-- ===================== MÓDULOS ===================== -->
+  <section id="modulos">
+    <div class="wrap">
+      <div class="head rise">
+        <span class="pill g"><span class="d"></span>O núcleo aberto · integra-gov</span>
+        <h2>Uma caixa de ferramentas para o SEI e o SIAPE.</h2>
+        <p class="lede">O coração do INTEGRA é uma biblioteca Python reutilizável, publicada módulo a módulo — cada peça generalizada, testada e <b>verificada ao vivo</b> antes de entrar. Nada de valores de um órgão embutidos no código: tudo é parâmetro.</p>
+      </div>
+      <div class="mods">
+        <div class="card mgroup rise">
+          <div class="g-h"><span class="name">SEI</span><span class="tag">núcleo · multiplataforma</span></div>
+          <p class="g-sub">Do processo em branco ao documento assinado e tramitado.</p>
+          <div class="chips">
+            <span class="chip">iniciar processo</span><span class="chip">documento externo</span><span class="chip">documento interno</span>
+            <span class="chip">editar (placeholders)</span><span class="chip">assinar</span><span class="chip">bloco de assinatura</span>
+            <span class="chip">tramitar</span><span class="chip">marcadores</span><span class="chip">controle de prazo</span>
+            <span class="chip">concluir</span><span class="chip">download</span><span class="chip">árvore de documentos</span>
+          </div>
+        </div>
+        <div class="card mgroup rise">
+          <div class="g-h"><span class="name">SIAPE 3270</span><span class="tag">extra · Windows</span></div>
+          <p class="g-sub">A tela preta do mainframe, conduzida por código — com você autenticando.</p>
+          <div class="chips">
+            <span class="chip">acesso web + OTP</span><span class="chip">lançador do terminal</span><span class="chip">ler tela / enviar teclas</span>
+            <span class="chip">login (OTP)</span><span class="chip">acessar transação</span><span class="chip">troca de habilitação</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== COMO FUNCIONA ===================== -->
+  <section id="como">
+    <div class="wrap">
+      <div class="head rise">
+        <span class="pill"><span class="d"></span>Como funciona</span>
+        <h2>Sem gambiarra, sem integração privilegiada.</h2>
+        <p class="lede">A automação reproduz a interação do servidor na interface dos sistemas — não acessa banco por trás. Por isso funciona em qualquer órgão, sem depender de habilitação institucional.</p>
+      </div>
+      <div class="feat">
+        <div class="card fcard rise"><span class="k">Headless</span><h3>Usa a sessão que você já abriu</h3><p>Roda sobre a mesma sessão logada do servidor. Nenhuma credencial de sistema, nenhuma liberação especial — o mesmo acesso, sem o trabalho braçal.</p></div>
+        <div class="card fcard rise"><span class="k">Determinístico</span><h3>Injeção direta na API, não “robô cego”</h3><p>Fala com a API do editor (CKEditor) e busca arquivos por <code>fetch</code> dentro da sessão — rápido e previsível, em vez de simular mouse e teclado às cegas.</p></div>
+        <div class="card fcard rise"><span class="k">Verificado ao vivo</span><h3>Provado em produção, não só em teste</h3><p>Cada módulo é confirmado num SEI real (4.1.5) antes de ser publicado: processo criado, documento assinado, valor lançado — e só então entra no repositório.</p></div>
+        <div class="card fcard rise"><span class="k">Confiável de conferir</span><h3>Corrige o que o humano erra</h3><p>Compara o que foi digitado com o registro oficial do SIAPE e aponta a divergência — como a matrícula trocada que antes travava o processamento.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== GOVERNANÇA ===================== -->
+  <section id="governanca" class="trust">
+    <div class="wrap">
+      <div class="head rise">
+        <span class="pill g"><span class="d"></span>Governança</span>
+        <h2>Rastreável por princípio, não por acaso.</h2>
+        <p class="lede">Automação em serviço público só se sustenta com segurança e transparência. Esses pontos são regra do projeto — não recomendação.</p>
+      </div>
+      <div class="tlist">
+        <div class="titem rise"><span class="ck">✓</span><span><b>Não burla autenticação nem captcha</b><span>Automatiza o acesso que o próprio usuário já possui — nada de contornar controle.</span></span></div>
+        <div class="titem rise"><span class="ck">✓</span><span><b>Você é quem autoriza</b><span>A senha é parâmetro de quem executa: nunca embutida no código, nunca registrada em log.</span></span></div>
+        <div class="titem rise"><span class="ck">✓</span><span><b>Cada operação sob o seu usuário</b><span>As ações ficam registradas sob o servidor que roda a automação — auditáveis, como qualquer ato dele.</span></span></div>
+        <div class="titem rise"><span class="ck">✓</span><span><b>Nenhum dado pessoal no repositório</b><span>CPF, nome, número de processo: nada real é versionado. Os exemplos usam valores fictícios.</span></span></div>
+      </div>
+      <div class="scopebox rise">
+        <div class="sb-k">Responsabilidade &amp; escopo</div>
+        <p>O integra oferece os <b>blocos</b> — a automação é de quem a executa. As RPAs montadas com os módulos do pacote são de <b>inteira responsabilidade de seus executores</b>: cada órgão deve observar as suas <b>próprias regras de negócio</b> e casos de uso, e a <b>execução deve ser sempre acompanhada</b>. São <b>ferramentas de apoio</b> ao andamento das unidades — <b>não constituem aplicações institucionais</b>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== REPLICÁVEL ===================== -->
+  <section id="replicavel">
+    <div class="wrap">
+      <div class="split" style="align-items:center">
+        <div class="head rise">
+          <span class="pill"><span class="d"></span>Bem público digital</span>
+          <h2>Feito na DECIPEX. Aberto para qualquer órgão.</h2>
+          <p class="lede">O INTEGRA surgiu por iniciativa da <b>Coordenação-Geral de Pagamentos (CGPAG)</b>, no MGI/SGP/DECIPEX. E o mesmo problema — SEI e SIAPE que não conversam — se repete em ministério após ministério, com cada unidade reinventando a roda, muitas vezes de forma informal.</p>
+          <p class="lede" style="margin-top:16px">O núcleo do INTEGRA responde a isso sendo <b>código aberto sob licença MIT</b>, parametrizável por órgão e publicado abertamente. Um órgão pluga o seu SEI e o seu SIAPE — sem começar do zero.</p>
+        </div>
+        <div class="card mgroup rise">
+          <div class="g-h"><span class="name">Reaproveite</span><span class="tag">MIT · aberto</span></div>
+          <p class="g-sub">O que já vem pronto para outro órgão adotar:</p>
+          <div class="chips">
+            <span class="chip">licença MIT</span><span class="chip">URL e órgão configuráveis</span><span class="chip">exceções tipadas</span>
+            <span class="chip">testado (CI)</span><span class="chip">documentado</span><span class="chip">PyPI (em breve)</span>
+          </div>
+          <p class="g-sub" style="margin:18px 0 0">Colaboração entre órgãos é bem-vinda — o repositório aceita contribuições de outros servidores e desenvolvedores.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ECOSSISTEMA ===================== -->
+  <section id="ecossistema">
+    <div class="wrap">
+      <div class="head rise">
+        <span class="pill g"><span class="d"></span>O ecossistema</span>
+        <h2>Uma base aberta, camadas em cima dela.</h2>
+        <p class="lede">O projeto cresce em camadas: um núcleo público e auditável, um orquestrador que encadeia os passos, e as aplicações reais que rodam na unidade e provam o valor.</p>
+      </div>
+      <div class="layers">
+        <div class="card layer core rise"><span class="lv">núcleo</span><div class="lc"><h3>integra-gov</h3><p>A biblioteca open-source: os blocos de SEI e SIAPE, reutilizáveis por qualquer órgão.</p></div><span class="bdg pub">público</span></div>
+        <div class="card layer rise"><span class="lv">orquestração</span><div class="lc"><h3>Motor de fluxos</h3><p>Encadeia os blocos em rotinas completas — catálogo de passos, fontes de dados e persistência.</p></div><span class="bdg int">interno</span></div>
+        <div class="card layer rise"><span class="lv">aplicações</span><div class="lc"><h3>Instrução de processos na ponta</h3><p>Os fluxos reais da CGPAG/DECIPEX que geraram os resultados desta página.</p></div><span class="bdg int">interno</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FEITO COM O INTEGRA ===================== -->
+  <section id="feito-com">
+    <div class="wrap">
+      <div class="head rise">
+        <span class="pill g"><span class="d"></span>Feito com o integra · na prática</span>
+        <h2>Dos módulos às soluções que já rodam.</h2>
+        <p class="lede">Projetos construídos com o apoio dos blocos do pacote — cada um observando as regras do seu contexto. Telas e vídeos de execução, sempre com <b>dados fictícios</b>.</p>
+      </div>
+      <div class="showcase">
+        <article class="proj rise">
+          <div class="poster"><img src="assets/img-04-615283e8.jpg" alt="Painel SEI — dashboard de indicadores" loading="lazy"></div>
+          <div class="proj-body">
+            <h3>Painel SEI</h3>
+            <p>Lê a base de processos do SEI e mostra os indicadores da unidade em tempo quase real — ativos, entradas, conclusões e passivo acima de 90 dias — com a evolução no período e exportação em PDF.</p>
+            <div class="proj-tags"><span class="ptag">CGPAG/DECIPEX</span><span class="ptag mod">base SEI</span><span class="ptag mod">indicadores</span></div>
+          </div>
+        </article>
+        <article class="proj rise">
+          <div class="poster"><img src="assets/img-05-0ad33b0c.jpg" alt="Extrator SEI — coleta da base de processos" loading="lazy"></div>
+          <div class="proj-body">
+            <h3>Extrator SEI</h3>
+            <p>Acessa o SEI e atualiza uma base local dos processos da unidade (abertos, sobrestados, concluídos), com movimentações e marcadores. É a base de dados que alimenta o Painel SEI.</p>
+            <div class="proj-tags"><span class="ptag mod">login SEI</span><span class="ptag mod">processos</span><span class="ptag mod">marcadores</span></div>
+          </div>
+        </article>
+        <article class="proj rise">
+          <div class="poster"><img src="assets/img-06-487d112d.jpg" alt="INTEGRA Mensageria — Central de Mensagens do Sigepe" loading="lazy"></div>
+          <div class="proj-body">
+            <h3>INTEGRA Mensageria</h3>
+            <p>Comunicação em lote, porém personalíssima: automatiza a Central de Mensagens do Sigepe com mensagem e anexo sob medida para cada servidor, em fases (captura → envio → comprovante no SEI → edital no DOU → encerramento).</p>
+            <div class="proj-tags"><span class="ptag">Sigepe</span><span class="ptag mod">SEI: incluir doc.</span><span class="ptag mod">controle de sessão</span></div>
+          </div>
+        </article>
+        <article class="proj rise">
+          <div class="poster"><img src="assets/img-07-c7db0106.jpg" alt="INTEGRA PSS — Reposição ao Erário" loading="lazy"></div>
+          <div class="proj-body">
+            <h3>INTEGRA PSS — Reposição ao Erário</h3>
+            <p>Automação de instrução dos processos de Reposição ao Erário (PSS), executando o fluxo “Memória + Notificação + Formulário” com a lógica headless do pacote — você autentica, a automação conduz.</p>
+            <div class="proj-tags"><span class="ptag">DECIPEX</span><span class="ptag mod">SEI</span><span class="ptag mod">SIAPE</span></div>
+          </div>
+        </article>
+        <article class="proj rise" data-video="/media/exante.mp4">
+          <div class="poster"><img src="assets/img-08-6ad7082f.jpg" alt="INTEGRA Exante em execução — dados pessoais ocultados" loading="lazy"><button class="play" aria-label="Assistir à execução">▶</button></div>
+          <div class="proj-body">
+            <h3>INTEGRA Exante — Exercícios Anteriores</h3>
+            <p>O fluxo premiado: lançamento de exercícios anteriores conectando SEI e SIAPE (terminal 3270), da tabela de valores à nota técnica assinada — ~32 min → ~3,5 min por processo.</p>
+            <div class="proj-tags"><span class="ptag">1º lugar</span><span class="ptag mod">SEI</span><span class="ptag mod">SIAPE 3270</span></div>
+            <span class="proj-link">▶ ver execução</span>
+          </div>
+        </article>
+      </div>
+      <p class="proj-note">Projetos internos construídos com o apoio dos módulos do integra — ferramentas de apoio às unidades. Capturas com dados de demonstração; o vídeo do Exante entra em seguida.</p>
+    </div>
+  </section>
+
+  <!-- ===================== CTA / FOOTER ===================== -->
+  <div class="cta-wrap">
+    <div class="wrap">
+      <div class="cta rise">
+        <span class="pill"><span class="d"></span>Leve para o seu órgão</span>
+        <h2>Menos ritual manual. Mais análise.</h2>
+        <p class="lede">O INTEGRA está em construção e é publicado módulo a módulo. O que já está aberto pode ser usado, estudado e melhorado hoje.</p>
+        <div class="cta-row">
+          <a class="btn btn-p" href="https://github.com/MarcoAShanon/integra-gov" target="_blank" rel="noopener">Abrir o repositório</a>
+          <a class="btn btn-s" href="mailto:marco.aurelio-silva@gestao.gov.br">Falar com a equipe</a>
+        </div>
+        <div class="foot">
+          <div class="note">
+            <img src="assets/img-09-4d87ec95.png" alt="Projeto INTEGRA — I.A. &amp; Automação" style="height:88px;width:auto;display:block;margin:0 0 16px">
+            <b>INTEGRA</b> — iniciativa de servidores da <b>Coordenação-Geral de Pagamentos (CGPAG)</b> — MGI / SGP / DECIPEX.<br>
+            Caso publicado na revista <b>Gestão de Pessoas em Ação</b> (MGI), vol. 3, jun/2025.<br>
+            Ferramentas de apoio às unidades — não constituem aplicações institucionais.<br>
+            Em construção · licença MIT · sem dados pessoais no repositório.
+          </div>
+          <div>
+            site: <b>projeto.govintegra.com.br</b><br>
+            repositório: <a href="https://github.com/MarcoAShanon/integra-gov" target="_blank" rel="noopener" style="color:#F5B23E;text-decoration:none">github.com/MarcoAShanon/integra-gov</a><br>
+            contato: Marco Aurélio Silva · <a href="mailto:marco.aurelio-silva@gestao.gov.br" style="color:#F5B23E;text-decoration:none">marco.aurelio-silva@gestao.gov.br</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="lb" id="lb" aria-hidden="true"><button class="close" aria-label="Fechar vídeo">✕</button><video controls playsinline preload="none"></video></div>
+
+</div>
+
+<script>
+(function(){
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var risers = [].slice.call(document.querySelectorAll('.rise'));
+  function fillBars(scope){
+    [].slice.call(scope.querySelectorAll('.bars')).forEach(function(b){
+      var max = parseFloat(b.getAttribute('data-max'));
+      [].slice.call(b.querySelectorAll('.col')).forEach(function(c){
+        var h = parseFloat(c.getAttribute('data-h'));
+        c.style.height = Math.max(2,(h/max)*100) + '%';
+      });
+    });
+  }
+  if(reduce || !('IntersectionObserver' in window)){
+    risers.forEach(function(el){el.classList.add('in')}); fillBars(document); return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        if(e.target.querySelector && e.target.querySelector('.bars')) fillBars(e.target);
+        io.unobserve(e.target);
+      }
+    });
+  },{threshold:.16});
+  risers.forEach(function(el){io.observe(el)});
+})();
+(function(){
+  var lb=document.getElementById('lb'); if(!lb) return;
+  var v=lb.querySelector('video');
+  function op(src){v.src=src;lb.classList.add('open');v.play().catch(function(){});}
+  function cl(){lb.classList.remove('open');v.pause();v.removeAttribute('src');v.load();}
+  [].slice.call(document.querySelectorAll('.proj[data-video]')).forEach(function(p){
+    var src=p.getAttribute('data-video');var ps=p.querySelector('.poster');
+    if(ps){ps.style.cursor='pointer';ps.addEventListener('click',function(){op(src);});}
+    var l=p.querySelector('.proj-link');if(l)l.addEventListener('click',function(e){e.preventDefault();op(src);});
+  });
+  lb.addEventListener('click',function(e){if(e.target===lb||e.target.classList.contains('close'))cl();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&lb.classList.contains('open'))cl();});
+})();
+</script>
+</body>
+</html>
