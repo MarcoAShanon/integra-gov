@@ -9,6 +9,10 @@
                             recebem height em % de data-max.
      .proj[data-video]      cartao de video. O <button> interno abre o
                             lightbox; o .poster tambem abre, no mouse.
+                            Sem <button>, o cartao e IGNORADO — o botao
+                            e o unico acesso por teclado.
+     data-video-titulo      nomeia o dialogo daquele video (opcional,
+                            mas necessario quando ha mais de um).
      #lightbox-video        id RESERVADO. O elemento e criado por este
                             script; nenhuma fatia escreve essa marcacao.
 
@@ -109,8 +113,26 @@
     if (!video || !botaoFechar) return;
 
     var origem = null;
+    /* irmaos do dialogo: ficam inertes enquanto ele esta aberto, senao
+       o rotor do leitor de tela passeia pela pagina atras dele. A
+       armadilha de Tab sozinha nao contem o rotor. */
+    var irmaos = Array.prototype.filter.call(document.body.children, function (el) {
+      return el !== lb;
+    });
 
     function aberto() { return lb.hidden === false; }
+
+    function trancarFundo(trancar) {
+      irmaos.forEach(function (el) {
+        if (trancar) {
+          el.setAttribute('inert', '');
+          el.setAttribute('aria-hidden', 'true');
+        } else {
+          el.removeAttribute('inert');
+          el.removeAttribute('aria-hidden');
+        }
+      });
+    }
 
     function focaveis() {
       return [botaoFechar, video].filter(function (el) {
@@ -118,11 +140,13 @@
       });
     }
 
-    function abrir(src, disparador) {
+    function abrir(src, disparador, titulo) {
       if (!src || aberto()) return;
       origem = disparador || document.activeElement;
+      lb.setAttribute('aria-label', titulo || 'Vídeo de execução');
       video.setAttribute('src', src);
       lb.hidden = false;
+      trancarFundo(true);
       document.documentElement.style.overflow = 'hidden';
       botaoFechar.focus();
       var p = video.play();
@@ -135,6 +159,7 @@
       video.removeAttribute('src');
       try { video.load(); } catch (e) { /* idem */ }
       lb.hidden = true;
+      trancarFundo(false);
       document.documentElement.style.overflow = '';
       if (origem && typeof origem.focus === 'function') origem.focus();
       origem = null;
@@ -175,23 +200,25 @@
 
     cartoes.forEach(function (cartao) {
       var src = cartao.getAttribute('data-video');
-      if (!src) return;
       var botao = cartao.querySelector('button');
+      /* sem <button> nao ha acesso por teclado, e nao haveria para onde
+         devolver o foco ao fechar. Ignorar o cartao deixa a falha
+         visivel na previa da fatia, em vez de virar defeito silencioso
+         de acessibilidade em producao. */
+      if (!src || !botao) return;
+      var titulo = cartao.getAttribute('data-video-titulo');
       var poster = cartao.querySelector('.poster');
 
-      if (botao) {
-        botao.addEventListener('click', function (ev) {
-          ev.preventDefault();
-          abrir(src, botao);
-        });
-      }
+      botao.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        abrir(src, botao, titulo);
+      });
       if (poster) {
         poster.style.cursor = 'pointer';
         poster.addEventListener('click', function (ev) {
           /* o clique no proprio <button> ja foi tratado acima */
-          if (botao && (ev.target === botao ||
-                        (botao.contains && botao.contains(ev.target)))) return;
-          abrir(src, botao || poster);
+          if (ev.target === botao || (botao.contains && botao.contains(ev.target))) return;
+          abrir(src, botao, titulo);
         });
       }
     });

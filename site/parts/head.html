@@ -2,6 +2,12 @@
      emitida por site/montar.py, nao por este arquivo. -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Marca que o JS esta vivo, ANTES de qualquer pintura. O .rise do
+     sistema so esconde o bloco sob .js: sem este script, nada se
+     esconde, e a pagina inteira nasce visivel mesmo com JS bloqueado.
+     Inline e sincrono de proposito — um arquivo externo ou um defer
+     deixaria uma piscada de conteudo escondido. -->
+<script>document.documentElement.className+=" js";</script>
 <title>INTEGRA — automação do SEI e do SIAPE, feita por servidores</title>
 <meta name="description" content="Automação que conecta o SEI e o SIAPE usando o acesso do próprio servidor — sem burlar nada. 1º lugar em Experiências Inspiradoras em Gestão de Pessoas (MGI/SGP, 2025), −90% no tempo por processo. Núcleo open-source (MIT).">
 <meta name="author" content="Marco Aurélio Silva — CGPAG · MGI/SGP/DECIPEX">

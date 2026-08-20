@@ -12,9 +12,12 @@
 
   /* ---------------- tipografia ----------------
      Tres familias, tres papeis. A primeira de cada pilha vem do Google
-     Fonts (o <link> esta em head.html); as demais sao a rede de queda,
-     escolhidas por altura-de-x e peso parecidos com a primeira. */
-  --font-display:"Bricolage Grotesque","Helvetica Neue","Segoe UI",Arial,sans-serif;
+     Fonts (o <link> esta em head.html); as demais sao a rede de queda.
+     A ordem da queda do display foi MEDIDA, nao suposta: a 100px/800, a
+     altura-de-x do Bricolage Grotesque e 53, a do Segoe UI 50 (-6%) e a
+     do Helvetica Neue 45 (-15%). Segoe UI vem primeiro por ser a queda
+     mais parecida — e, em Windows, a que de fato renderiza. */
+  --font-display:"Bricolage Grotesque","Segoe UI","Helvetica Neue",Arial,sans-serif;
   --font-corpo:"Archivo","Segoe UI","Helvetica Neue",Arial,sans-serif;
   --font-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,"Liberation Mono",monospace;
 
@@ -25,8 +28,8 @@
   --t-2:.82rem;
   --t-3:.94rem;
   --t-4:1.0625rem;
-  --t-5:1.18rem;
-  --t-6:clamp(1.2rem, 1.1rem + .5vw, 1.45rem);
+  --t-5:1.3rem;
+  --t-6:clamp(1.4rem, 1.22rem + .7vw, 1.7rem);
   --t-7:clamp(1.85rem, 1.3rem + 2.4vw, 2.7rem);
   --t-8:clamp(2.35rem, 1.5rem + 3.8vw, 3.85rem);
 
@@ -70,6 +73,12 @@
   --raio:10px;
   --raio-s:6px;
 
+  /* ---------------- empilhamento ----------------
+     Tres camadas, e so estas. Nenhuma fatia escreve z-index cru. */
+  --z-topo:100;
+  --z-lightbox:200;
+  --z-skip:999;
+
   /* ---------------- movimento ---------------- */
   --tempo:.22s;
   --tempo-lento:.6s;
@@ -91,15 +100,21 @@
   --on-acento:#20160A;   /* texto sobre --acento */
   --ok:#0A7355;          /* esmeralda: SINAL DE ESTADO, nunca acento */
   --ok-soft:#E3F1EA;
-  --dado:#C0770B;        /* serie cheia do grafico */
-  --dado-fraco:#9C8256;  /* serie de periodo parcial */
-  --dado-neutro:#8C8377; /* serie de referencia / cenario manual */
+  /* rampa de dados: uma RAMPA DE INTENSIDADE de verdade, no matiz
+     ambar. Os tres niveis se separam em luminancia (ver contrato 6.6),
+     nao em matiz — por isso sobrevivem ao daltonismo e a impressao em
+     preto e branco. */
+  --dado:#563506;        /* serie cheia — o nivel mais escuro */
+  --dado-neutro:#695E54; /* referencia / cenario manual — meio, dessaturado */
+  --dado-fraco:#AA8046;  /* periodo parcial — o nivel mais claro */
 }
 
 /* A faixa de tinta troca a ESCALA inteira dentro dela, para que toda
    primitiva (cartao, botao, pilula, fio) continue valendo la dentro sem
    a fatia precisar saber de nada. */
 .faixa.tinta{
+  --bg:#14110D;
+  --fundo-alt:#1B1711;
   --surface:#241D15;
   --text:#F3EEE5;
   --text-soft:#B3A99B;
@@ -110,9 +125,9 @@
   --on-acento:#1A1206;
   --ok:#45CBA0;
   --ok-soft:#10271E;
-  --dado:#F0AE3E;
-  --dado-fraco:#A98F62;
-  --dado-neutro:#8A8070;
+  --dado:#EFD7AF;
+  --dado-neutro:#ABA69C;
+  --dado-fraco:#92764F;
 }
 
 /* ---------------- cor — TEMA ESCURO ----------------
@@ -121,7 +136,7 @@
 @media (prefers-color-scheme:dark){
   :root{
     --bg:#14110D;
-    --fundo-alt:#1B1711;
+    --fundo-alt:#201B14;
     --fundo-tinta:#2A2318;
     --surface:#241D15;
     --text:#F3EEE5;
@@ -133,13 +148,16 @@
     --on-acento:#1A1206;
     --ok:#45CBA0;
     --ok-soft:#10271E;
-    --dado:#F0AE3E;
-    --dado-fraco:#A98F62;
-    --dado-neutro:#8A8070;
+    --dado:#EFD7AF;
+    --dado-neutro:#ABA69C;
+    --dado-fraco:#92764F;
   }
   /* no escuro a faixa de tinta sobe em vez de descer, senao ela some
      dentro da propria pagina escura. */
+  .faixa.alt{--surface:#2D2720}
   .faixa.tinta{
+    --bg:#2A2318;
+    --fundo-alt:#352C1F;
     --surface:#352C1F;
     --border:#4A4030;
   }
@@ -189,6 +207,14 @@ p{margin:0}
 a{color:inherit;text-decoration:none}
 img{max-width:100%;height:auto}
 b,strong{font-weight:600;color:var(--text)}
+/* o default do navegador (1em de margem, 40px de recuo) nao sai da
+   escala de espacamento sozinho — sai aqui. */
+ul,ol{margin:0;padding-inline-start:var(--e-4)}
+li{margin:0}
+li + li{margin-top:var(--e-2)}
+figure,blockquote{margin:0}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:0}
 
 /* foco visivel unico da pagina: contorno em ambar de texto, que mede
    5,49:1 sobre o ecru e 8,58:1 dentro da faixa de tinta. */
@@ -219,7 +245,7 @@ b,strong{font-weight:600;color:var(--text)}
   color:var(--text);
 }
 .faixa + .faixa{border-top:1px solid var(--border)}
-.faixa.alt{background:var(--fundo-alt)}
+.faixa.alt{background:var(--fundo-alt);--surface:#F8F6F1}
 .faixa.tinta{background:var(--fundo-tinta)}
 /* entre uma faixa clara e a faixa de tinta a propria troca de cor ja
    separa: o fio ali viraria sujeira. */
@@ -242,7 +268,10 @@ b,strong{font-weight:600;color:var(--text)}
   flex-direction:column;
   align-items:flex-start;
   gap:var(--e-4);
-  max-width:var(--col-7);
+  /* medida em rem, nao em --col-N: --col-N e percentual e resolve
+     contra o bloco contenedor, entao uma .abertura dentro de uma
+     celula de grade encolheria sem erro visivel. */
+  max-width:52rem;
 }
 
 /* .lede — o paragrafo de abertura, um degrau acima do corpo. */
@@ -250,7 +279,7 @@ b,strong{font-weight:600;color:var(--text)}
   color:var(--text-soft);
   font-size:var(--t-5);
   line-height:var(--lh-corpo);
-  max-width:var(--col-7);
+  max-width:62ch;
 }
 
 /* .link — link dentro de texto corrido. */
@@ -262,6 +291,102 @@ b,strong{font-weight:600;color:var(--text)}
   transition:text-decoration-thickness var(--tempo) var(--curva);
 }
 .link:hover{text-decoration-thickness:2px}
+
+/* .topo — a barra da marca + navegacao, no alto do hero. NAO e
+   grudenta: a pagina e curta, tem um CTA so, e uma barra fixa teria de
+   negociar fundo com cada faixa. Por isso --z-topo quase nunca importa. */
+.topo{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--e-4);
+  padding-block:var(--e-4);
+  position:relative;
+  z-index:var(--z-topo);
+}
+.nav{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:var(--e-3) var(--e-5);
+  font-size:var(--t-3);
+}
+.nav a{color:var(--text-soft);transition:color var(--tempo) var(--curva)}
+.nav a:hover{color:var(--acento-ink)}
+
+/* .acoes — o grupo de botoes. Existe porque .btn vira largura total
+   abaixo de 768px, e isso so funciona se o contêiner virar coluna. */
+.acoes{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:var(--e-3);
+}
+
+/* .tabela — regua entre linhas, cabecalho em mono. */
+.tabela{font-size:var(--t-3)}
+.tabela th{
+  font-family:var(--font-mono);
+  font-size:var(--t-1);
+  font-weight:500;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  color:var(--text-soft);
+  padding:var(--e-2) var(--e-3);
+  border-bottom:1px solid var(--border);
+}
+.tabela td{padding:var(--e-3);border-bottom:1px solid var(--border)}
+.tabela tr:last-child td{border-bottom:0}
+.tabela .num{white-space:nowrap}
+
+/* .figura — imagem com legenda FORA da imagem (regra do 6.4). */
+.figura{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--raio);
+  overflow:hidden;
+}
+.figura img{display:block;width:100%}
+.figura figcaption{
+  padding:var(--e-3) var(--e-4);
+  border-top:1px solid var(--border);
+  font-size:var(--t-2);
+  color:var(--text-soft);
+}
+
+/* .lista-ok — a lista de garantias. O unico outro lugar do --ok. */
+.lista-ok{list-style:none;margin:0;padding:0;display:grid;gap:var(--e-3)}
+.lista-ok li{display:flex;gap:var(--e-3);align-items:flex-start;margin:0}
+.lista-ok li::before{
+  content:"¹3";
+  color:var(--ok);
+  font-weight:700;
+  flex:none;
+}
+
+/* .rodape — o bloco institucional. Mora dentro da fatia 05. */
+.rodape{
+  margin-top:var(--e-6);
+  padding-top:var(--e-5);
+  border-top:1px solid var(--border);
+  display:flex;
+  flex-wrap:wrap;
+  gap:var(--e-4) var(--e-6);
+  justify-content:space-between;
+  font-size:var(--t-2);
+  color:var(--text-soft);
+  line-height:1.75;
+}
+
+/* .trilha — a pista de altura definida em que a .col cresce. A .col
+   recebe height em %, entao a MAE DIRETA dela precisa ter altura
+   propria, e sem os rotulos dentro. */
+.trilha{
+  display:flex;
+  align-items:flex-end;
+  width:100%;
+  height:188px;
+}
 
 /* .card — painel de conteudo. Fio de cabelo, sem sombra. */
 .card{
@@ -333,7 +458,7 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
   position:fixed;
   left:var(--e-4);
   top:calc(-1 * var(--e-8));
-  z-index:999;
+  z-index:var(--z-skip);
   display:inline-block;
   padding:var(--e-3) var(--e-4);
   background:var(--surface);
@@ -347,25 +472,36 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 }
 .skip:focus{top:var(--e-4)}
 
-/* .rise — entrada por rolagem. O script.js poe .in. */
-.rise{
+/* .rise — entrada por rolagem. O script.js poe .in.
+
+   O SELETOR COMECA EM .js DE PROPOSITO. Quem esconde o bloco e o CSS,
+   mas quem o revela e o script — entao, sem script, esconder seria
+   esconder para sempre: filtro corporativo que bloqueia JS, erro de
+   script, robo de previa de link. O head.html poe .js no <html> antes
+   de qualquer pintura; se ele nao rodar, .rise simplesmente nao existe
+   como regra e o conteudo nasce visivel. */
+.js .rise{
   opacity:0;
   transform:translateY(14px);
   transition:opacity var(--tempo-lento) var(--curva),
              transform var(--tempo-lento) var(--curva);
 }
-.rise.in{opacity:1;transform:none}
-.rise[data-atraso="1"]{transition-delay:80ms}
-.rise[data-atraso="2"]{transition-delay:160ms}
-.rise[data-atraso="3"]{transition-delay:240ms}
-.rise[data-atraso="4"]{transition-delay:320ms}
-.rise[data-atraso="5"]{transition-delay:400ms}
+.js .rise.in{opacity:1;transform:none}
+.js .rise[data-atraso="1"]{transition-delay:80ms}
+.js .rise[data-atraso="2"]{transition-delay:160ms}
+.js .rise[data-atraso="3"]{transition-delay:240ms}
+.js .rise[data-atraso="4"]{transition-delay:320ms}
+.js .rise[data-atraso="5"]{transition-delay:400ms}
 
 /* .num — TODO numero visivel da pagina. Sem excecao. */
+/* font-weight FIXO: a URL do Google Fonts traz 400/500/600 do Plex
+   Mono e nada acima. Sem fixar, um .num dentro de h1/h2 (peso 800)
+   herdaria um peso que a fonte nao tem e o navegador sintetizaria
+   faux-bold justamente no glifo em que a direcao estetica se apoia. */
 .num{
   font-family:var(--font-mono);
+  font-weight:600;
   font-variant-numeric:tabular-nums;
-  font-feature-settings:"tnum" 1,"zero" 1;
   letter-spacing:-.02em;
 }
 /* .num-g — o numero de destaque (indicador, nota, percentual). */
@@ -373,7 +509,6 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
   display:block;
   font-family:var(--font-mono);
   font-variant-numeric:tabular-nums;
-  font-feature-settings:"tnum" 1,"zero" 1;
   font-size:var(--t-7);
   font-weight:600;
   line-height:1;
@@ -419,7 +554,7 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 .lightbox{
   position:fixed;
   inset:0;
-  z-index:200;
+  z-index:var(--z-lightbox);
   display:grid;
   place-items:center;
   padding:var(--e-5);
@@ -468,6 +603,9 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
   .grid > *{grid-column:1 / -1 !important}
   .marca-cubo{height:36px}
   .btn{width:100%}
+  .acoes{flex-direction:column;align-items:stretch}
+  .topo{flex-direction:column;align-items:flex-start;gap:var(--e-3)}
+  .rodape{flex-direction:column}
 }
 
 /* =====================================================================
@@ -476,7 +614,7 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
    ===================================================================== */
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .rise,.rise.in{opacity:1;transform:none;transition:none}
+  .js .rise,.js .rise.in{opacity:1;transform:none;transition:none}
   *,*::before,*::after{
     animation-duration:.001ms !important;
     animation-iteration-count:1 !important;
