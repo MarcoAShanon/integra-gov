@@ -1470,7 +1470,14 @@ REQUISITOS ESTRUTURAIS:
 - O aviso de que as capturas usam dados de demonstração PERMANECE.
 
 CORREÇÃO OBRIGATÓRIA: o texto atual diz "o vídeo do Exante entra em seguida".
-Isso está desatualizado — o vídeo JÁ está publicado. Corrija a frase.
+Isso está desatualizado — o vídeo JÁ está publicado (verificado ao vivo:
+/media/exante.mp4 responde HTTP 200). Corrija a frase.
+
+NÃO "CORRIJA" ISTO: o texto validado diz "O que já vem PRONTO para outro órgão
+adotar". A palavra "pronto" está na lista de restrições, mas AQUI ela significa
+*incluído*, e não *o projeto acabou* — é sobre módulos já publicados. A frase
+"vem pronto para" está explicitamente na allowlist do verificador e PASSA no
+portão. Mantenha o texto como está.
 
 O QUE NÃO FAZER: nenhuma métrica (é a fatia 02); nenhuma tabela de comparação
 de planos; nenhuma promessa de módulo futuro com data.
@@ -1789,8 +1796,10 @@ Esperado: FALHA — `montar()` não aceita `previa`.
 - [ ] **Step 3: Implementar o modo prévia**
 
 Em `site/montar.py`: `montar(so=None, *, previa=False)` injeta
-`<meta name="robots" content="noindex,nofollow">` como **primeira linha do
-head** quando `previa=True`, e `caminho_saida(so, *, previa=False)` devolve
+`<meta name="robots" content="noindex,nofollow">` **logo depois do
+`<meta charset>`** quando `previa=True` — o charset vem primeiro por convenção
+e precisa estar nos primeiros 1024 bytes do documento. E
+`caminho_saida(so, *, previa=False)` devolve
 `RAIZ / "previa.html"` nesse caso. O CLI ganha `--previa`.
 
 Nada mais muda. A prévia tem que ser **byte a byte** igual à produção fora essa
@@ -1829,12 +1838,25 @@ O vídeo não precisa subir — o `data-video` aponta para `/media/exante.mp4`, 
 
 - [ ] **Step 7: Verificar a prévia no ar**
 
+A prova de que produção não foi tocada é um **checksum capturado
+imediatamente antes** do Step 6, não uma constante no plano. Tamanho igual não
+prova conteúdo igual, e um número fixo aqui quebraria no dia em que a produção
+mudasse legitimamente.
+
+Antes do Step 6:
+
 ```bash
-curl -sS -o /dev/null -w "previa: HTTP %{http_code}  %{size_download} bytes\n" https://projeto.govintegra.com.br/previa/ && curl -sS https://projeto.govintegra.com.br/previa/ | grep -c 'noindex' && curl -sS -o /dev/null -w "producao intacta: HTTP %{http_code}  %{size_download} bytes\n" https://projeto.govintegra.com.br/
+curl -sS https://projeto.govintegra.com.br/ | sha256sum | tee /tmp/producao-antes.txt
 ```
 
-Esperado: prévia `HTTP 200`; `1` ocorrência de `noindex`; e **produção com os
-665046 bytes de sempre** — se esse número mudou, a produção foi tocada e é
+Depois do Step 6:
+
+```bash
+curl -sS -o /dev/null -w "previa: HTTP %{http_code}  %{size_download} bytes\n" https://projeto.govintegra.com.br/previa/ && curl -sS https://projeto.govintegra.com.br/previa/ | grep -c 'noindex' && curl -sS https://projeto.govintegra.com.br/ | sha256sum | diff - /tmp/producao-antes.txt && echo "producao intacta: checksum identico"
+```
+
+Esperado: prévia `HTTP 200`; `1` ocorrência de `noindex`; e o `diff` **silencioso**
+seguido de `producao intacta`. Se o `diff` acusar, a produção foi tocada e é
 preciso restaurar antes de qualquer outra coisa.
 
 Então avise o usuário: <https://projeto.govintegra.com.br/previa/> — peça que
