@@ -1220,8 +1220,17 @@ literal. Repita Steps 2–4 até `SEM ACHADOS BLOQUEANTES`.
 Peça ao usuário que **deixe o painel Browser visível na tela** — sem isso não
 há captura. Então:
 
-1. `preview_start` com `url` apontando para `site/preview-01-hero.html`
-   (a Task 9 usa `site/index.html`, a página inteira).
+1. `preview_start` com `name: "landing"` — sobe o servidor estático de
+   `.claude/launch.json` (`python -m http.server 8765 --directory site`), e
+   então `navigate` para `http://localhost:8765/preview-01-hero.html`.
+   (A Task 9 usa `http://localhost:8765/index.html`, a página inteira.)
+
+   **Não abra o arquivo direto por `file://`** — verificado em 20/08/2026: o
+   painel converte `file://` num snapshot `data:`, e **todo caminho relativo
+   quebra**. As oito imagens da página não carregam, e a bateria passaria a
+   julgar um design com as imagens faltando, ou a reportar defeitos que não
+   existem. O servidor estático resolve isso e ainda faz `/media/exante.mp4`
+   (caminho absoluto no `data-video`) resolver como resolve em produção.
 2. `resize_window` 1280×800, tema claro → `computer screenshot`.
 3. `resize_window` 1280×800, `colorScheme: dark` → `computer screenshot`.
 4. `resize_window` preset `mobile` (375) → recarregar → `computer screenshot`.
