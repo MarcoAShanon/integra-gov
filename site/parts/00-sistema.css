@@ -1,0 +1,478 @@
+/* =====================================================================
+   INTEGRA — sistema visual da landing (fatia 0)
+   Contrato em prosa: site/parts/contrato.md — leia antes de usar.
+
+   Este arquivo declara TOKENS e PRIMITIVAS. Nao ha nenhuma regra de
+   secao aqui. As fatias 01..05 apenas CONSOMEM o que esta abaixo:
+   nao redeclaram token, nao abrem bloco :root, nao redefinem primitiva.
+   ===================================================================== */
+
+:root{
+  color-scheme:light dark;
+
+  /* ---------------- tipografia ----------------
+     Tres familias, tres papeis. A primeira de cada pilha vem do Google
+     Fonts (o <link> esta em head.html); as demais sao a rede de queda,
+     escolhidas por altura-de-x e peso parecidos com a primeira. */
+  --font-display:"Bricolage Grotesque","Helvetica Neue","Segoe UI",Arial,sans-serif;
+  --font-corpo:"Archivo","Segoe UI","Helvetica Neue",Arial,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,"Liberation Mono",monospace;
+
+  /* escala tipografica — OITO degraus, nenhum degrau livre.
+     t-1 micro-rotulo | t-2 legenda | t-3 texto secundario e botao
+     t-4 corpo | t-5 lede | t-6 h3 | t-7 h2 e numero grande | t-8 h1 */
+  --t-1:.72rem;
+  --t-2:.82rem;
+  --t-3:.94rem;
+  --t-4:1.0625rem;
+  --t-5:1.18rem;
+  --t-6:clamp(1.2rem, 1.1rem + .5vw, 1.45rem);
+  --t-7:clamp(1.85rem, 1.3rem + 2.4vw, 2.7rem);
+  --t-8:clamp(2.35rem, 1.5rem + 3.8vw, 3.85rem);
+
+  --lh-marca:1.02;
+  --lh-titulo:1.12;
+  --lh-corpo:1.62;
+
+  /* ---------------- espacamento ----------------
+     Fibonacci a partir de 4px. Nenhum valor de margem ou padding fora
+     desta escala nas fatias. */
+  --e-1:4px;
+  --e-2:8px;
+  --e-3:12px;
+  --e-4:20px;
+  --e-5:32px;
+  --e-6:52px;
+  --e-7:84px;
+  --e-8:136px;
+
+  /* ---------------- grade de 12 colunas ----------------
+     --col-N e a largura de N colunas MAIS as calhas entre elas, em % do
+     container (.wrap). Serve de max-width, width ou flex-basis. Para
+     layout em grade use a primitiva .grid + grid-column:span N. */
+  --maxw:1120px;
+  --calha:24px;
+  --col-1:calc((100% - 11 * var(--calha)) / 12);
+  --col-2:calc(var(--col-1) * 2 + var(--calha) * 1);
+  --col-3:calc(var(--col-1) * 3 + var(--calha) * 2);
+  --col-4:calc(var(--col-1) * 4 + var(--calha) * 3);
+  --col-5:calc(var(--col-1) * 5 + var(--calha) * 4);
+  --col-6:calc(var(--col-1) * 6 + var(--calha) * 5);
+  --col-7:calc(var(--col-1) * 7 + var(--calha) * 6);
+  --col-8:calc(var(--col-1) * 8 + var(--calha) * 7);
+  --col-9:calc(var(--col-1) * 9 + var(--calha) * 8);
+  --col-10:calc(var(--col-1) * 10 + var(--calha) * 9);
+  --col-11:calc(var(--col-1) * 11 + var(--calha) * 10);
+  --col-12:100%;
+
+  /* ---------------- raios ----------------
+     10px/6px: quina de instrumento, nao de cartao de aplicativo. */
+  --raio:10px;
+  --raio-s:6px;
+
+  /* ---------------- movimento ---------------- */
+  --tempo:.22s;
+  --tempo-lento:.6s;
+  --curva:cubic-bezier(.2,.7,.2,1);
+
+  /* ---------------- cor — TEMA CLARO ----------------
+     Razoes de contraste medidas pela formula WCAG estao na tabela do
+     contrato. Todo par texto/fundo daqui passa AA. */
+  --bg:#FBFAF7;          /* ecru: fundo da pagina e das faixas impares */
+  --fundo-alt:#F4F1E9;   /* ecru fundo: faixas pares */
+  --fundo-tinta:#14110D; /* tinta: a faixa de conversao */
+  --surface:#FFFFFF;     /* papel do cartao, sempre acima da faixa */
+  --text:#1C1917;
+  --text-soft:#6A6055;
+  --border:#DED7C9;      /* fio de cabelo — DECORATIVO, ver contrato */
+  --acento:#E7920D;      /* ambar de preenchimento */
+  --acento-ink:#96570A;  /* ambar de TEXTO e de contorno */
+  --acento-soft:#F7EBD2; /* tinta clara de ambar, fundo de .pill */
+  --on-acento:#20160A;   /* texto sobre --acento */
+  --ok:#0A7355;          /* esmeralda: SINAL DE ESTADO, nunca acento */
+  --ok-soft:#E3F1EA;
+  --dado:#C0770B;        /* serie cheia do grafico */
+  --dado-fraco:#9C8256;  /* serie de periodo parcial */
+  --dado-neutro:#8C8377; /* serie de referencia / cenario manual */
+}
+
+/* A faixa de tinta troca a ESCALA inteira dentro dela, para que toda
+   primitiva (cartao, botao, pilula, fio) continue valendo la dentro sem
+   a fatia precisar saber de nada. */
+.faixa.tinta{
+  --surface:#241D15;
+  --text:#F3EEE5;
+  --text-soft:#B3A99B;
+  --border:#3A3227;
+  --acento:#F0AE3E;
+  --acento-ink:#F0AE3E;
+  --acento-soft:#2C2214;
+  --on-acento:#1A1206;
+  --ok:#45CBA0;
+  --ok-soft:#10271E;
+  --dado:#F0AE3E;
+  --dado-fraco:#A98F62;
+  --dado-neutro:#8A8070;
+}
+
+/* ---------------- cor — TEMA ESCURO ----------------
+   Todo token abaixo JA tem definicao no tema claro; aqui so muda de
+   valor. Nenhum token nasce dentro deste bloco. */
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#14110D;
+    --fundo-alt:#1B1711;
+    --fundo-tinta:#2A2318;
+    --surface:#241D15;
+    --text:#F3EEE5;
+    --text-soft:#B3A99B;
+    --border:#3A3227;
+    --acento:#F0AE3E;
+    --acento-ink:#F0AE3E;
+    --acento-soft:#2C2214;
+    --on-acento:#1A1206;
+    --ok:#45CBA0;
+    --ok-soft:#10271E;
+    --dado:#F0AE3E;
+    --dado-fraco:#A98F62;
+    --dado-neutro:#8A8070;
+  }
+  /* no escuro a faixa de tinta sobe em vez de descer, senao ela some
+     dentro da propria pagina escura. */
+  .faixa.tinta{
+    --surface:#352C1F;
+    --border:#4A4030;
+  }
+}
+
+/* =====================================================================
+   BASE
+   ===================================================================== */
+*,*::before,*::after{box-sizing:border-box}
+
+html{background:var(--bg);scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-corpo);
+  font-size:var(--t-4);
+  line-height:var(--lh-corpo);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+h1,h2,h3,h4{
+  margin:0;
+  font-family:var(--font-display);
+  font-weight:700;
+  line-height:var(--lh-titulo);
+  letter-spacing:-.018em;
+  text-wrap:balance;
+}
+h1{font-size:var(--t-8);font-weight:800;letter-spacing:-.028em;line-height:1.04}
+h2{font-size:var(--t-7);font-weight:800;letter-spacing:-.024em}
+h3{font-size:var(--t-6)}
+h4{font-size:var(--t-5)}
+
+p{margin:0}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;height:auto}
+b,strong{font-weight:600;color:var(--text)}
+
+/* foco visivel unico da pagina: contorno em ambar de texto, que mede
+   5,49:1 sobre o ecru e 8,58:1 dentro da faixa de tinta. */
+:where(a,button,summary,video,[tabindex]):focus-visible{
+  outline:2px solid var(--acento-ink);
+  outline-offset:3px;
+  border-radius:var(--raio-s);
+}
+
+/* =====================================================================
+   PRIMITIVAS
+   ===================================================================== */
+
+/* .wrap — o container. Toda faixa tem exatamente um. */
+.wrap{
+  width:100%;
+  max-width:var(--maxw);
+  margin-inline:auto;
+  padding-inline:var(--e-5);
+}
+
+/* .faixa — o ritmo vertical e o fundo da secao. A fatia NUNCA declara
+   padding vertical nem background na propria <section>. */
+.faixa{
+  position:relative;
+  padding-block:clamp(var(--e-6), 6.5vw, var(--e-8));
+  background:var(--bg);
+  color:var(--text);
+}
+.faixa + .faixa{border-top:1px solid var(--border)}
+.faixa.alt{background:var(--fundo-alt)}
+.faixa.tinta{background:var(--fundo-tinta)}
+/* entre uma faixa clara e a faixa de tinta a propria troca de cor ja
+   separa: o fio ali viraria sujeira. */
+.faixa.tinta + .faixa,
+.faixa + .faixa.tinta{border-top:0}
+
+/* .grid — a grade de 12 colunas. Os filhos usam grid-column:span N. */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(12,minmax(0,1fr));
+  gap:var(--calha);
+  align-items:start;
+}
+
+/* .abertura — o bloco que abre TODA faixa: pilula, titulo, lede. Mora no
+   sistema porque as cinco fatias abrem do mesmo jeito; se cada uma
+   compusesse o proprio cabecalho, a costura apareceria na montagem. */
+.abertura{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:var(--e-4);
+  max-width:var(--col-7);
+}
+
+/* .lede — o paragrafo de abertura, um degrau acima do corpo. */
+.lede{
+  color:var(--text-soft);
+  font-size:var(--t-5);
+  line-height:var(--lh-corpo);
+  max-width:var(--col-7);
+}
+
+/* .link — link dentro de texto corrido. */
+.link{
+  color:var(--acento-ink);
+  text-decoration:underline;
+  text-underline-offset:.18em;
+  text-decoration-thickness:1px;
+  transition:text-decoration-thickness var(--tempo) var(--curva);
+}
+.link:hover{text-decoration-thickness:2px}
+
+/* .card — painel de conteudo. Fio de cabelo, sem sombra. */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--raio);
+  padding:var(--e-5);
+}
+a.card{display:block;transition:border-color var(--tempo) var(--curva)}
+a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
+
+/* .btn — o unico controle da pagina. */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:var(--e-2);
+  font-family:var(--font-corpo);
+  font-size:var(--t-3);
+  font-weight:600;
+  line-height:1;
+  letter-spacing:.005em;
+  padding:var(--e-3) var(--e-4);
+  border:1px solid transparent;
+  border-radius:var(--raio-s);
+  cursor:pointer;
+  text-align:center;
+  transition:transform var(--tempo) var(--curva),
+             border-color var(--tempo) var(--curva),
+             color var(--tempo) var(--curva);
+}
+.btn-p{background:var(--acento);color:var(--on-acento);border-color:var(--acento-ink)}
+.btn-p:hover{transform:translateY(-1px)}
+.btn-s{background:transparent;color:var(--text);border-color:var(--text-soft)}
+.btn-s:hover{transform:translateY(-1px);border-color:var(--acento-ink);color:var(--acento-ink)}
+
+/* .pill — micro-rotulo de secao, em mono maiusculo. */
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:var(--e-2);
+  font-family:var(--font-mono);
+  font-size:var(--t-1);
+  font-weight:500;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  padding:var(--e-1) var(--e-3);
+  border-radius:999px;
+  background:var(--acento-soft);
+  color:var(--acento-ink);
+}
+/* a UNICA variante colorida da pagina: sinal de estado positivo. */
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill .ponto{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+
+/* .hairline — o fio de cabelo isolado, como regua entre blocos. */
+.hairline{
+  display:block;
+  width:100%;
+  height:1px;
+  border:0;
+  margin:0;
+  padding:0;
+  background:var(--border);
+}
+
+/* .skip — link de pular para o conteudo. Some ate receber foco. */
+.skip{
+  position:fixed;
+  left:var(--e-4);
+  top:calc(-1 * var(--e-8));
+  z-index:999;
+  display:inline-block;
+  padding:var(--e-3) var(--e-4);
+  background:var(--surface);
+  color:var(--text);
+  border:1px solid var(--acento-ink);
+  border-radius:var(--raio-s);
+  font-family:var(--font-corpo);
+  font-size:var(--t-3);
+  font-weight:600;
+  transition:top var(--tempo) var(--curva);
+}
+.skip:focus{top:var(--e-4)}
+
+/* .rise — entrada por rolagem. O script.js poe .in. */
+.rise{
+  opacity:0;
+  transform:translateY(14px);
+  transition:opacity var(--tempo-lento) var(--curva),
+             transform var(--tempo-lento) var(--curva);
+}
+.rise.in{opacity:1;transform:none}
+.rise[data-atraso="1"]{transition-delay:80ms}
+.rise[data-atraso="2"]{transition-delay:160ms}
+.rise[data-atraso="3"]{transition-delay:240ms}
+.rise[data-atraso="4"]{transition-delay:320ms}
+.rise[data-atraso="5"]{transition-delay:400ms}
+
+/* .num — TODO numero visivel da pagina. Sem excecao. */
+.num{
+  font-family:var(--font-mono);
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:"tnum" 1,"zero" 1;
+  letter-spacing:-.02em;
+}
+/* .num-g — o numero de destaque (indicador, nota, percentual). */
+.num-g{
+  display:block;
+  font-family:var(--font-mono);
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:"tnum" 1,"zero" 1;
+  font-size:var(--t-7);
+  font-weight:600;
+  line-height:1;
+  letter-spacing:-.04em;
+  color:var(--acento-ink);
+}
+
+/* .marca — cubo + wordmark tipografico. Composicao unica da marca na
+   pagina; nenhuma fatia monta isso de outro jeito. */
+.marca{
+  display:inline-flex;
+  align-items:center;
+  gap:var(--e-3);
+}
+.marca-cubo{
+  height:44px;
+  width:auto;
+  flex:none;
+  display:block;
+}
+.marca-texto{display:flex;flex-direction:column;gap:var(--e-1)}
+.marca-nome{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:1.05rem;
+  letter-spacing:.055em;
+  text-transform:uppercase;
+  line-height:var(--lh-marca);
+  color:var(--text);
+}
+.marca-desc{
+  font-family:var(--font-mono);
+  font-weight:500;
+  font-size:var(--t-1);
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  line-height:1;
+  color:var(--text-soft);
+}
+
+/* .lightbox — criado pelo script.js, id reservado "lightbox-video".
+   Nenhuma fatia escreve esta marcacao. */
+.lightbox{
+  position:fixed;
+  inset:0;
+  z-index:200;
+  display:grid;
+  place-items:center;
+  padding:var(--e-5);
+  background:rgba(10,8,5,.9);
+}
+.lightbox[hidden]{display:none}
+.lightbox-video{
+  max-width:min(1000px,94vw);
+  max-height:84vh;
+  width:auto;
+  border-radius:var(--raio);
+  background:#000;
+}
+.lightbox-fechar{
+  position:absolute;
+  top:var(--e-4);
+  right:var(--e-4);
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  border:1px solid rgba(243,238,229,.4);
+  background:rgba(20,17,13,.85);
+  color:#F3EEE5;
+  font-size:1.1rem;
+  line-height:1;
+  cursor:pointer;
+}
+
+/* =====================================================================
+   BREAKPOINTS — apenas estes dois, apenas em max-width, nesta ordem.
+   ===================================================================== */
+@media (max-width:1080px){
+  .wrap{padding-inline:var(--e-4)}
+  .faixa{padding-block:clamp(var(--e-6), 7vw, var(--e-7))}
+}
+
+@media (max-width:768px){
+  :root{--calha:16px}
+  .faixa{padding-block:var(--e-6)}
+  .wrap{padding-inline:var(--e-4)}
+  /* a grade colapsa para uma coluna e o sistema garante que nenhum
+     span:N sobreviva criando coluna implicita. Quem precisa de duas
+     colunas no celular nao usa .grid — monta o proprio grid dentro do
+     seu prefixo. */
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .grid > *{grid-column:1 / -1 !important}
+  .marca-cubo{height:36px}
+  .btn{width:100%}
+}
+
+/* =====================================================================
+   MOVIMENTO REDUZIDO — rede final. Vale para o sistema e para as cinco
+   fatias, mesmo que uma delas esqueca de tratar o caso.
+   ===================================================================== */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .rise,.rise.in{opacity:1;transform:none;transition:none}
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+    transition-delay:0s !important;
+    scroll-behavior:auto !important;
+  }
+}
