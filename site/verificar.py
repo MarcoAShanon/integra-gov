@@ -12,7 +12,11 @@ Uso:
 O modo (pagina inteira x fatia isolada) e inferido pelo NOME do arquivo: um
 alvo cujo nome comeca com "preview-" e verificado em modo fatia (ver
 verificar()) — casa com o preview-<fatia>.html que montar.py --so gera. Sem
-flag pra um agente esquecer de passar.
+flag pra um agente esquecer de passar. No mesmo modo, verificar_partes()
+tambem restringe a varredura de CSS a SO a fatia daquele preview (+
+00-sistema.css) — com cinco agentes construindo fatias em paralelo na
+mesma arvore, o agente de uma fatia nao pode ser acusado pelo CSS de
+outro agente ainda pela metade.
 """
 from __future__ import annotations
 
@@ -366,8 +370,18 @@ def verificar(html: str, *, fatia: bool = False) -> list[str]:
     return achados
 
 
-def verificar_partes(parts: pathlib.Path) -> list[str]:
-    """Achados nos CSS das fatias: redefinicao de token e vazamento de seletor."""
+def verificar_partes(parts: pathlib.Path, *, somente: str | None = None) -> list[str]:
+    """Achados nos CSS das fatias: redefinicao de token e vazamento de seletor.
+
+    `somente=<fatia>` restringe a varredura ao CSS dessa fatia + 00-sistema.css
+    (que ela consome, e por isso continua sendo lido nos dois modos). Sem
+    isso, com cinco agentes construindo fatias em paralelo na mesma arvore,
+    o agente da fatia X rodando a verificacao da PROPRIA previa receberia
+    achados do CSS ainda pela metade de outro agente, misturados com os
+    proprios — ou ele edita arquivo alheio (destrutivo, e nao tem como
+    perguntar a ninguem), ou reporta a propria fatia como reprovada por
+    culpa alheia. Na pagina inteira (somente=None), continua varrendo tudo.
+    """
     achados: list[str] = []
     sistema = parts / "00-sistema.css"
     if not sistema.exists():
@@ -375,7 +389,13 @@ def verificar_partes(parts: pathlib.Path) -> list[str]:
 
     tokens = set(_RE_TOKEN.findall(_sem_comentarios(sistema.read_text(encoding="utf-8"))))
 
-    for arquivo in sorted(parts.glob("*.css")):
+    if somente is not None:
+        candidato = parts / f"{somente}.css"
+        arquivos = [candidato] if candidato.exists() else []
+    else:
+        arquivos = sorted(parts.glob("*.css"))
+
+    for arquivo in arquivos:
         if arquivo.name == "00-sistema.css":
             continue
         css = _sem_comentarios(arquivo.read_text(encoding="utf-8"))
@@ -432,11 +452,16 @@ def main() -> int:
     achados: list[str] = []
     alvo = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else RAIZ / "index.html"
     fatia = alvo.name.startswith("preview-")
+    # com o alvo preview-<fatia>.html, verificar_partes olha SO o CSS dessa
+    # fatia (+ 00-sistema.css) — nao o de outro agente ainda escrevendo em
+    # paralelo. alvo.stem de "preview-01-hero.html" e "preview-01-hero";
+    # tira o prefixo "preview-" e sobra "01-hero".
+    somente = alvo.stem[len("preview-"):] if fatia else None
     if alvo.exists():
         achados += verificar(alvo.read_text(encoding="utf-8"), fatia=fatia)
     else:
         achados.append(f"{alvo} nao existe — rode montar.py antes")
-    achados += verificar_partes(RAIZ / "parts")
+    achados += verificar_partes(RAIZ / "parts", somente=somente)
 
     if not achados:
         print(f"verificar: sem achados ({alvo.name})")

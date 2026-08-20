@@ -8,6 +8,15 @@ um arquivo de centenas de linhas.
 Uso:
     python site/montar.py              # monta a pagina inteira
     python site/montar.py --so 02-prova  # monta so uma fatia (para revisao)
+
+A navegacao (site/parts/nav.html) vira o conteudo de um <header> proprio,
+ANTES do main da pagina (id="conteudo") — nao mora dentro de nenhuma
+fatia. Isso da a pagina um landmark "banner" de verdade, com a nav como
+landmark de topo, e faz o skip link (que aponta pra #conteudo) pular a
+navegacao de fato — pular a nav e o unico proposito de um skip link. Se
+nav.html ainda nao existir (as fatias chegam uma por vez), o <header>
+sai vazio: montar() nao quebra por causa de uma parte que ainda nao
+chegou.
 """
 from __future__ import annotations
 
@@ -24,6 +33,15 @@ IDS_FATIAS = ["hero", "prova", "contexto", "oferta", "conversao"]
 
 def _ler(nome: str) -> str:
     return (PARTS / nome).read_text(encoding="utf-8").strip()
+
+
+def _ler_opcional(nome: str) -> str:
+    """Como _ler(), mas devolve "" se a parte ainda nao existir — pra partes
+    que nao bloqueiam a montagem (hoje, so nav.html: ele e escrito pelo
+    agente da fatia 1, que chega depois de head.html/00-sistema.css/
+    script.js, e montar() nao pode quebrar so porque ele ainda nao chegou)."""
+    caminho = PARTS / nome
+    return caminho.read_text(encoding="utf-8").strip() if caminho.exists() else ""
 
 
 def caminho_saida(so: str | None) -> pathlib.Path:
@@ -62,6 +80,9 @@ def montar(so: str | None = None) -> str:
             "</head>",
             "<body>",
             '<a class="skip" href="#conteudo">Pular para o conteúdo</a>',
+            "<header>",
+            _ler_opcional("nav.html"),
+            "</header>",
             '<main id="conteudo">',
             "\n".join(corpo),
             "</main>",

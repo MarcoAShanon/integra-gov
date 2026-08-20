@@ -94,6 +94,31 @@ def test_montar_so_uma_fatia_tambem_envolve_em_main():
     assert '<main id="conteudo">' in html
 
 
+# ------------------------------------------------ A1: nav vira header proprio
+# A navegacao morava DENTRO da fatia 1 (hero), logo dentro do <main>. Isso
+# deixava a pagina sem landmark "banner", a nav sem ser landmark de topo, e o
+# skip link (href="#conteudo") aterrissando ANTES da navegacao — ou seja, nao
+# pulava nada, que e o unico proposito de um skip link. montar() agora emite
+# <header> (com o conteudo de nav.html, se existir) ANTES do <main>.
+@completo
+def test_montar_emite_header_antes_do_main():
+    html = m.montar()
+    assert "<header>" in html
+    assert html.index("<header>") < html.index('<main id="conteudo">')
+
+
+@completo
+def test_montar_alvo_do_skip_link_vem_depois_do_header():
+    html = m.montar()
+    assert html.index('id="conteudo"') > html.index("</header>")
+
+
+@completo
+def test_montar_so_uma_fatia_tambem_emite_header_antes_do_main():
+    html = m.montar(so="01-hero")
+    assert html.index("<header>") < html.index('<main id="conteudo">')
+
+
 # ------------------------------------------------------------- verificar
 def test_h1_duplicado_e_achado():
     achados = v.verificar("<h1>a</h1><h1>b</h1>")
@@ -672,3 +697,43 @@ def test_proprio_dominio_canonical_continua_permitido():
 def test_host_permitido_em_caixa_alta_continua_permitido():
     html = '<link rel="stylesheet" href="https://FONTS.GOOGLEAPIS.COM/css2?family=X">'
     assert not any("externo" in a for a in v.verificar(html))
+
+
+# ============================================== rodada 5: escopo do verificador
+# A2 — com cinco agentes construindo fatias em paralelo na mesma arvore,
+# verificar_partes() varria SEMPRE parts/*.css inteiro. O agente do hero
+# rodava a verificacao da sua propria previa e recebia achados de CSS de
+# outras fatias ainda pela metade — destrutivo de editar (nao e dele) e
+# injusto de reportar como reprovacao da propria fatia.
+def test_verificar_partes_modo_fatia_ignora_css_de_outras_fatias(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text("#hero .card{color:var(--brand)}", encoding="utf-8")
+    (tmp_path / "03-contexto.css").write_text(".vaza{color:red}", encoding="utf-8")
+    achados = v.verificar_partes(tmp_path, somente="01-hero")
+    assert achados == []
+
+
+def test_verificar_partes_pagina_inteira_ainda_acusa_outras_fatias(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text("#hero .card{color:var(--brand)}", encoding="utf-8")
+    (tmp_path / "03-contexto.css").write_text(".vaza{color:red}", encoding="utf-8")
+    achados = v.verificar_partes(tmp_path)
+    assert any("03-contexto.css" in a for a in achados)
+
+
+def test_verificar_partes_modo_fatia_ainda_le_00_sistema_para_tokens(tmp_path):
+    """00-sistema.css continua sendo lido como fonte dos tokens nos dois
+    modos — sem ele, nao daria pra saber se a fatia redefine um token."""
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text(":root{--brand:#FF0000}", encoding="utf-8")
+    achados = v.verificar_partes(tmp_path, somente="01-hero")
+    assert any("redefine" in a for a in achados)
+
+
+def test_verificar_partes_modo_fatia_sem_css_proprio_nao_e_achado(tmp_path):
+    """Se a fatia ainda nao tem CSS proprio (so HTML), nao ha nada pra
+    verificar nela — nao pode virar achado por ausencia."""
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "03-contexto.css").write_text(".vaza{color:red}", encoding="utf-8")
+    achados = v.verificar_partes(tmp_path, somente="01-hero")
+    assert achados == []
