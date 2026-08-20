@@ -1134,8 +1134,12 @@ git commit -m "feat(site): contrato de design da landing (fatia 0)"
 
 As cinco seguem **a mesma mecânica de sete passos**. Ela está escrita por
 inteiro na Task 4; as Tasks 5 a 8 repetem a mecânica e trazem só o que muda.
-**Despacho em paralelo, aprovação em série** (decidido com o usuário em
-20/08/2026). As cinco dependem apenas da Task 3 e escrevem arquivos disjuntos,
+**A fatia 1 é piloto; as outras quatro em paralelo depois dela** (emenda de
+20/08/2026 — ver spec §5, com o motivo escrito; não restaure o paralelismo das
+cinco achando que corrige um erro).
+
+**Despacho em paralelo, aprovação em série** — vale para as fatias 2 a 5
+(decidido com o usuário em 20/08/2026). As cinco dependem apenas da Task 3 e escrevem arquivos disjuntos,
 então constroem ao mesmo tempo. A corrida que existiria no `site/index.html`
 foi eliminada na Task 1: `montar.py --so <fatia>` grava em
 `site/preview-<fatia>.html`, um arquivo por fatia. Cada uma continua com o seu

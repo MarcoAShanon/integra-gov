@@ -111,7 +111,26 @@ Saídas: `site/parts/00-sistema.css` e `site/parts/contrato.md`.
 **Nenhuma outra fatia começa antes de o contrato ser aprovado pelo usuário**,
 porque todas o consomem literalmente.
 
-### Fatias 1–5 (paralelas)
+### Fatias 1–5 — a 1 é piloto, as outras quatro em paralelo
+
+**Emenda de 20/08/2026, e ela tem motivo — não "corrija" de volta.**
+
+O desenho original soltava as cinco de uma vez. Duas rodadas de revisão do
+contrato acharam defeitos **lendo**, e o autor do contrato registrou que "a
+terceira leva provavelmente existe: dois ciclos seguidos acharam coisas que só
+aparecem quando alguém tenta **usar** o contrato".
+
+Cinco agentes construindo sobre a mesma lacuna produzem cinco retrabalhos. Um
+produz um, e ensina os outros quatro.
+
+Por isso a **fatia 1 (hero + navegação) sai sozinha, como piloto**, com
+instrução explícita de manter a lista do que o contrato não deu e teve que ser
+decidido sozinho — e de perguntar antes de adivinhar. Essa lista vale mais que
+o CSS dela. As fatias 2 a 5 saem em paralelo **depois**, já com o contrato
+corrigido pelo que o piloto encontrar.
+
+O paralelismo das quatro continua valendo, e a corrida no `site/index.html` que
+o viabiliza continua resolvida pelo `caminho_saida()`.
 
 Cada subagente escreve **apenas** a sua `<section>` e o CSS dela, consumindo os
 tokens do contrato e sem redefinir nenhum.
