@@ -212,7 +212,7 @@ b,strong{font-weight:600;color:var(--text)}
 ul,ol{margin:0;padding-inline-start:var(--e-4)}
 li{margin:0}
 li + li{margin-top:var(--e-2)}
-figure,blockquote{margin:0}
+figure,blockquote,dl,dd{margin:0}
 table{border-collapse:collapse;width:100%}
 th,td{text-align:left;padding:0}
 
@@ -364,6 +364,43 @@ th,td{text-align:left;padding:0}
   flex:none;
 }
 
+/* .ficha — par rotulo/valor, para dados tecnicos. Combina com .card.
+   Promovida da fatia 1, que a desenhou primeiro; mora aqui porque as
+   outras fatias tem a mesma necessidade e inventariam cada uma a sua.
+
+   <div class="card ficha">
+     <dl>
+       <div><dt>Sistemas</dt><dd>SEI e SIAPE</dd></div>
+     </dl>
+   </div>
+
+   O <div> em volta de cada par nao e enfeite: <dl> nao permite agrupar
+   dt+dd de outro jeito sem perder a semantica. */
+.ficha dl{margin:0}
+.ficha dl > div{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-1);
+  padding-block:var(--e-3);
+  border-bottom:1px solid var(--border);
+}
+.ficha dl > div:first-child{padding-top:0}
+.ficha dl > div:last-child{padding-bottom:0;border-bottom:0}
+.ficha dt{
+  font-family:var(--font-mono);
+  font-size:var(--t-1);
+  font-weight:500;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  color:var(--text-soft);
+}
+.ficha dd{
+  margin:0;
+  font-size:var(--t-3);
+  color:var(--text);
+  line-height:var(--lh-corpo);
+}
+
 /* .rodape — o bloco institucional. Mora dentro da fatia 05. */
 .rodape{
   margin-top:var(--e-6);
@@ -437,6 +474,11 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
   border-radius:999px;
   background:var(--acento-soft);
   color:var(--acento-ink);
+  /* linha unica: quebrada em duas, o .ponto centraliza no conjunto e
+     fica visivelmente fora da primeira linha. O teto de 32 caracteres
+     esta no contrato; aqui o nowrap faz a violacao aparecer na previa
+     em vez de degradar em silencio. */
+  white-space:nowrap;
 }
 /* a UNICA variante colorida da pagina: sinal de estado positivo. */
 .pill.ok{background:var(--ok-soft);color:var(--ok)}
@@ -603,7 +645,17 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
   .grid > *{grid-column:1 / -1 !important}
   .marca-cubo{height:36px}
   .btn{width:100%}
-  .acoes{flex-direction:column;align-items:stretch}
+  /* P4: largura cheia no celular NAO pode depender de o pai estar em
+     stretch. Um align-items:flex-start no pai — a coisa natural de
+     escrever num grid de hero — deixaria os botoes a meia largura, sem
+     erro em lugar nenhum. width + align-self tornam a primitiva imune
+     ao alinhamento de quem a contem. */
+  .acoes{
+    flex-direction:column;
+    align-items:stretch;
+    width:100%;
+    align-self:stretch;
+  }
   .topo{flex-direction:column;align-items:flex-start;gap:var(--e-3)}
   .rodape{flex-direction:column}
 }

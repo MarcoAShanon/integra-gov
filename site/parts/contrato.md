@@ -32,6 +32,12 @@ qualquer primitiva deste contrato.
 3. Usar `@media` de largura fora dos dois valores fechados (§3).
 4. Declarar `font-family` crua. Só `var(--font-display)`, `var(--font-corpo)`
    ou `var(--font-mono)`.
+4-b. Mexer em token de cor. Se alguma vez for inevitável, **rode
+   `python site/auditar_contrato.py`**: ele relê os tokens do
+   `00-sistema.css`, recalcula as razões e cobra que cada número afirmado
+   neste contrato ainda feche. **Número no contrato sem lastro no CSS é
+   defeito, não estilo** — essa classe de erro já passou por aqui três vezes,
+   e nas três quem achou foi uma pessoa lendo com atenção.
 5. Redefinir uma primitiva (`.card`, `.btn`, `.pill`…) globalmente. Ajustar
    **dentro do seu prefixo** é permitido e esperado:
    `#oferta .card{padding:var(--e-4)}`.
@@ -164,10 +170,17 @@ escuro. Agora tem:
   tem um CTA só, e uma barra fixa teria de negociar fundo com cada faixa —
   inclusive com a de tinta — o que é justamente o tipo de costura que este
   contrato existe para evitar.
-- **`.nav`** é uma fileira de links de texto para âncoras internas
-  (`#prova`, `#contexto`, `#oferta`, `#conversao`). Sem menu sanfonado, sem
-  submenu, sem ícone de hambúrguer: abaixo de 768px o `.topo` vira coluna e os
-  links quebram em linha. Quatro links cabem.
+- **`.nav`** é uma fileira de links de texto: as âncoras internas das quatro
+  faixas seguintes (`#prova`, `#contexto`, `#oferta`, `#conversao`) **mais, no
+  máximo, um link externo** — o repositório. Cinco itens, e esse é o teto. Sem
+  menu sanfonado, sem submenu, sem ícone de hambúrguer: abaixo de 768px o
+  `.topo` vira coluna e os links quebram em linha.
+
+  > Uma versão anterior deste parágrafo dizia "âncoras internas" e "quatro links
+  > cabem", o que contradizia o briefing da fatia 1, que manda incluir o
+  > repositório. O briefing tinha razão: o repositório é a prova de que o
+  > projeto é aberto, e escondê-lo atrás de uma rolagem inteira é perder o
+  > argumento. O contrato é que estava estreito demais.
 - **O rodapé é `.rodape`**, último bloco **dentro da faixa 05**. Não é uma sexta
   faixa. É onde vive o bloco institucional que a página no ar tem — CGPAG, a
   revista, licença MIT, contato.
@@ -436,6 +449,45 @@ recalculadas a partir dos tokens do próprio `00-sistema.css`.
 contrato.** Não existe combinação nova sem recalcular, e recalcular não é
 tarefa de fatia.
 
+### 6.2-b O ponto cego da tabela: vizinhança
+
+Tudo acima mede **contra o fundo**. Isso não diz nada sobre duas cores que
+ficam **lado a lado**, e essa é uma pergunta diferente — já nos custou dois
+defeitos: a rampa de dados (três cores passando contra o fundo e a 1,02:1 entre
+si) e o par abaixo.
+
+No tema claro, três tokens caem praticamente na mesma claridade:
+
+| token | L\* |
+|---|---|
+| `--text-soft` | 41,4 |
+| `--ok` | 42,7 |
+| `--acento-ink` | 43,2 |
+
+`--acento-ink` × `--text-soft` mede **1,07:1**. `--ok` × `--text-soft`, 1,05:1.
+São cores diferentes de mesma claridade: separadas por matiz, não por valor —
+some em escala de cinza, some para quem tem daltonismo, some para quem enxerga
+mal.
+
+Contra `--text`, ao contrário, `--acento-ink` mede **3,05:1** — o link se
+distingue do texto de corpo mesmo se o sublinhado sumir.
+
+Daí a regra geral, que vale para qualquer fatia:
+
+> **Nada colorido com `--acento-ink` ou `--ok` pode aparecer dentro de um bloco
+> de texto em `--text-soft`.** Contra `--text` eles se separam; contra
+> `--text-soft`, não.
+
+Isso alcança o `.link` dentro do `.lede` (§ 8.3-c), o `✓` da `.lista-ok` em
+lista de texto secundário (§ 8.3-h) e qualquer `.num` colorido dentro de uma
+legenda. **Não é preferência de estilo: é a única coisa que impede um link de
+desaparecer no parágrafo.**
+
+O `site/auditar_contrato.py` vigia os dois lados disso — cobra que os pares que
+precisam se separar continuem separando, e cobra que estes, sobre os quais as
+proibições foram construídas, continuem indistinguíveis. Se um dia separarem, a
+proibição vira letra morta e ele avisa.
+
 ### 6.3 O fio de cabelo é decorativo
 
 `--border` mede de 1,27:1 (sobre `--fundo-alt`) a 1,43:1 (sobre `--surface`) contra o fundo. Isso é **de propósito**: é um fio de
@@ -593,15 +645,27 @@ atributo `style` é proibido (§ 1, item 10):
 
 `--col-N` é a largura de N colunas **mais** as calhas entre elas — mas o `100%`
 de dentro dele resolve contra o **bloco contenedor do elemento**, não contra o
-`.wrap`. Por isso a regra é mais estreita do que parece:
+`.wrap`. A regra, então, é sobre **largura resolvida**, não sobre parentesco:
 
-> **`--col-N` só vale como filho DIRETO do `.wrap`.**
+> **`--col-N` só significa o que promete quando o bloco contenedor do elemento
+> tem a largura do `.wrap`.**
 
-Dentro de uma célula de grade, `var(--col-7)` significa "7 colunas de uma grade
-do tamanho da célula" — numa célula de `span 8` isso dá ≈38% do `.wrap`, e o
-título é esmagado sem que nada acuse erro. Foi por isso que `.abertura` e
-`.lede` **deixaram de usar `--col-N`**: a medida delas é `52rem` e `62ch`, que
-não dependem de onde o bloco foi parar.
+O teste prático, e ele é mecânico: subindo do elemento até o `.wrap`, todo
+ancestral no caminho é um bloco de largura cheia — sem `max-width`, sem
+`padding` lateral, sem ser célula de grade nem item de flex que encolha? Então
+`--col-N` vale. Um `<div>` intermediário comum **não** invalida nada; uma célula
+de `grid-column:span 8` invalida, e ali `var(--col-7)` passa a significar "7
+colunas de uma grade do tamanho da célula" — ≈38% do `.wrap` — e o título é
+esmagado sem que nada acuse erro.
+
+> Uma versão anterior desta regra dizia "só como filho **direto** do `.wrap`".
+> Era mais fácil de conferir e **estreita demais**: a fatia 1 seguiu a letra e
+> achatou a estrutura do topo para manter o `<h1>` como filho direto, quando um
+> `<div>` de agrupamento no meio teria funcionado igual. Parentesco era um
+> atalho para a propriedade que importa, e o atalho custou estrutura.
+
+Foi por isso que `.abertura` e `.lede` **deixaram de usar `--col-N`**: a medida
+delas é `52rem` e `62ch`, que não dependem de onde o bloco foi parar.
 
 Medida de leitura: use `ch` (`60ch`–`70ch`) para texto corrido em qualquer lugar,
 e `--col-N` só para dividir o `.wrap` no primeiro nível. Nunca deixe um
@@ -676,9 +740,37 @@ acima — que é o que se copia — traz `.abertura rise`. `.abertura` é das fa
 **Não use** `.abertura` para um bloco no meio da seção; ela é o topo. **Não
 use** `.lede` para parágrafo comum — corpo é `--t-4` e cor `--text`.
 
+**A receita do topo do hero**, já que ele não usa `.abertura` e mesmo assim não
+pode ser improvisado. Não virou primitiva de propósito: existe **um** hero, e
+uma primitiva usada uma vez só é código morto — a regra deste sistema é que
+primitiva existe quando cinco agentes inventariam cinco versões. Como aqui é um,
+fica a receita, e ela é lei igual:
+
+- o `.wrap` do hero empilha em coluna com `gap:var(--e-4)`;
+- o alinhamento fica em `stretch` (o padrão) — **não** ponha `align-items:
+  flex-start` (§ 8.3-e explica o que isso quebrava);
+- a medida do `<h1>` é `var(--col-10)`, que cai para `var(--col-11)` abaixo de
+  1080px e para `none` abaixo de 768px, onde percentual de coluna só deixaria
+  sobra inútil à direita;
+- o único realce de cor do `<h1>` é `--acento-ink` num `<em>` com
+  `font-style:normal`;
+- o hero **não leva `.rise`** (§ 8.9): ele está inteiro acima da dobra.
+
 ### 8.3-c `.link`
 Link dentro de texto corrido: `--acento-ink`, sublinhado com offset, sublinhado
-engrossa no hover.
+engrossa no hover. O sublinhado é **permanente** — nunca o remova, nem no hover.
+
+**Onde ele vive:** em texto de corpo, isto é, em bloco cuja cor é `--text`. Ali
+ele mede 3,05:1 contra o texto ao redor e se distingue por cor *e* por
+sublinhado.
+
+**Onde ele NÃO vive — e isto é regra, não gosto:** dentro de `.lede`,
+`.rodape`, `figcaption`, legenda, ou qualquer bloco em `--text-soft`. Ali ele
+mede **1,07:1** contra o texto vizinho (§ 6.2-b): mesma claridade, só outro
+matiz, e o sublinhado passa a ser a única coisa que o distingue. Precisa de um
+link num lede? Duas saídas, as duas legítimas: promova o parágrafo a `--text`,
+ou tire o link do lede e ponha a ação logo abaixo, como `.btn-s`.
+
 **Não use** para uma ação principal — isso é `.btn-p`. **Não use** em cima de
 um `.card` inteiro que já é `<a class="card">`.
 
@@ -695,6 +787,16 @@ fica certo se o contêiner virar coluna — o que `.acoes` faz e um `<div>` avul
 não faria. Dois agentes com dois wrappers diferentes produziriam duas linhas de
 botão diferentes no celular.
 
+`.acoes` é **imune ao alinhamento do pai**. Isso não era verdade até a fatia 1:
+a primitiva só entregava botões de largura cheia se o contêiner estivesse em
+`stretch`, e um `align-items:flex-start` no pai — a coisa natural de escrever
+num grid de hero — deixava os botões a meia largura **sem erro em lugar
+nenhum**, com o portão passando e o celular torto. Agora ela carrega
+`width:100%` e `align-self:stretch` abaixo de 768px, então funciona qualquer que
+seja o alinhamento de quem a contém. **Você não precisa saber disto** — é
+exatamente esse o ponto: regra que depende do contexto do consumidor é regra que
+vai ser quebrada.
+
 ### 8.3-f `.tabela`
 Tabela de dados: cabeçalho em mono/caixa alta, régua de 1px entre linhas, sem
 régua na última. O ranking do prêmio é uma `.tabela`.
@@ -710,7 +812,32 @@ do fundo sólido proíbe.
 ### 8.3-h `.lista-ok`
 A lista de garantias, com `✓` em `--ok` gerado pelo CSS. É o segundo dos três
 lugares onde a esmeralda pode aparecer (§ 6.5).
+**O texto dos itens fica em `--text`** (o padrão — não o pinte de
+`--text-soft`): o `✓` mede 3,00:1 contra `--text` e 1,05:1 contra
+`--text-soft`, então em texto secundário ele deixa de ser um sinal e vira uma
+mancha (§ 6.2-b).
 **Não use** para lista comum — `<ul>` simples já tem reset e marcador.
+
+### 8.3-k `.ficha`
+Par rótulo/valor, para dado técnico — rótulo em mono/caixa alta, valor em
+corpo, régua de 1px entre pares. Combina com `.card`:
+
+```html
+<div class="card ficha">
+  <dl>
+    <div><dt>Sistemas</dt><dd>SEI e SIAPE</dd></div>
+    <div><dt>Acesso</dt><dd>O do próprio servidor, sem burlar nada</dd></div>
+  </dl>
+</div>
+```
+
+O `<div>` em volta de cada par não é enfeite: `<dl>` não permite agrupar
+`dt`+`dd` de outro jeito sem perder a semântica.
+
+Foi **promovida da fatia 1**, que a desenhou primeiro; mora no sistema porque as
+outras fatias têm a mesma necessidade e inventariam cada uma a sua.
+**Não use** para dado que é número puro comparável — isso é `.tabela`. **Não
+use** para texto corrido com um rótulo: isso é um parágrafo com `<b>`.
 
 ### 8.3-i `.rodape`
 O bloco institucional, último dentro da faixa 05 (§ 4.1-b). Fio no topo, texto
@@ -759,6 +886,11 @@ contorno em `--text-soft`.
 ### 8.6 `.pill` (+ `.ok`)
 Micro-rótulo em mono, caixa alta, tracking largo. Abre a seção, antes do `<h2>`.
 `.pill.ok` é o selo de estado positivo (§6.5).
+**Máximo de 32 caracteres**, contando espaços. A primitiva é de linha única
+(`white-space:nowrap`), porque quebrada em duas o `.ponto` se centraliza no
+conjunto e fica visivelmente fora da primeira linha. A 375px, 32 caracteres é o
+que cabe numa linha; acima disso ela transborda — de propósito, para a violação
+aparecer na sua prévia em vez de degradar em silêncio.
 **Não use** mais de uma `.pill` como abertura de seção, nem como botão, nem
 como tag de lista longa — para lista de termos, use texto em `--t-3`.
 Ponto de status opcional: `<span class="ponto"></span>` dentro dela.
@@ -1022,6 +1154,9 @@ E confira à mão, item por item:
 - [ ] nenhum `--col-N` fora de um filho direto do `.wrap`
 - [ ] se você é a fatia 01: a navegação está em `nav.html`, com o seu próprio
       `.wrap`, e **não** dentro de `01-hero.html`
+- [ ] nenhum `.link` e nenhum `✓` dentro de bloco em `--text-soft` (§ 6.2-b)
+- [ ] nenhuma `.pill` acima de 32 caracteres
+- [ ] se você mexeu em token de cor: `python site/auditar_contrato.py` limpo
 - [ ] nenhum `href="#"`; toda âncora aponta para um `id` existente
 - [ ] a hierarquia de títulos não pula degrau
 - [ ] você olhou a seção nos dois temas, claro e escuro

@@ -47,6 +47,17 @@ O QUE ELE CHECA
    aposentada, o ambar da marca que nao pode ser barra, a faixa do fio de
    cabelo) tambem sao recalculadas, em vez de ficarem de fora so por nao
    estarem numa tabela.
+5. VIZINHANCA — contraste CONTRA O FUNDO e contraste ENTRE VIZINHOS sao
+   perguntas diferentes, e a segunda ja nos pegou duas vezes: a rampa de
+   dados (tres cores a 1,02:1 entre si, todas passando contra o fundo) e
+   o par --acento-ink x --text-soft (1,07:1, os dois passando contra o
+   fundo). Por isso ha duas listas aqui. PARES_VIZINHOS sao os que
+   PRECISAM se separar. NAO_SEPARAM sao os que o contrato declara
+   indistinguiveis — e sobre os quais ele constroi proibicoes, como
+   ".link nao vive dentro de .lede". Se um deles passar a se separar, o
+   auditor avisa: a proibicao virou letra morta e o contrato ficou
+   estrito demais. Contrato que envelhece para o lado permissivo e
+   perigoso; para o lado restritivo, e so burrice acumulada.
 
 LIMITE HONESTO
 ==============
@@ -210,11 +221,30 @@ DERIVADOS = (
     ("o ambar da marca, que nao pode ser barra", "--acento", "--surface", "claro"),
     ("o fio de cabelo, sobre a faixa par", "--border", "--fundo-alt", "claro"),
     ("o fio de cabelo, sobre o papel", "--border", "--surface", "claro"),
+    # o link dentro de texto de corpo: e o que justifica onde .link pode viver
+    ("o link dentro de texto de corpo", "--acento-ink", "--text", "claro"),
+    ("o link dentro de texto secundario", "--acento-ink", "--text-soft", "claro"),
 )
 
 
 def _cor(referencia: str, paleta: dict[str, str]) -> str | None:
     return paleta.get(referencia) if referencia.startswith("--") else referencia
+
+
+# Pares que aparecem LADO A LADO e precisam se distinguir um do outro.
+# (rotulo, token A, token B, minimo, escopos)
+# (A rampa de dados tem checagem propria, mais acima.)
+PARES_VIZINHOS = (
+    ("o texto secundario ao lado do principal", "--text-soft", "--text", 1.8, ("claro", "escuro")),
+)
+
+# Pares que o contrato declara INDISTINGUIVEIS, e sobre os quais monta
+# proibicoes. O auditor cobra que continuem indistinguiveis: se separarem,
+# a proibicao virou letra morta e o texto precisa ser revisto.
+NAO_SEPARAM = (
+    ("--acento-ink", "--text-soft", "§ 8.3-c proibe .link dentro de .lede", 1.5),
+    ("--ok", "--text-soft", "§ 8.3-h proibe .lista-ok com texto em --text-soft", 1.5),
+)
 
 
 # ------------------------------------------------------------- auditoria
@@ -262,6 +292,36 @@ def auditar(css: str, contrato: str, *, verboso: bool = False) -> list[str]:
                 )
             else:
                 passou.append(f"ok {formatar(valor):>9}  [{nome}] {rotulo}")
+
+    # 5 — vizinhanca: quem precisa se separar, e quem o contrato jura que nao separa
+    for rotulo, a_tok, b_tok, minimo, escopos_alvo in PARES_VIZINHOS:
+        for nome in escopos_alvo:
+            paleta = escopos[nome]
+            if a_tok not in paleta or b_tok not in paleta:
+                continue
+            valor = razao(paleta[a_tok], paleta[b_tok])
+            if valor < minimo:
+                achados.append(
+                    f"vizinhanca: [{nome}] {rotulo} — {a_tok} x {b_tok} = "
+                    f"{formatar(valor)}, abaixo do minimo de {minimo}"
+                )
+            else:
+                passou.append(f"ok {formatar(valor):>9}  [{nome}] {a_tok} x {b_tok}")
+
+    for a_tok, b_tok, motivo, teto in NAO_SEPARAM:
+        for nome in ("claro", "escuro"):
+            paleta = escopos[nome]
+            valor = razao(paleta[a_tok], paleta[b_tok])
+            if valor >= teto:
+                achados.append(
+                    f"vizinhanca: [{nome}] {a_tok} x {b_tok} = {formatar(valor)}, "
+                    f"acima de {teto} — eles agora SE SEPARAM, entao {motivo} "
+                    f"ficou estrito demais e precisa ser revisto"
+                )
+            else:
+                passou.append(
+                    f"ok {formatar(valor):>9}  [{nome}] {a_tok} x {b_tok} segue indistinguivel"
+                )
 
     # 4 — as afirmacoes avulsas
     for rotulo, frente, fundo, escopo in DERIVADOS:

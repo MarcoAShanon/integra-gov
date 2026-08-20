@@ -879,3 +879,33 @@ def test_auditor_le_a_faixa_alt_clara_e_nao_a_escura():
     escopos = a.paletas(CSS_SISTEMA)
     assert escopos["claro/faixa par"]["--surface"] == "#F8F6F1"
     assert escopos["escuro/faixa par"]["--surface"] == "#2D2720"
+
+
+def test_auditor_acusa_vizinhos_indistinguiveis():
+    """Contraste contra o FUNDO e contraste entre VIZINHOS sao perguntas
+    diferentes. Se o texto secundario encostar no principal, a tabela do
+    6.2 continua passando e so a checagem de vizinhanca acusa."""
+    colado = CSS_SISTEMA.replace("--text-soft:#6A6055", "--text-soft:#1C1917", 1)
+    assert colado != CSS_SISTEMA
+    achados = a.auditar(colado, CONTRATO)
+    assert any(
+        achado.startswith("vizinhanca:") and "abaixo do minimo" in achado
+        for achado in achados
+    )
+
+
+def test_auditor_avisa_quando_proibicao_vira_letra_morta():
+    """O contrato proibe .link dentro de .lede porque --acento-ink e
+    --text-soft nao se separam (1,07:1). Se um dia separarem, a proibicao
+    perde a razao de ser — e o auditor tem que dizer isso, senao o contrato
+    envelhece para o lado restritivo e ninguem percebe."""
+    afastado = CSS_SISTEMA.replace("--text-soft:#6A6055", "--text-soft:#1C1917", 1)
+    achados = a.auditar(afastado, CONTRATO)
+    assert any("estrito demais" in achado for achado in achados)
+
+
+def test_auditor_aprova_a_vizinhanca_atual():
+    """No estado versionado, os pares proibidos seguem indistinguiveis e os
+    exigidos seguem separando — nenhum achado de vizinhanca."""
+    achados = a.auditar(CSS_SISTEMA, CONTRATO)
+    assert not [achado for achado in achados if achado.startswith("vizinhanca:")]
