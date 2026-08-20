@@ -53,7 +53,6 @@ def test_montar_so_rejeita_fatia_inexistente():
         m.montar(so="99-nada")
 
 
-@completo
 def test_caminho_saida_da_pagina_inteira_e_o_index():
     assert m.caminho_saida(None).name == "index.html"
 
