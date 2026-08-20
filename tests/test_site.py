@@ -741,6 +741,82 @@ def test_verificar_partes_modo_fatia_sem_css_proprio_nao_e_achado(tmp_path):
     assert achados == []
 
 
+# ============================================== rodada 6: piloto da fatia 1
+# P1 — verificar_partes exigia que TODO seletor de 01-hero.css comecasse
+# com #hero, mas a navegacao (nav.html) mora dentro do <header> que o
+# montador emite — FORA do #hero. Escolha: "header" vira prefixo valido
+# ADICIONAL so para 01-hero.css. Nenhuma outra fatia ganha esse prefixo —
+# a protecao contra vazamento entre fatias nao afrouxa em lugar nenhum,
+# so ganha uma excecao estrutural exatamente onde o montador de fato
+# coloca o conteudo dessa fatia (ver A1, montar.py emite <header> antes
+# do <main>, so pra fatia 1 atraves de nav.html).
+def test_seletor_com_prefixo_header_em_01_hero_e_aceito(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text("header .nav a{color:var(--brand)}", encoding="utf-8")
+    assert v.verificar_partes(tmp_path) == []
+
+
+def test_seletor_com_prefixo_header_em_outra_fatia_e_achado(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "03-contexto.css").write_text("header .nav a{color:var(--brand)}", encoding="utf-8")
+    achados = v.verificar_partes(tmp_path)
+    assert any(a.startswith("prefixo:") for a in achados)
+
+
+def test_seletor_sem_prefixo_nenhum_ainda_e_achado_em_01_hero(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text(".vaza{color:red}", encoding="utf-8")
+    achados = v.verificar_partes(tmp_path)
+    assert any(a.startswith("prefixo:") for a in achados)
+
+
+# P2 — comentario HTML contava como marcacao de verdade: um <h1> ou
+# href="#" DENTRO de <!-- --> gerava achado falso. Ja resolvido para
+# id/ancora com _sem_comentarios_html (rodada 3); estende pra contagem de
+# h1, hierarquia de titulos, links mortos, alt de imagem e recursos
+# externos (a checagem por tag src/href — as vias embutidas em CSS
+# ficam de fora desta rodada, ver nota no codigo).
+def test_h1_em_comentario_nao_conta_e_h1_real_continua_contando():
+    achados = v.verificar("<!-- <h1>exemplo</h1> --><h1>real</h1>")
+    assert not any(a.startswith("h1") for a in achados)
+
+
+def test_href_morto_em_comentario_nao_e_achado():
+    achados = v.verificar('<!-- href="#" -->')
+    assert not any("href" in a for a in achados)
+
+
+def test_imagem_sem_alt_em_comentario_nao_e_achado():
+    achados = v.verificar("<!-- <img src=x> -->")
+    assert not any("alt" in a for a in achados)
+
+
+def test_titulo_que_pula_degrau_em_comentario_nao_conta():
+    html = "<!-- <h1>a</h1><h3>c</h3> --><h1>a</h1><h2>b</h2>"
+    achados = v.verificar(html)
+    assert not any("degrau" in a for a in achados)
+
+
+def test_recurso_externo_em_comentario_nao_e_achado():
+    html = '<!-- <script src="https://evil.com/x.js"></script> -->'
+    achados = v.verificar(html)
+    assert not any("externo" in a for a in achados)
+
+
+def test_stripper_html_nao_interfere_com_comentario_css_no_style():
+    """O gemeo: comentario HTML (<!-- -->) desaparece; comentario CSS
+    (/* */) dentro do <style>, que fica FORA de qualquer <!-- -->,
+    sobrevive intacto — e o h1 real, depois do <style>, continua sendo
+    contado normalmente (nem a mais, nem a menos)."""
+    html = (
+        "<style>/* nao mexer */ .x{color:red}</style>"
+        "<!-- <h1>fantasma</h1> -->"
+        "<h1>real</h1>"
+    )
+    achados = v.verificar(html)
+    assert not any(a.startswith("h1") for a in achados)
+
+
 # ------------------------------------------------- auditor do contrato
 # A classe de erro "numero declarado em vez de calculado" pegou o contrato
 # de design tres vezes (ver a docstring de site/auditar_contrato.py). Estes

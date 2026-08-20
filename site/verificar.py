@@ -201,7 +201,21 @@ def verificar(html: str, *, fatia: bool = False) -> list[str]:
       e o montador, na pagina inteira, nao a fatia isolada.
     """
     achados: list[str] = []
-    niveis = _titulos(html)
+    # despe comentarios HTML (<!-- -->) UMA vez, no topo, e reusa nas
+    # checagens que leem marcacao de verdade -- sem isso, um <h1> ou um
+    # href="#" so CITADO dentro de um comentario explicativo virava achado
+    # falso (o exemplo real: um agente escreveu "<!-- <h1>assim</h1> -->"
+    # pra documentar uma decisao, e o verificador contou como um segundo
+    # <h1> de verdade). Isto e SO o comentario de HTML: nao mexe em
+    # comentario CSS (/* */) dentro de um <style> -- esse e um universo
+    # separado, tratado por _sem_comentarios() dentro de verificar_partes,
+    # nunca aqui. As checagens embutidas em CSS abaixo (font-family cru,
+    # @import/url(), poster/data-video/srcset) continuam lendo o html
+    # ORIGINAL, sem essa despida: elas vivem dentro de <style>/atributos, um
+    # universo de comentario diferente do de marcacao HTML, e misturar os
+    # dois e exatamente o risco que se quer evitar.
+    html_sem_comentarios = _sem_comentarios_html(html)
+    niveis = _titulos(html_sem_comentarios)
 
     # --- hierarquia de titulos
     qtd_h1 = niveis.count(1)
@@ -218,16 +232,14 @@ def verificar(html: str, *, fatia: bool = False) -> list[str]:
         anterior = n
 
     # --- links mortos
-    if _RE_HREF_MORTO.search(html):
+    if _RE_HREF_MORTO.search(html_sem_comentarios):
         achados.append('links: existe href="#" ou href="" — link que nao leva a lugar nenhum')
 
     # --- ids duplicados (roda nos DOIS modos) e ancora interna quebrada (so
-    # na pagina inteira — uma fatia isolada legitimamente aponta pra ancoras
-    # de outras fatias que ainda nao existem na previa dela). Despe
-    # comentarios HTML antes: uma copia comentada de um id nao esta na
-    # pagina renderizada e nao pode contar como duplicata, nem servir de
-    # alvo valido de ancora.
-    html_sem_comentarios = _sem_comentarios_html(html)
+    # na pagina inteira -- uma fatia isolada legitimamente aponta pra ancoras
+    # de outras fatias que ainda nao existem na previa dela). Uma copia
+    # comentada de um id nao esta na pagina renderizada e nao pode contar
+    # como duplicata, nem servir de alvo valido de ancora.
     ids = _RE_ID.findall(html_sem_comentarios)
     for id_dup in sorted({i for i in ids if ids.count(i) > 1}):
         achados.append(f"id: {id_dup!r} aparece mais de uma vez no documento")
@@ -241,7 +253,7 @@ def verificar(html: str, *, fatia: bool = False) -> list[str]:
                 )
 
     # --- imagens sem alt
-    for tag in _RE_IMG.findall(html):
+    for tag in _RE_IMG.findall(html_sem_comentarios):
         if not re.search(r"\balt\s*=", tag, re.I):
             achados.append(f"alt: <img> sem atributo alt — {tag[:80]}")
 
@@ -252,7 +264,7 @@ def verificar(html: str, *, fatia: bool = False) -> list[str]:
         r"<(" + "|".join(TAGS_DE_RECURSO) + r")\b[^>]*?\b(?:src|href)\s*=\s*\"((?:https?:)?//[^\"]+)\"",
         re.I,
     )
-    for _tag, url in padrao.findall(html):
+    for _tag, url in padrao.findall(html_sem_comentarios):
         _checar_host(url, achados)
 
     # o CSS final vive inline dentro de <style>: @import e url() sao rotas
@@ -400,6 +412,16 @@ def verificar_partes(parts: pathlib.Path, *, somente: str | None = None) -> list
             continue
         css = _sem_comentarios(arquivo.read_text(encoding="utf-8"))
         ident = "#" + arquivo.stem.split("-", 1)[1]
+        # so a fatia 1 tem direito ao prefixo "header": a navegacao
+        # (nav.html) mora dentro do <header> que o montador emite ANTES do
+        # <main> (ver A1) — fora do #hero. Nenhuma outra fatia tem header
+        # nenhum pra estilizar, entao nenhuma outra ganha esse prefixo: a
+        # protecao contra vazamento entre fatias nao afrouxa em lugar
+        # nenhum, so ganha uma excecao estrutural onde o montador de fato
+        # coloca o conteudo desta fatia.
+        prefixos_validos = [ident, ":root"]
+        if arquivo.stem == "01-hero":
+            prefixos_validos.append("header")
 
         for token in _RE_TOKEN.findall(css):
             if token in tokens:
@@ -441,7 +463,7 @@ def verificar_partes(parts: pathlib.Path, *, somente: str | None = None) -> list
                 continue
             for seletor in seletores.split(","):
                 seletor = seletor.strip()
-                if seletor and not seletor.startswith(ident) and not seletor.startswith(":root"):
+                if seletor and not any(seletor.startswith(p) for p in prefixos_validos):
                     achados.append(
                         f"prefixo: {arquivo.name} tem seletor {seletor!r} sem o prefixo {ident} — vaza"
                     )
