@@ -12,9 +12,13 @@
      ignora o cartao inteiro. Nenhuma linha de JavaScript aqui.
 
      Sem JavaScript esta secao nasce inteira: .rise so esconde sob .js
-     (contrato 9.1), nao ha grafico, e o unico controle que depende de
-     script — o botao do lightbox — tem ao lado um link direto ao arquivo
-     de video, que funciona sem script nenhum. -->
+     (contrato 9.1) e nao ha grafico. O unico controle que depende de
+     script e o botao do lightbox, e as DUAS rotas do video se excluem
+     pela primitiva nova do sistema: o sistema esconde sozinho o botao
+     quando o <html> nao tem .js, e o link cru para o arquivo leva
+     .so-sem-js, entao ele so aparece quando e a UNICA rota (A2 e A6).
+     Nunca ha dois controles com o mesmo rotulo semantico ao mesmo
+     tempo, e nunca ha um controle desenhado que nao faz nada. -->
 <section id="oferta" class="faixa alt">
   <div class="wrap">
 
@@ -119,7 +123,7 @@
             <img src="assets/img-08-6ad7082f.jpg"
                  alt="Janela do INTEGRA Exante sobreposta à tela do SEI, com a árvore de documentos do processo à esquerda e o log da automação; os números de processo aparecem pixelizados."
                  loading="lazy" width="1000" height="541">
-            <button type="button" class="play" aria-label="Assistir ao vídeo de execução do INTEGRA Exante">▶</button>
+            <button type="button" class="play so-com-js" aria-label="Assistir ao vídeo de execução do INTEGRA Exante">▶</button>
           </div>
           <div class="corpo">
             <h4>INTEGRA Exante — Exercícios Anteriores</h4>
@@ -129,7 +133,7 @@
               <li>SEI</li>
               <li>mainframe SIAPE</li>
             </ul>
-            <p class="direto"><a class="link" href="/media/exante.mp4">Abrir o vídeo de execução</a></p>
+            <p class="direto so-sem-js"><a class="link" href="/media/exante.mp4">Abrir o vídeo de execução</a></p>
           </div>
         </article>
 

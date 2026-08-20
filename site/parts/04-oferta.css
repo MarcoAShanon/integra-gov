@@ -18,7 +18,11 @@
       tem fundo proprio e a palavra escrita.
    3. O botao de play tem 56x56 — acima dos 44 da bateria de toque —, e
       o link direto do video carrega min-height:44px pelo mesmo motivo.
-      Os chips e as tags NAO sao clicaveis, entao nao entram nessa conta.
+      NADA MAIS desta fatia tem aparencia de controle: a lista de blocos
+      perdeu a moldura e o raio justamente por isso (A9.4). Um retangulo
+      arredondado com fio em volta E um botao aos olhos de quem toca a
+      tela, e 18 botoes que nao fazem nada e o pior tipo de affordance:
+      a que so falha depois do gesto.
    ===================================================================== */
 
 /* --- ritmo interno da fatia -----------------------------------------
@@ -90,24 +94,43 @@
 /* a lista de blocos: mono porque sao NOMES DE OPERACAO do pacote, o
    mesmo papel dos "trechos de terminal" do contrato 5.4 — e --t-3
    porque o contrato 8.6 manda usar texto em --t-3 para lista de termos,
-   em vez de transformar cada termo numa .pill. Nao sao clicaveis. */
+   em vez de transformar cada termo numa .pill.
+
+   SEM MOLDURA E SEM RAIO (A9.4). A primeira versao dava a cada termo
+   um fio de 1px e --raio-s, que o contrato 7.3 define como o raio de
+   "botao, campo, chip": 18 silhuetas de controle que nao sao controle.
+   No lugar do quadro, um marcador de item — a lista se le como indice,
+   nao como fileira de botoes, e nada aqui convida ao toque.
+
+   O marcador vai em TODO item, inclusive no primeiro, e nao entre
+   itens: como a lista quebra em tres linhas, um separador entre itens
+   abriria linha com um ponto orfao. Marcador de item nunca fica orfao,
+   porque pertence ao item. */
 #oferta .blocos{
   list-style:none;
   margin:0;
   padding:0;
   display:flex;
   flex-wrap:wrap;
-  gap:var(--e-2);
+  gap:var(--e-2) var(--e-4);
+  font-family:var(--font-mono);
+  font-size:var(--t-3);
+  line-height:1.5;
+  color:var(--text);
 }
 #oferta .blocos li{
   margin:0;
-  font-family:var(--font-mono);
-  font-size:var(--t-3);
-  line-height:1.3;
-  color:var(--text);
-  border:1px solid var(--border);
-  border-radius:var(--raio-s);
-  padding:var(--e-1) var(--e-3);
+  display:flex;
+  gap:var(--e-2);
+}
+/* ponto medio escapado (\00B7) para nao depender da codificacao do
+   arquivo. Em --text-soft: mede 5,69:1 contra o cartao (legivel) e se
+   separa do termo em --text por 32 pontos de L*, entao marca sem
+   competir. Nao e --acento-ink nem --ok — o 6.2-b vale aqui tambem. */
+#oferta .blocos li::before{
+  content:"\00B7";
+  color:var(--text-soft);
+  flex:none;
 }
 
 /* =====================================================================
@@ -182,7 +205,25 @@
    e o glifo fica sobre COR SOLIDA (--on-acento sobre --acento, 7,21:1
    no claro e 9,56:1 no escuro) — nunca sobre a imagem, que e o que o
    contrato 6.4 proibe. Sem hover: o contrato 10 so autoriza movimento
-   de hover no .btn. O anel de foco vem do sistema. */
+   de hover no .btn. O anel de foco vem do sistema.
+
+   RAIO --raio-s, NAO 999px (A9.3). A primeira versao usava o circulo
+   por convencao de player de video, e isso era um TERCEIRO raio numa
+   pagina que declara dois (contrato 7.3). Nao ha argumento para o
+   circulo aqui: o ▶ centrado num poster ja carrega a affordance, o
+   rotulo acessivel diz o resto, e --raio-s e literalmente o raio de
+   "botao" — este e o unico botao do cartao, entao ele passa a ser um
+   irmao do .btn em vez de um objeto de outra familia. De quebra, o anel
+   de foco do sistema (que assume --raio-s) volta a acompanhar a forma.
+
+   O display:inline-flex daqui e a razao de o botao levar .so-com-js NA
+   MARCACAO em vez de confiar na rede do sistema. A regra automatica
+   `html:not(.js) .proj[data-video] button{display:none}` nao tem
+   !important e pesa (0,3,2); esta regra pesa (1,1,0), e um id vence
+   qualquer numero de classes — entao ela venceria a rede em silencio e
+   o botao inerte continuaria desenhado sem JS. A primitiva marcada tem
+   !important e ganha. Vale para qualquer fatia que declare `display`
+   num elemento que a rede do sistema queira esconder. */
 #oferta .play{
   position:absolute;
   top:50%;
@@ -194,7 +235,7 @@
   align-items:center;
   justify-content:center;
   border:1px solid var(--acento-ink);
-  border-radius:999px;
+  border-radius:var(--raio-s);
   background:var(--acento);
   color:var(--on-acento);
   font-family:var(--font-corpo);
