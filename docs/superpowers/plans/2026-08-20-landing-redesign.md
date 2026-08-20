@@ -1728,7 +1728,131 @@ git commit -m "feat(site): monta a landing completa e documenta o site/"
 
 ---
 
-## Task 10: Pontas soltas e preparação do deploy
+## Task 10: Prévia em `/previa/` na VPS
+
+Decidida com o usuário em 20/08/2026. O navegador local não prova o que importa:
+a fonte do Google Fonts carregando em rede real, o vídeo de 5,9 MB em 4G, e um
+alvo de toque de 44px sob um dedo de verdade. A prévia num caminho separado dá
+isso **sem tocar no `index.html` de produção**.
+
+`nginx` já serve subdiretório: o server block tem `root /var/www/projeto.govintegra.com.br`,
+`index index.html` e `location / { try_files $uri $uri/ =404; }` — verificado em
+20/08/2026. **Nenhuma alteração de nginx é necessária.**
+
+**Files:**
+- Modify: `site/montar.py` (modo prévia)
+- Modify: `tests/test_site.py`
+- Create: `site/previa.html` (gerado, gitignorado)
+
+**Interfaces:**
+- Consumes: o `site/index.html` aprovado na Task 9.
+- Produces: `montar(previa=True)` e `python site/montar.py --previa`, que grava
+  `site/previa.html`.
+
+- [ ] **Step 1: Escrever o teste que falha**
+
+Acrescente a `tests/test_site.py`:
+
+```python
+@completo
+def test_previa_leva_noindex():
+    """A previa fica publica numa URL adivinhavel; buscador nao pode indexa-la."""
+    html = m.montar(previa=True)
+    assert '<meta name="robots" content="noindex,nofollow">' in html
+
+
+@completo
+def test_pagina_de_producao_nao_leva_noindex():
+    assert "noindex" not in m.montar()
+
+
+@completo
+def test_previa_e_producao_diferem_so_pelo_robots():
+    previa = m.montar(previa=True).replace(
+        '<meta name="robots" content="noindex,nofollow">\n', ""
+    )
+    assert previa == m.montar()
+
+
+def test_caminho_saida_da_previa_e_isolado():
+    assert m.caminho_saida(None, previa=True).name == "previa.html"
+```
+
+- [ ] **Step 2: Rodar e ver falhar**
+
+```bash
+C:/Users/Thelemarco/PycharmProjects/integra-publico/.venv/Scripts/python.exe -m pytest tests/test_site.py -q -k previa
+```
+
+Esperado: FALHA — `montar()` não aceita `previa`.
+
+- [ ] **Step 3: Implementar o modo prévia**
+
+Em `site/montar.py`: `montar(so=None, *, previa=False)` injeta
+`<meta name="robots" content="noindex,nofollow">` como **primeira linha do
+head** quando `previa=True`, e `caminho_saida(so, *, previa=False)` devolve
+`RAIZ / "previa.html"` nesse caso. O CLI ganha `--previa`.
+
+Nada mais muda. A prévia tem que ser **byte a byte** igual à produção fora essa
+linha — é isso que a torna uma prévia, e é o que o terceiro teste garante.
+
+O `rel="canonical"` continua apontando para `https://projeto.govintegra.com.br/`,
+e isso está **certo**: diz ao buscador que a página real é a de produção.
+
+- [ ] **Step 4: Rodar e ver passar**
+
+```bash
+C:/Users/Thelemarco/PycharmProjects/integra-publico/.venv/Scripts/python.exe -m pytest tests/test_site.py -q && C:/Users/Thelemarco/PycharmProjects/integra-publico/.venv/Scripts/python.exe -m ruff check .
+```
+
+- [ ] **Step 5: Ignorar a prévia no git e commitar**
+
+Acrescente `site/previa.html` ao `.gitignore` (é artefato, como as prévias de
+fatia). Commit.
+
+- [ ] **Step 6: Publicar a prévia — SÓ COM ORDEM DO USUÁRIO**
+
+O usuário autorizou esta publicação em 20/08/2026. Ainda assim, **avise antes de
+executar** e confirme que a Task 9 foi aprovada — publicar uma página reprovada
+não serve a ninguém.
+
+```bash
+C:/Users/Thelemarco/PycharmProjects/integra-publico/.venv/Scripts/python.exe site/montar.py --previa && ssh -i ~/.ssh/integra_deploy root@145.223.95.35 "mkdir -p /var/www/projeto.govintegra.com.br/previa" && scp -i ~/.ssh/integra_deploy site/previa.html root@145.223.95.35:/var/www/projeto.govintegra.com.br/previa/index.html && scp -i ~/.ssh/integra_deploy -r site/assets root@145.223.95.35:/var/www/projeto.govintegra.com.br/previa/
+```
+
+O `index.html` de produção **não é tocado** por nenhum destes comandos. Confira
+isso antes de rodar: nenhum dos caminhos de destino termina em
+`/var/www/projeto.govintegra.com.br/index.html`.
+
+O vídeo não precisa subir — o `data-video` aponta para `/media/exante.mp4`, que
+é caminho **absoluto** e já existe na raiz do domínio.
+
+- [ ] **Step 7: Verificar a prévia no ar**
+
+```bash
+curl -sS -o /dev/null -w "previa: HTTP %{http_code}  %{size_download} bytes\n" https://projeto.govintegra.com.br/previa/ && curl -sS https://projeto.govintegra.com.br/previa/ | grep -c 'noindex' && curl -sS -o /dev/null -w "producao intacta: HTTP %{http_code}  %{size_download} bytes\n" https://projeto.govintegra.com.br/
+```
+
+Esperado: prévia `HTTP 200`; `1` ocorrência de `noindex`; e **produção com os
+665046 bytes de sempre** — se esse número mudou, a produção foi tocada e é
+preciso restaurar antes de qualquer outra coisa.
+
+Então avise o usuário: <https://projeto.govintegra.com.br/previa/> — peça que
+abra no celular, que é o teste que o navegador local não dá.
+
+- [ ] **Step 8: Registrar**
+
+Anote no `site/README.md` o que é `/previa/`, como republicá-la, e que ela deve
+ser **removida depois do deploy final** — uma cópia velha esquecida no ar é pior
+que nenhuma prévia:
+
+```bash
+ssh -i ~/.ssh/integra_deploy root@145.223.95.35 "rm -rf /var/www/projeto.govintegra.com.br/previa"
+```
+
+---
+
+## Task 11: Pontas soltas e preparação do deploy final
 
 **Files:**
 - Create: `site/parts/og.html`
@@ -1857,7 +1981,16 @@ git add site/parts/og.html site/gerar_og.py site/assets/og-image.png site/README
 git commit -m "feat(site): og-image na nova identidade e comando de redeploy documentado"
 ```
 
-- [ ] **Step 5: Fechar a branch**
+- [ ] **Step 5: Remover a prévia**
+
+Depois que o deploy final estiver no ar e verificado, remova `/previa/` — uma
+cópia velha esquecida num caminho público é pior que nenhuma prévia:
+
+```bash
+ssh -i ~/.ssh/integra_deploy root@145.223.95.35 "rm -rf /var/www/projeto.govintegra.com.br/previa"
+```
+
+- [ ] **Step 6: Fechar a branch**
 
 Invoque `superpowers:finishing-a-development-branch` para decidir com o usuário
 entre merge, PR ou continuar na branch. **Só depois disso**, e só se o usuário
@@ -1877,4 +2010,6 @@ Espelha a spec §11. O trabalho está concluído quando, e apenas quando:
       `verificar.py` e `README.md`.
 - [ ] As pontas soltas da spec §10 estão decididas — resolvidas ou
       explicitamente adiadas por escrito.
+- [ ] A prévia em `/previa/` foi vista pelo usuário **no celular** e aprovada.
 - [ ] O comando de redeploy está documentado e **não executado** sem ordem.
+- [ ] Depois do deploy final, `/previa/` foi removida da VPS.
