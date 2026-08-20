@@ -920,8 +920,20 @@ RESTRIÇÕES DURAS:
 - VETADAS como primeira família: Inter, Roboto, Arial, system-ui,
   -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica Neue, Space Grotesk.
   Como fallback, são obrigatórias e esperadas. Escolha um display com caráter
-  próprio e um mono legível para números — ambos no Google Fonts, ambos
-  verificados como existentes lá (não invente nome de fonte).
+  próprio e um mono legível para números — ambos no Google Fonts.
+  NÃO INVENTE NOME DE FONTE. Estas 22 foram verificadas ao vivo em 20/08/2026
+  e respondem 200 na API do Google Fonts:
+    display/corpo — Fraunces, Instrument Sans, Bricolage Grotesque, Archivo,
+      Sora, Outfit, Newsreader, Source Serif 4, Familjen Grotesk,
+      Schibsted Grotesk, Manrope, Figtree, Epilogue, Chivo
+    mono — IBM Plex Mono, JetBrains Mono, DM Mono, Space Mono, Fira Code,
+      Martian Mono, Azeret Mono, Spline Sans Mono
+  A lista é rede de segurança, não camisa de força: você PODE escolher fora
+  dela, mas então precisa VERIFICAR que a família existe antes de escrever o
+  <link> — buscando na web ou batendo na API. Uma fonte inventada quebra a
+  página inteira e só aparece na bateria de navegador, tarde.
+  E não convirja no óbvio: escolha o par porque ele serve a "rigor técnico
+  quente", não porque é o primeiro da lista.
 - Acessibilidade: toda combinação texto/fundo da paleta precisa passar AA
   (4.5:1 normal, 3:1 grande). CALCULE o contraste de cada par e registre a
   razão no contrato. Não estime.
