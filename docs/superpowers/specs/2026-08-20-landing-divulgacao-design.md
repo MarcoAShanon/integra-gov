@@ -4,6 +4,8 @@
 *O texto validado das seções existentes é preservado; o que muda é a forma —
 e o fim da página, que hoje não conduz a lugar nenhum.*
 
+*A **ordem**, essa muda: ver §5.1.*
+
 ## 1. Objetivo
 
 A landing existe para **convencer servidores e gestores de outros órgãos a
@@ -116,7 +118,45 @@ tokens do contrato e sem redefinir nenhum.
 | 4 | Oferta | módulos, ecossistema, feito-com | — |
 | 5 | Conversão | **piloto assistido** (nova) + rodapé | cloud.gov + Public Digital |
 
+### 5.1 A ordem muda — e é de propósito
+
+O agrupamento em fatias **reordena** a página. Hoje ela vai
+prêmio → problema → resultados; as fatias entregam
+prova (prêmio + números + resultados) → contexto (problema + como funciona +
+governança). Ou seja, **os resultados passam para antes do problema**.
+
+Isso é deliberado e serve ao objetivo: o gestor de outro órgão escaneia a prova
+primeiro e decide se vale ler; o problema vira contexto para quem ficou. Está
+escrito aqui para que nenhum agente de fatia "corrija" de volta achando que
+encontrou um erro de montagem.
+
+O que **não** muda: o texto de cada seção, e o hero abrindo a página.
+
+### 5.2 Inventário — onde cada seção da página atual foi parar
+
+Nenhuma das doze seções pode se perder na montagem:
+
+| Seção atual | Fatia |
+|---|---|
+| nav, hero | 1 — Hero |
+| prêmio, resultados | 2 — Prova |
+| problema, como funciona, governança | 3 — Contexto |
+| módulos, **replicável**, ecossistema, feito-com | 4 — Oferta |
+| CTA, rodapé | 5 — Conversão |
+
+A seção **replicável** ("Feito na DECIPEX. Aberto para qualquer órgão" — MIT, o
+que já vem incluído, colaboração entre órgãos) é o conteúdo mais diretamente
+ligado ao objetivo de convencer a replicar. Ela vive na fatia 4 como miolo
+argumentativo; as objeções derrubadas pelo nome migram para a fatia 5.
+
 ### Fatia 5 em detalhe (é a que não existe hoje)
+
+**O nome define o próprio limite, na primeira frase.** "Assistido" é
+literalmente a promessa de acompanhamento que o corpo da seção nega — um gestor
+lê o título e infere que a equipe acompanha a implantação. O termo fica, e a
+primeira frase da seção o desarma na hora: *assistido no arranque — uma conversa
+de diagnóstico e a indicação do caminho; a implantação é do seu órgão.*
+(Decisão do usuário, 20/08/2026.)
 
 Promessa autorizada, e nada além dela: **conversa inicial e orientação
 pontual.** Um e-mail respondido, uma reunião de diagnóstico, e a indicação do

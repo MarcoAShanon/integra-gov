@@ -47,6 +47,7 @@ Valem para **toda** tarefa e para **todo** subagente. Copiadas da spec §4.
    visível, ordem de foco correta, `prefers-reduced-motion` respeitado.
 8. **Deploy nunca é automático.** Nenhuma tarefa deste plano executa `scp`,
    `rsync` ou `ssh` de escrita. O comando é preparado; quem manda é o usuário.
+   Exceção de leitura: `ssh` para inspecionar o servidor é permitido.
 9. **Idioma:** todo texto visível em pt-BR. Comentários de código em pt-BR sem
    acentuação obrigatória (segue o padrão do repositório).
 10. **Toda etapa passa pela sessão Revisão** antes de ser dada por concluída —
@@ -101,6 +102,16 @@ RESTRIÇÕES DURAS:
   toda imagem informativa (alt="" em decorativa), hierarquia de títulos sem
   pular degrau, e todo movimento dentro de
   @media (prefers-reduced-motion: no-preference).
+- O <h1> da página pertence EXCLUSIVAMENTE à fatia 01-hero. Se a sua fatia não
+  for a 01-hero, ela começa em <h2> e NUNCA emite <h1>. A prévia isolada da sua
+  fatia não terá h1, e isso está correto — o verificador reconhece o modo fatia
+  pelo nome do arquivo (preview-<fatia>.html).
+- Breakpoints: só 768px e 1080px. Nenhum outro valor de @media de largura.
+- Não defina padding vertical nem background da sua <section> — use a primitiva
+  .faixa do contrato. O ritmo vertical da página não é seu.
+- Fundo sólido atrás de texto que precise ser lido. Gradiente e
+  background-clip:text são permitidos em ornamento, nunca sob texto — é o que
+  torna o contraste verificável por máquina em vez de opinável.
 
 ENTREGA — exatamente dois arquivos, e nada mais:
 1. site/parts/<NN-nome>.html — um único elemento <section> (com id), sem
@@ -857,7 +868,9 @@ esta.
   que `verificar.py` e as cinco fatias falem a mesma língua:
   `--font-display`, `--font-corpo`, `--font-mono`, `--bg`, `--surface`,
   `--text`, `--text-soft`, `--border`, `--acento`, `--acento-ink`,
-  `--acento-soft`, `--on-acento`, `--col-1` … `--col-12`, `--maxw`.
+  `--acento-soft`, `--on-acento`, `--col-1` … `--col-12`, `--maxw`,
+  a **escala de espaçamento** (`--e-1` … `--e-8`, valores declarados) e
+  `--raio`, `--raio-s`.
   Primitivas com nomes de classe fixos: `.btn`, `.btn-p`, `.btn-s`, `.card`,
   `.pill`, `.hairline`, `.faixa`, `.skip`, `.rise`, `.num`.
 
@@ -915,6 +928,25 @@ RESTRIÇÕES DURAS:
   precise ser lido. Escreva essa regra no contrato, com esta justificativa.
 - Tema claro E escuro, via @media (prefers-color-scheme: dark).
 
+TRÊS REGRAS DE COERÊNCIA que você precisa FIXAR no contrato, porque cinco
+agentes independentes vão consumi-lo sem falar entre si. Sem elas, cada um
+inventa a sua e a página montada fica com costuras visíveis:
+
+1. BREAKPOINTS FECHADOS. Apenas dois valores de @media de largura são
+   permitidos nas fatias: 768px e 1080px. Nenhum outro. Declare os dois e diga
+   o que muda em cada um.
+2. O RITMO VERTICAL E O FUNDO NÃO PERTENCEM À FATIA. Nenhuma fatia define
+   padding vertical nem background da própria <section> — quem define é a
+   primitiva .faixa, que é sua. Sem isso, as junções entre seções duplicam
+   espaçamento e duas faixas de mesma cor coladas viram uma só. FIXE NO
+   CONTRATO a sequência de fundos das cinco seções, escrita explicitamente
+   (ex.: hero=bg, prova=surface, contexto=bg, oferta=surface, conversao=bg —
+   escolha a sua e escreva).
+3. DOCUMENTE A API DO script.js no contrato.md: .rise/.in, .bars[data-max],
+   .col[data-h], .proj[data-video] e o id do lightbox. As fatias 2 (gráficos) e
+   4 (vídeo) consomem esses ganchos; sem a documentação, o agente da fatia 2
+   não tem como descobrir que existem.
+
 ENTREGUE EXATAMENTE QUATRO ARQUIVOS:
 
 1. site/parts/contrato.md — o contrato em prosa, em português. Deve conter:
@@ -937,8 +969,10 @@ ENTREGUE EXATAMENTE QUATRO ARQUIVOS:
 
 3. site/parts/head.html — apenas o CONTEÚDO do <head>, sem a tag <head> em si:
    charset, viewport, title, description, autor, favicon (use
-   assets/<o favicon do MAPA.md>), theme-color, todas as meta OG e Twitter, e
-   o <link> do Google Fonts com preconnect. Preserve os textos de OG que já
+   assets/<o favicon do MAPA.md>), theme-color, <link rel="canonical"> para
+   https://projeto.govintegra.com.br/, todas as meta OG e Twitter, e o <link>
+   do Google Fonts com preconnect e com &display=swap na URL — sem o swap, o
+   texto fica invisível enquanto a fonte carrega. Preserve os textos de OG que já
    estão em site/original/index-slim.html — eles foram validados. A URL
    canônica é https://projeto.govintegra.com.br/ e a imagem OG é
    https://projeto.govintegra.com.br/og-image.png (1200x630).
@@ -1510,6 +1544,13 @@ MOLDES:
 - public.digital (visite https://public.digital): roube o convite formulado
   como PERGUNTA sobre o contexto de quem chega, em vez de campos de formulário.
 
+A PRIMEIRA FRASE DA SEÇÃO TEM UM TRABALHO OBRIGATÓRIO: definir o termo
+"assistido" e, com isso, limitar o escopo. "Assistido" sozinho promete
+acompanhamento — um gestor lê o título e infere que a equipe acompanha a
+implantação. Desarme na hora, mais ou menos assim (a redação é sua):
+"assistido no arranque — uma conversa de diagnóstico e a indicação do caminho;
+a implantação é do seu órgão."
+
 A PROMESSA AUTORIZADA — e nada além dela: CONVERSA INICIAL E ORIENTAÇÃO
 PONTUAL. Um e-mail respondido, uma reunião de diagnóstico, e a indicação do
 caminho: quais módulos servem, o que o órgão precisa ter, onde costuma travar.
@@ -1562,6 +1603,17 @@ Além da lista do bloco acima, verifique com rigor máximo:
   horário fixo, acompanhamento continuado, suporte, SLA, equipe dedicada, ou
   "a gente implanta para você"? Cada ocorrência é BLOQUEIA. Leia procurando o
   que um leitor ansioso INFERIRIA, não só o que está literalmente escrito.
+- Frases-mina levantadas pela sessão Revisão — todas inferem plantão ou
+  continuidade sem prometer literalmente. Procure estas e suas variantes:
+  "estamos à disposição", "conte com a equipe", "tire suas dúvidas",
+  "vamos juntos", "te guiamos", "ajudamos na implantação",
+  "qualquer coisa, escreva". Cada uma é BLOQUEIA.
+- O inverso disfarçado também promete cadência: "responderemos assim que
+  possível", "retornamos em breve", "logo entramos em contato". BLOQUEIA.
+- A PRIMEIRA FRASE da seção define o termo "assistido" e limita o escopo —
+  assistido NO ARRANQUE: uma conversa de diagnóstico e a indicação do caminho;
+  a implantação é do órgão. Se essa definição não estiver lá, é BLOQUEIA: sem
+  ela o título promete o que o corpo nega.
 - A seção diz concretamente O QUE MANDAR NO E-MAIL, a ponto de um servidor
   conseguir escrever o e-mail só de ler? Se ficou genérico ("entre em
   contato"), é BLOQUEIA — é a função central da fatia.
@@ -1640,6 +1692,11 @@ Peça ao usuário que deixe o painel Browser visível. Rode, na página **inteir
 6. Cada âncora da navegação (`#prova`, `#contexto`, `#oferta`, `#conversao`)
    leva à seção certa.
 7. Lightbox do Exante: abre, `Escape` fecha, foco volta ao poster.
+   O vídeo vive **só na VPS** e não é versionado, então a prévia local não o
+   tem. Antes desta bateria, baixe-o uma vez para o diretório gitignorado:
+   `curl -sS --create-dirs -o site/media/exante.mp4 https://projeto.govintegra.com.br/media/exante.mp4`
+   (5,9 MB). Sem isso, o passo 7 testa um lightbox que abre um vídeo inexistente
+   e passa sem provar nada.
 8. Rolagem completa procurando estouro horizontal:
    `document.documentElement.scrollWidth <= document.documentElement.clientWidth`
    → `true` em 375, 768 e 1280.
@@ -1774,6 +1831,20 @@ scp -i ~/.ssh/integra_deploy site/index.html site/assets/og-image.png root@145.2
 **Não rode.** Publicação externa exige ordem explícita do usuário. Note que o
 `index.html` novo referencia `assets/…`, então os assets precisam subir
 **junto ou antes** — subir só o HTML deixa a página no ar sem imagem.
+
+Duas linhas que a sessão Revisão pediu, e que valem o que custam:
+
+**Rollback barato** — antes do `scp`, guarde o que está no ar:
+
+```bash
+ssh -i ~/.ssh/integra_deploy root@145.223.95.35 "cp /var/www/projeto.govintegra.com.br/index.html /var/www/projeto.govintegra.com.br/index.prev.html"
+```
+
+**Cache** — os assets têm nome estável, então um navegador que já visitou o site
+pode servir a imagem velha depois do redeploy. Registre a regra no
+`site/README.md`: **asset que muda de conteúdo muda de nome**. O
+`extrair_assets.py` já nomeia por hash do conteúdo, o que resolve isso de graça
+para as imagens extraídas — a regra existe para as que vierem depois.
 
 - [ ] **Step 4: Commit**
 
