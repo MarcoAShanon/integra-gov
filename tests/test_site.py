@@ -1013,3 +1013,40 @@ def test_auditor_visita_todos_os_escopos():
     tema claro."""
     achados = a.auditar(CSS_SISTEMA, CONTRATO)
     assert not [x for x in achados if x.startswith("escopo:")]
+
+# ----------------------------------------- a imagem de compartilhamento
+OG_HTML = (SITE / "parts" / "og.html").read_text(encoding="utf-8")
+
+
+def test_og_copia_os_tokens_do_sistema_sem_divergir():
+    """O og.html e standalone e REPLICA os tokens do tema claro. Copia
+    envelhece: se um valor mudar no sistema e nao la, a marca do link passa
+    a divergir da marca da pagina devagar, e sem ninguem notar — porque
+    ninguem abre o og.html."""
+    assert a.auditar_og(CSS_SISTEMA, OG_HTML) == []
+
+
+def test_og_acusa_cor_que_saiu_da_paleta():
+    adulterado = OG_HTML.replace("--acento-ink:#96570A", "--acento-ink:#B4700D", 1)
+    assert adulterado != OG_HTML
+    achados = a.auditar_og(CSS_SISTEMA, adulterado)
+    assert any("--acento-ink" in achado for achado in achados)
+
+
+def test_og_acusa_fonte_diferente_da_pagina():
+    """A dependencia que o plano manda nao deixar implicita: se o contrato
+    trocar a fonte de display, a marca do link so acompanha depois de
+    alguem rodar gerar_og.py. O auditor avisa que ela ficou para tras."""
+    adulterado = OG_HTML.replace('"Bricolage Grotesque","Segoe UI"', '"Archivo","Segoe UI"', 1)
+    assert adulterado != OG_HTML
+    achados = a.auditar_og(CSS_SISTEMA, adulterado)
+    assert any("--font-display" in achado for achado in achados)
+
+
+def test_og_image_tem_exatamente_1200x630():
+    """Qualquer outra dimensao e cortada pelas redes."""
+    import gerar_og
+
+    imagem = SITE / "assets" / "og-image.png"
+    assert imagem.exists(), "rode: python site/gerar_og.py"
+    assert gerar_og.dimensoes_png(imagem) == (1200, 630)

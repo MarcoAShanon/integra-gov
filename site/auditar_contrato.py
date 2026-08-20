@@ -383,6 +383,48 @@ def auditar_glifos(nome: str, css: str) -> list[str]:
     return achados
 
 
+def _pilha(texto: str, nome: str) -> str | None:
+    """Valor de uma custom property de FONTE, normalizado por espacos."""
+    achado = re.search(re.escape(nome) + r"\s*:\s*([^;}]+)", texto)
+    return " ".join(achado.group(1).split()) if achado else None
+
+
+def auditar_og(css_sistema: str, og: str) -> list[str]:
+    """O og.html copia tokens do sistema. Copia envelhece — entao se confere.
+
+    A imagem de compartilhamento e uma pagina AUTONOMA: ela nao passa pelo
+    montador e nao pode importar o 00-sistema.css, entao replica os tokens
+    do tema claro num <style> proprio. Isso e uma duplicacao consciente, e
+    duplicacao consciente sem checagem e so duplicacao. Se um valor mudar
+    no sistema e nao aqui, a marca do link passa a divergir da marca da
+    pagina — devagar, e sem ninguem notar, porque ninguem abre o og.html.
+    """
+    achados: list[str] = []
+    sistema = _bloco(_RE_COMENTARIO.sub("", css_sistema), ":root{")
+    copia = _bloco(_RE_COMENTARIO.sub("", og), ":root{")
+    for token, valor in copia.items():
+        if not valor.startswith("#"):
+            continue
+        oficial = sistema.get(token)
+        if oficial is None:
+            achados.append(f"og: {token} nao existe no 00-sistema.css")
+        elif oficial.upper() != valor.upper():
+            achados.append(
+                f"og: {token} vale {valor} no og.html e {oficial} no sistema — "
+                f"a imagem de compartilhamento saiu da paleta da pagina"
+            )
+    # a pilha de fontes e texto, nao cor: compara literal, sem espacos
+    for familia in ("--font-display", "--font-mono"):
+        oficial = _pilha(css_sistema, familia)
+        aqui = _pilha(og, familia)
+        if oficial and aqui and oficial != aqui:
+            achados.append(
+                f"og: {familia} difere do sistema — a marca do link ficaria "
+                f"com outra tipografia que a marca da pagina"
+            )
+    return achados
+
+
 # ------------------------------------------------------------- auditoria
 def auditar(css: str, contrato: str, *, verboso: bool = False) -> list[str]:
     """Achados. Lista vazia significa que o contrato tem lastro no CSS."""
@@ -516,6 +558,9 @@ def main() -> int:
     # fatia pode colar um caractere e o defeito e o mesmo.
     for arquivo in sorted(PARTS.glob("*.css")):
         achados += auditar_glifos(arquivo.name, arquivo.read_text(encoding="utf-8"))
+    og = PARTS / "og.html"
+    if og.exists():
+        achados += auditar_og(css, og.read_text(encoding="utf-8"))
     if not achados:
         print("auditar_contrato: sem achados — todo numero do contrato tem lastro")
         return 0

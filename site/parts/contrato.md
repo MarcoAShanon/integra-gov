@@ -1083,6 +1083,17 @@ enquanto marca, não sobre o wordmark ser imagem. O que muda aqui é o cubo
 (passa a ser o `cubo-integra.png`, 283×268, quase o dobro da resolução) e a
 tipografia do wordmark — não a técnica.
 
+**A marca fora da página.** Compor o wordmark em texto vale para a *página*. O
+compartilhamento social (WhatsApp, Teams, LinkedIn) exige a marca como
+**imagem**, e quem a produz é `site/parts/og.html`, fotografado por
+`site/gerar_og.py` em 1200×630. Consequência prática, e ela é obrigatória:
+**trocar `--font-display` obriga a atualizar o `og.html` e rodar
+`python site/gerar_og.py`** — sem isso a marca do link continua na fonte
+antiga e passa a divergir da marca da página. O `og.html` replica os tokens do
+tema claro num `<style>` próprio (é standalone, não importa o sistema), e o
+`auditar_contrato.py` compara essa cópia com o original a cada execução, para a
+duplicação não envelhecer em silêncio.
+
 > **Divergência consciente, registrada para ninguém "consertar" depois:** a
 > marca desta landing fica **tipograficamente diferente** do lockup oficial
 > usado na revista e no painelsei. A decisão é do usuário, tomada em

@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>og-image do Projeto INTEGRA</title>
+
+<!-- =====================================================================
+     A FONTE DA og-image.png. Esta pagina NAO passa pelo montador: ela e
+     autonoma, tem exatamente 1200x630 e existe so para ser fotografada
+     por site/gerar_og.py.
+
+     DEPENDENCIA QUE NAO PODE FICAR IMPLICITA: o contrato decidiu compor o
+     wordmark em TEXTO, e isso vale para a pagina. O compartilhamento
+     social continua exigindo a marca como IMAGEM — e e este arquivo,
+     renderizado, que a produz. Ou seja: se o contrato trocar
+     --font-display, a marca do link deixa de bater com a marca da pagina
+     ate alguem rodar `python site/gerar_og.py` de novo. Nao e opcional.
+
+     Os tokens abaixo sao COPIA do tema claro do 00-sistema.css. Copia,
+     porque a pagina e standalone e nao pode importar o CSS do sistema —
+     entao ela tambem nao e coberta pelo auditar_contrato.py. Se um valor
+     mudar la, muda aqui.
+     ===================================================================== -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  /* copia do tema claro do 00-sistema.css */
+  --bg:#FBFAF7;
+  --surface:#FFFFFF;
+  --text:#1C1917;
+  --text-soft:#6A6055;
+  --border:#DED7C9;
+  --acento:#E7920D;
+  --acento-ink:#96570A;
+  --acento-soft:#F7EBD2;
+  --font-display:"Bricolage Grotesque","Segoe UI","Helvetica Neue",Arial,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,"Liberation Mono",monospace;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+
+body{
+  width:1200px;
+  height:630px;
+  overflow:hidden;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+}
+
+.cartao{
+  width:1200px;
+  height:630px;
+  padding:74px 80px 68px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  position:relative;
+}
+
+/* faixa de ambar no topo: a unica coisa que sobrevive inteira em
+   miniatura, e ja identifica a marca antes de qualquer texto. */
+.faixa-topo{
+  position:absolute;
+  left:0; top:0;
+  width:100%; height:12px;
+  background:var(--acento);
+}
+
+/* ---------------- a marca ---------------- */
+.marca{display:flex;align-items:center;gap:24px}
+.marca-cubo{height:92px;width:auto;display:block;flex:none}
+.marca-texto{display:flex;flex-direction:column;gap:8px}
+.marca-nome{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:50px;
+  letter-spacing:.055em;
+  text-transform:uppercase;
+  line-height:1.02;
+  color:var(--text);
+}
+.marca-desc{
+  font-family:var(--font-mono);
+  font-weight:500;
+  font-size:23px;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  line-height:1;
+  color:var(--text-soft);
+}
+
+/* ---------------- a proposicao ----------------
+   E o que precisa ser legivel a 300px de largura: a 84px, uma miniatura
+   de 1/4 ainda entrega 21px de altura de letra. */
+.proposicao{
+  margin:0;
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:84px;
+  line-height:1.06;
+  letter-spacing:-.028em;
+  max-width:17ch;
+  text-wrap:balance;
+}
+/* SEI e SIAPE em ambar: aqui e fundo claro, onde --acento-ink x --text
+   mede 3,05:1 (contrato 6.2-b). E <em>, entao a cor e ornamento sobre
+   uma marcacao que ja carrega a enfase. */
+.proposicao em{font-style:normal;color:var(--acento-ink)}
+
+/* ---------------- o rodape ---------------- */
+.rodape{display:flex;align-items:center;gap:20px}
+.selo{
+  display:inline-flex;
+  align-items:center;
+  gap:14px;
+  padding:14px 26px;
+  border-radius:999px;
+  background:var(--acento-soft);
+  color:var(--acento-ink);
+  font-family:var(--font-mono);
+  font-weight:600;
+  font-size:30px;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.selo .ponto{width:12px;height:12px;border-radius:50%;background:currentColor;flex:none}
+</style>
+</head>
+<body>
+<div class="cartao">
+  <div class="faixa-topo"></div>
+
+  <div class="marca">
+    <img class="marca-cubo" src="../assets/cubo-integra.png"
+         alt="" aria-hidden="true" width="283" height="268">
+    <span class="marca-texto">
+      <b class="marca-nome">Projeto INTEGRA</b>
+      <span class="marca-desc">I.A. &amp; Automação</span>
+    </span>
+  </div>
+
+  <h1 class="proposicao">Automação do <em>SEI</em> e do <em>SIAPE</em> com o acesso que o servidor já tem.</h1>
+
+  <div class="rodape">
+    <span class="selo"><span class="ponto"></span>1º lugar nacional · MGI/SGP 2025</span>
+  </div>
+</div>
+</body>
+</html>
