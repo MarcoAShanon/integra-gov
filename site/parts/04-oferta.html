@@ -1,0 +1,250 @@
+<!-- Fatia 04 — a oferta: os blocos do pacote, as camadas do ecossistema, o
+     que ja roda na unidade e o que outro orgao adota sem comecar do zero.
+
+     Ordem deliberada, pro leitor de outro orgao: (a) e uma CAIXA DE
+     FERRAMENTAS — blocos nomeados, nao um sistema monolitico; (b) as pecas
+     ja RODAM em producao; (c) a distancia ate o orgao dele e curta e
+     NOMEAVEL — por isso o ultimo bloco e uma ficha de rotulo/valor, e nao
+     mais um paragrafo de promessa.
+
+     O cartao do Exante preserva o gancho do contrato 9.3: .proj +
+     data-video + .poster + exatamente UM <button>. Sem o botao o script
+     ignora o cartao inteiro. Nenhuma linha de JavaScript aqui.
+
+     Sem JavaScript esta secao nasce inteira: .rise so esconde sob .js
+     (contrato 9.1), nao ha grafico, e o unico controle que depende de
+     script — o botao do lightbox — tem ao lado um link direto ao arquivo
+     de video, que funciona sem script nenhum. -->
+<section id="oferta" class="faixa alt">
+  <div class="wrap">
+
+    <div class="abertura rise">
+      <span class="pill"><span class="ponto"></span>O núcleo aberto · integra-gov</span>
+      <h2>Uma caixa de ferramentas para o SEI e o SIAPE.</h2>
+      <p class="lede">O coração do INTEGRA é uma biblioteca Python reutilizável, publicada módulo a módulo — cada peça generalizada, testada e <b>verificada ao vivo</b> antes de entrar. Nada de valores de um órgão embutidos no código: tudo é parâmetro.</p>
+    </div>
+
+    <!-- ============ os blocos ============ -->
+    <div class="bloco">
+      <div class="cabeca rise">
+        <h3>Os blocos que o pacote publica.</h3>
+        <p class="sub">Cada bloco faz uma coisa e devolve o resultado dela. Você escolhe quais usar — e monta a rotina do seu setor com as peças que interessam.</p>
+      </div>
+
+      <div class="grid mods">
+        <div class="card modulo rise" data-atraso="1">
+          <div class="modulo-topo">
+            <h4>SEI</h4>
+            <span class="tag">núcleo · multiplataforma</span>
+          </div>
+          <p class="modulo-sub">Do processo em branco ao documento assinado e tramitado.</p>
+          <ul class="blocos">
+            <li>iniciar processo</li>
+            <li>documento externo</li>
+            <li>documento interno</li>
+            <li>editar (placeholders)</li>
+            <li>assinar</li>
+            <li>bloco de assinatura</li>
+            <li>tramitar</li>
+            <li>marcadores</li>
+            <li>controle de prazo</li>
+            <li>concluir</li>
+            <li>download</li>
+            <li>árvore de documentos</li>
+          </ul>
+        </div>
+
+        <div class="card modulo rise" data-atraso="2">
+          <div class="modulo-topo">
+            <h4>SIAPE <span class="num">3270</span></h4>
+            <span class="tag">extra · Windows</span>
+          </div>
+          <p class="modulo-sub">A tela preta do mainframe, conduzida por código — com você autenticando.</p>
+          <ul class="blocos">
+            <li>acesso web + OTP</li>
+            <li>lançador do terminal</li>
+            <li>ler tela / enviar teclas</li>
+            <li>login (OTP)</li>
+            <li>acessar transação</li>
+            <li>troca de habilitação</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ as camadas ============ -->
+    <div class="bloco">
+      <div class="cabeca rise">
+        <h3>Uma base aberta, camadas em cima dela.</h3>
+        <p class="sub">O projeto cresce em camadas: um núcleo público e auditável, um orquestrador que encadeia os passos, e as aplicações que rodam na unidade. Só a base é o que outro órgão precisa para começar.</p>
+      </div>
+
+      <div class="card camadas rise">
+        <div class="camada">
+          <span class="tag">núcleo · público</span>
+          <div class="camada-txt">
+            <h4>integra-gov</h4>
+            <p>A biblioteca de código aberto: os blocos de SEI e de SIAPE, reutilizáveis por qualquer órgão.</p>
+          </div>
+        </div>
+        <div class="camada">
+          <span class="tag">orquestração · interno</span>
+          <div class="camada-txt">
+            <h4>Motor de fluxos</h4>
+            <p>Encadeia os blocos em rotinas inteiras — catálogo de passos, fontes de dados e persistência.</p>
+          </div>
+        </div>
+        <div class="camada">
+          <span class="tag">aplicações · interno</span>
+          <div class="camada-txt">
+            <h4>Instrução de processos na ponta</h4>
+            <p>Os fluxos da CGPAG/DECIPEX que instruem processo de verdade, no dia a dia da unidade.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ o que ja roda ============ -->
+    <div class="bloco">
+      <div class="cabeca rise">
+        <span class="pill ok"><span class="ponto"></span>Em produção · CGPAG/DECIPEX</span>
+        <h3>Dos blocos às soluções que já rodam.</h3>
+        <p class="sub">Projetos construídos com o apoio dos blocos do pacote — cada um observando as regras do seu contexto. São ferramentas de apoio às unidades, não aplicações institucionais.</p>
+      </div>
+
+      <div class="grid vitrine">
+
+        <article class="proj destaque card rise" data-video="/media/exante.mp4" data-video-titulo="INTEGRA Exante">
+          <div class="poster">
+            <img src="assets/img-08-6ad7082f.jpg"
+                 alt="Janela do INTEGRA Exante sobreposta à tela do SEI, com a árvore de documentos do processo à esquerda e o log da automação; os números de processo aparecem pixelizados."
+                 loading="lazy" width="1000" height="541">
+            <button type="button" class="play" aria-label="Assistir ao vídeo de execução do INTEGRA Exante">▶</button>
+          </div>
+          <div class="corpo">
+            <h4>INTEGRA Exante — Exercícios Anteriores</h4>
+            <p>O fluxo premiado: lançamento de exercícios anteriores conectando o SEI e o SIAPE (terminal <span class="num">3270</span>), da tabela de valores à nota técnica assinada.</p>
+            <ul class="tags">
+              <li>DECIPEX</li>
+              <li>SEI</li>
+              <li>mainframe SIAPE</li>
+            </ul>
+            <p class="direto"><a class="link" href="/media/exante.mp4">Abrir o vídeo de execução</a></p>
+          </div>
+        </article>
+
+        <article class="proj card rise" data-atraso="2">
+          <div class="poster">
+            <img src="assets/img-04-615283e8.jpg"
+                 alt="Painel SEI aberto no navegador, com os cartões de indicadores da unidade no alto — processos ativos, entradas do período, concluídos e passivo antigo — e o gráfico de evolução logo abaixo."
+                 loading="lazy" width="900" height="585">
+          </div>
+          <div class="corpo">
+            <h4>Painel SEI</h4>
+            <p>Lê a base de processos do SEI e mostra os indicadores da unidade quase em tempo real — ativos, entradas, conclusões e o passivo antigo —, com a evolução no período e exportação em PDF.</p>
+            <ul class="tags">
+              <li>CGPAG/DECIPEX</li>
+              <li>base SEI</li>
+              <li>indicadores</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="proj card rise" data-atraso="3">
+          <div class="poster">
+            <img src="assets/img-05-0ad33b0c.jpg"
+                 alt="Janela do aplicativo Extrator SEI sobre a tela de unidades do SEI, com os botões de coleta de movimentações e de marcadores; os campos de login e senha estão borrados."
+                 loading="lazy" width="900" height="458">
+          </div>
+          <div class="corpo">
+            <h4>Extrator SEI</h4>
+            <p>Acessa o SEI e atualiza uma base local dos processos da unidade — abertos, sobrestados e concluídos —, com movimentações e marcadores. É a base de dados que alimenta o Painel SEI.</p>
+            <ul class="tags">
+              <li>login SEI</li>
+              <li>processos</li>
+              <li>marcadores</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="proj card rise" data-atraso="4">
+          <div class="poster">
+            <img src="assets/img-06-487d112d.jpg"
+                 alt="Janela do INTEGRA Mensageria, com as abas de status, ações e log e as fases da automação, sobre a Central de Mensagens do Sigepe com os campos de destinatário e mensagem vazios."
+                 loading="lazy" width="900" height="428">
+          </div>
+          <div class="corpo">
+            <h4>INTEGRA Mensageria</h4>
+            <p>Comunicação em lote, porém personalíssima: automatiza a Central de Mensagens do Sigepe com mensagem e anexo sob medida para cada servidor, em fases — captura, envio, comprovante no SEI, edital no DOU e encerramento.</p>
+            <ul class="tags">
+              <li>Sigepe</li>
+              <li>SEI: incluir documento</li>
+              <li>controle de sessão</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="proj card rise" data-atraso="5">
+          <div class="poster">
+            <img src="assets/img-07-c7db0106.jpg"
+                 alt="Launcher do INTEGRA PSS, com os campos de login e token mascarados por pontos e o log de execução da automação correndo ao lado."
+                 loading="lazy" width="802" height="621">
+          </div>
+          <div class="corpo">
+            <h4>INTEGRA PSS — Reposição ao Erário</h4>
+            <p>Instrução dos processos de Reposição ao Erário, executando o fluxo “Memória + Notificação + Formulário” com a lógica headless do pacote — você autentica, a automação conduz.</p>
+            <ul class="tags">
+              <li>DECIPEX</li>
+              <li>SEI</li>
+              <li>SIAPE</li>
+            </ul>
+          </div>
+        </article>
+
+      </div>
+
+      <p class="nota rise">Projetos internos construídos com o apoio dos blocos do pacote. As telas acima usam <b>dados de demonstração</b> — nenhum dado pessoal, nenhum processo real. O vídeo de execução do Exante já está publicado e abre nesta página.</p>
+    </div>
+
+    <!-- ============ replicavel ============ -->
+    <div class="bloco">
+      <div class="cabeca rise">
+        <h3>Feito na DECIPEX. Aberto para qualquer órgão.</h3>
+      </div>
+
+      <div class="grid replica">
+        <div class="texto rise">
+          <p>O INTEGRA surgiu por iniciativa da <b>Coordenação-Geral de Pagamentos (CGPAG)</b>, no MGI/SGP/DECIPEX. E o mesmo problema — SEI e SIAPE que não conversam — se repete em ministério após ministério, com cada unidade reinventando a roda, muitas vezes de forma informal.</p>
+          <p>O núcleo responde a isso sendo <b>código aberto sob licença MIT</b>, parametrizável por órgão e publicado abertamente. Um órgão pluga o seu SEI e o seu SIAPE sem começar do zero — e a colaboração entre órgãos é bem-vinda: o repositório aceita contribuição de servidores e de desenvolvedores de fora da DECIPEX.</p>
+        </div>
+
+        <div class="card ficha rise" data-atraso="1">
+          <h4>O que já vem pronto para outro órgão adotar</h4>
+          <dl>
+            <div>
+              <dt>Licença</dt>
+              <dd>MIT: usar, estudar, modificar e redistribuir, inclusive dentro do órgão.</dd>
+            </div>
+            <div>
+              <dt>Parâmetros</dt>
+              <dd>A URL do SEI e o código do órgão entram por configuração — não estão cravados no código.</dd>
+            </div>
+            <div>
+              <dt>Falhas</dt>
+              <dd>Exceções tipadas: a sua rotina trata o erro em vez de adivinhar o que aconteceu.</dd>
+            </div>
+            <div>
+              <dt>Confiança</dt>
+              <dd>Testes automatizados em integração contínua e documentação de uso por módulo.</dd>
+            </div>
+            <div>
+              <dt>Contribuição</dt>
+              <dd>O repositório é público e aceita correção, melhoria e módulo novo de outro órgão.</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>

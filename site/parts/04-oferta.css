@@ -1,0 +1,294 @@
+/* =====================================================================
+   04-oferta — os blocos do pacote, as camadas, o que ja roda e o que
+   outro orgao adota. Todo seletor comeca em #oferta (contrato 1).
+
+   Tres decisoes que valem registro:
+
+   1. NENHUMA SOMBRA, nenhum gradiente, nenhum texto sobre imagem. O que
+      separa cartao de faixa e o fio de 1px mais o vao da calha (24px) —
+      e nao o preenchimento, que na faixa par sobe so DL*=1,74 (contrato
+      8.4). Por isso os cartoes vizinhos nunca se encostam: a separacao
+      que a tabela de contraste NAO enxerga e a de vizinhanca, e aqui ela
+      e geometrica.
+   2. NENHUM --acento-ink e NENHUM --ok dentro de bloco em --text-soft
+      (contrato 6.2-b): os tres caem em L* 41,4 / 42,7 / 43,2 e medem
+      1,05:1 a 1,07:1 entre si. O unico --acento-ink desta fatia e o
+      .link do cartao do Exante, que vive num paragrafo em --text
+      (3,05:1 contra o texto ao redor); o unico --ok e a .pill.ok, que
+      tem fundo proprio e a palavra escrita.
+   3. O botao de play tem 56x56 — acima dos 44 da bateria de toque —, e
+      o link direto do video carrega min-height:44px pelo mesmo motivo.
+      Os chips e as tags NAO sao clicaveis, entao nao entram nessa conta.
+   ===================================================================== */
+
+/* --- ritmo interno da fatia -----------------------------------------
+   A .faixa da o padding vertical e o fundo; aqui so o espacamento
+   ENTRE os quatro blocos da secao. */
+#oferta .wrap{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-6);
+}
+
+#oferta .bloco{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-5);
+}
+
+/* --- cabecalho de subsecao ------------------------------------------
+   .abertura e do TOPO da faixa (contrato 8.3-b) e nao serve aqui; esta
+   e a versao de subsecao, com a mesma medida de 52rem para o ritmo
+   bater com o do bloco de abertura. */
+#oferta .cabeca{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:var(--e-3);
+  max-width:52rem;
+}
+
+/* paragrafo de subsecao: e CORPO (--t-4, --text), nao .lede — o lede
+   pertence a abertura da faixa. */
+#oferta .sub{max-width:62ch}
+
+/* micro-rotulo tecnico, na mesma receita do .ficha dt do sistema.
+   Fica em --text-soft de proposito: em --acento-ink ele encostaria no
+   texto secundario vizinho com 1,07:1 (contrato 6.2-b). */
+#oferta .tag{
+  font-family:var(--font-mono);
+  font-size:var(--t-1);
+  font-weight:500;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  color:var(--text-soft);
+}
+
+/* =====================================================================
+   BLOCO 1 — os blocos que o pacote publica
+   ===================================================================== */
+#oferta .mods .modulo:first-child{grid-column:span 7}
+#oferta .mods .modulo:last-child{grid-column:span 5}
+
+#oferta .modulo{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-4);
+}
+#oferta .modulo-topo{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:var(--e-2) var(--e-3);
+}
+#oferta .modulo-sub{
+  color:var(--text-soft);
+  font-size:var(--t-3);
+  max-width:52ch;
+}
+
+/* a lista de blocos: mono porque sao NOMES DE OPERACAO do pacote, o
+   mesmo papel dos "trechos de terminal" do contrato 5.4 — e --t-3
+   porque o contrato 8.6 manda usar texto em --t-3 para lista de termos,
+   em vez de transformar cada termo numa .pill. Nao sao clicaveis. */
+#oferta .blocos{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:flex;
+  flex-wrap:wrap;
+  gap:var(--e-2);
+}
+#oferta .blocos li{
+  margin:0;
+  font-family:var(--font-mono);
+  font-size:var(--t-3);
+  line-height:1.3;
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:var(--raio-s);
+  padding:var(--e-1) var(--e-3);
+}
+
+/* =====================================================================
+   BLOCO 2 — as camadas
+   Um cartao so, tres estratos separados por fio: a metafora de camada
+   fica na geometria. Tres cartoes soltos exigiriam do olho a separacao
+   que o fio ja da de graca.
+   ===================================================================== */
+#oferta .camadas{padding:0}
+#oferta .camada{
+  display:grid;
+  grid-template-columns:14rem minmax(0,1fr);
+  gap:var(--e-3) var(--e-5);
+  align-items:baseline;
+  padding:var(--e-5);
+}
+#oferta .camada + .camada{border-top:1px solid var(--border)}
+#oferta .camada-txt{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-2);
+  max-width:68ch;
+}
+
+/* =====================================================================
+   BLOCO 3 — o que ja roda
+   ===================================================================== */
+/* align-items:stretch vence o "start" da primitiva para que dois
+   cartoes da mesma linha terminem na mesma altura mesmo com textos de
+   tamanhos diferentes. */
+#oferta .vitrine{align-items:stretch}
+
+#oferta .proj{
+  padding:0;              /* a imagem vai de fio a fio; o padding vive no .corpo */
+  overflow:hidden;        /* clipa o canto da imagem no --raio do cartao */
+  display:flex;
+  flex-direction:column;
+}
+#oferta .proj:not(.destaque){grid-column:span 6}
+
+#oferta .destaque{
+  grid-column:span 12;
+  display:grid;
+  grid-template-columns:7fr 5fr;
+}
+
+#oferta .poster{
+  position:relative;
+  display:block;
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
+}
+/* as cinco capturas tem proporcoes diferentes (de 1,29 a 2,10). Uma
+   proporcao unica alinha a grade; o recorte parte do canto superior
+   ESQUERDO, que e onde mora a informacao de uma janela. */
+#oferta .poster img{
+  display:block;
+  width:100%;
+  height:100%;
+  aspect-ratio:16 / 10;
+  object-fit:cover;
+  object-position:left top;
+}
+
+#oferta .destaque .poster{
+  border-bottom:0;
+  border-right:1px solid var(--border);
+  height:100%;
+}
+
+/* o unico controle desta fatia. 56x56 passa dos 44 da bateria de toque,
+   e o glifo fica sobre COR SOLIDA (--on-acento sobre --acento, 7,21:1
+   no claro e 9,56:1 no escuro) — nunca sobre a imagem, que e o que o
+   contrato 6.4 proibe. Sem hover: o contrato 10 so autoriza movimento
+   de hover no .btn. O anel de foco vem do sistema. */
+#oferta .play{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  width:56px;
+  height:56px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid var(--acento-ink);
+  border-radius:999px;
+  background:var(--acento);
+  color:var(--on-acento);
+  font-family:var(--font-corpo);
+  font-size:var(--t-5);
+  line-height:1;
+  cursor:pointer;
+}
+
+#oferta .corpo{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-3);
+  padding:var(--e-5);
+}
+#oferta .destaque .corpo{justify-content:center}
+#oferta .corpo p{max-width:62ch}
+
+#oferta .tags{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:flex;
+  flex-wrap:wrap;
+  gap:var(--e-1) var(--e-3);
+  font-family:var(--font-mono);
+  font-size:var(--t-1);
+  font-weight:500;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  color:var(--text-soft);
+}
+#oferta .tags li{margin:0;display:flex;gap:var(--e-3)}
+/* o ponto medio e do fio de separacao, nao do texto: fica em --border,
+   que e decorativo por definicao (contrato 6.3). Escapado (\00B7) para
+   nao depender da codificacao do arquivo. */
+#oferta .tags li + li::before{content:"\00B7";color:var(--border)}
+
+/* o caminho que sobrevive sem JavaScript: o <button> do lightbox
+   depende do script.js, este link nao. min-height de 44px porque ele E
+   um alvo de toque — a medida da bateria, nao a escala de respiro. */
+#oferta .direto{margin:0}
+#oferta .direto a{
+  display:inline-flex;
+  align-items:center;
+  min-height:44px;
+}
+
+#oferta .nota{
+  font-size:var(--t-2);
+  color:var(--text-soft);
+  max-width:76ch;
+}
+
+/* =====================================================================
+   BLOCO 4 — replicavel
+   ===================================================================== */
+#oferta .replica .texto{
+  grid-column:span 7;
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-4);
+}
+#oferta .replica .texto p{max-width:62ch}
+#oferta .replica .ficha{grid-column:span 5}
+/* o primeiro par do <dl> ja vem com padding-top:0 do sistema; sem esta
+   margem o rotulo encostaria no h4. */
+#oferta .replica .ficha h4{margin-bottom:var(--e-4)}
+
+/* =====================================================================
+   BREAKPOINTS — so 1080px e 768px, em max-width, nesta ordem.
+   ===================================================================== */
+@media (max-width:1080px){
+  /* a coluna do rotulo de camada encolhe antes do texto — mas nao abaixo
+     de 12rem: "ORQUESTRACAO · INTERNO" tem 22 caracteres e, no Plex Mono
+     a --t-1 com .11em de tracking, mede ~11,3rem. Em 10rem ela quebrava
+     deixando o ponto medio orfao no fim da primeira linha. */
+  #oferta .camada{grid-template-columns:12rem minmax(0,1fr)}
+}
+
+@media (max-width:768px){
+  /* o sistema ja colapsa a .grid e forca grid-column:1/-1 em todo
+     filho; aqui so o que e grade PROPRIA desta fatia. */
+  #oferta .destaque{grid-template-columns:minmax(0,1fr)}
+  #oferta .destaque .poster{
+    border-right:0;
+    border-bottom:1px solid var(--border);
+    height:auto;
+  }
+  #oferta .camada{
+    grid-template-columns:minmax(0,1fr);
+    padding:var(--e-4);
+  }
+  /* a 375px o cartao inteiro tem ~335px de largura: o respiro de 32px
+     comeria a linha de chip. */
+  #oferta .modulo{padding:var(--e-4)}
+  #oferta .corpo{padding:var(--e-4)}
+}
