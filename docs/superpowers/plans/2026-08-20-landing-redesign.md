@@ -278,7 +278,6 @@ def test_montar_so_rejeita_fatia_inexistente():
         m.montar(so="99-nada")
 
 
-@completo
 def test_caminho_saida_da_pagina_inteira_e_o_index():
     assert m.caminho_saida(None).name == "index.html"
 
@@ -671,7 +670,7 @@ C:/Users/Thelemarco/PycharmProjects/integra-publico/.venv/Scripts/python.exe -m 
 ```
 
 Esperado: todos os testes de `verificar` e `verificar_partes` **passam**;
-**quatro** testes de `montar` aparecem como `skipped` (`site/parts/ ainda
+**quatro** testes que dependem das fatias aparecem como `skipped` (`site/parts/ ainda
 incompleto`), porque as fatias só chegam nas Tasks 3–8. O quinto,
 `test_montar_so_rejeita_fatia_inexistente`, passa — ele levanta `ValueError`
 antes de tocar em arquivo nenhum.
