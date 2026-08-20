@@ -83,9 +83,21 @@
   max-width:64ch;
 }
 
-/* a foto nasce 400x266; em 5 colunas do .wrap ela fica em torno de
-   440px, ou seja, praticamente na resolucao nativa. */
-#prova .premio-foto{grid-column:span 5}
+/* A foto nasce 400x266 e e a UNICA fotografia da pagina. Sem teto, as 5
+   colunas do .wrap davam 424px a 1280px de viewport — 6% de ampliacao
+   sobre o original, que numa fotografia se ve. O teto e a largura
+   intrinseca do proprio arquivo, e nao um numero escolhido: com o fio de
+   1px da .figura e o box-sizing do sistema, a imagem renderiza a 398px,
+   sempre ABAIXO do nativo. Abaixo de ~1000px de viewport a celula ja e
+   menor que 400 e o teto deixa de valer sozinho.
+   justify-self:end poe os 24px de sobra na calha entre as colunas, onde
+   ninguem os ve, em vez de na margem direita do .wrap, onde apareceriam
+   como um desalinhamento com as outras faixas. */
+#prova .premio-foto{
+  grid-column:span 5;
+  max-width:400px;
+  justify-self:end;
+}
 
 /* =====================================================================
    AS SERIES
@@ -201,9 +213,19 @@
 /* =====================================================================
    BREAKPOINTS — so 768px, em max-width.
 
-   Nao ha bloco de 1080px porque nao ha o que corrigir la: medido, os
-   tres indicadores em 4 colunas e os dois graficos em 6 colunas cabem
-   ate 769px, e abaixo disso o proprio sistema colapsa a .grid para uma
+   A AUSENCIA DO BLOCO DE 1080px E DELIBERADA, e foi remedida depois que a
+   revisao da pagina montada notou que as outras quatro fatias tem um. A
+   1065px de viewport (1080 menos a barra de rolagem), medido na pagina:
+   indicador 326px, cartao de grafico 501px, figura 400px encostada na
+   borda da grade, h2 em duas linhas, nenhum transbordo e nenhuma barra
+   de perto do rotulo do eixo. Nao ha nada para corrigir la — e um bloco
+   vazio ou cosmetico so para igualar a contagem de blocos das outras
+   fatias seria ruido, nao acabamento. Se um dia houver, ele entra AQUI,
+   antes do de 768px (contrato 3).
+
+   O que de fato acontece nas duas reducoes: ate 769px os tres
+   indicadores em 4 colunas e os dois graficos em 6 colunas cabem
+   sozinhos; abaixo disso o proprio sistema colapsa a .grid para uma
    coluna com !important — nenhum span:N precisa ser desfeito aqui.
    ===================================================================== */
 @media (max-width:768px){
