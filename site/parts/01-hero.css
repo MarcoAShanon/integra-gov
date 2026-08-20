@@ -1,0 +1,108 @@
+/* =====================================================================
+   01-hero — o hero (e a navegacao, que nao precisou de CSS).
+
+   A NAVEGACAO NAO TEM REGRA AQUI, e isso e deliberado, nao esquecimento:
+   verificar.py exige que TODO seletor deste arquivo comece por "#hero",
+   e o conteudo de nav.html vive dentro do <header> que o montador emite
+   ANTES do <main> — ou seja, fora do #hero. Nenhum seletor prefixado por
+   #hero alcanca a navegacao. Ela foi composta so com primitivas do
+   sistema (.wrap, .topo, .marca, .nav), que a cobrem inteira, inclusive
+   o colapso para coluna abaixo de 768px. Ver o relatorio da fatia.
+
+   Sem .rise, sem movimento e sem dependencia de JavaScript: o hero
+   inteiro esta acima da dobra (contrato 8.9).
+   ===================================================================== */
+
+/* --- o empilhamento do topo da faixa -------------------------------
+   .wrap vira coluna para que rotulo, h1 e grade tenham um so ritmo.
+   O alinhamento fica em "stretch" (o padrao) DE PROPOSITO: com
+   flex-start, .acoes encolheria para a largura do conteudo e o
+   .btn{width:100%} que o sistema aplica abaixo de 768px nao teria
+   contra o que medir — os botoes ficariam a meia largura no celular,
+   que e exatamente o defeito que a primitiva .acoes existe para
+   evitar (contrato 8.3-e). A pilula fica a esquerda por ser
+   inline-flex; o h1 se contem pelo proprio max-width. */
+#hero .wrap{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-4);
+}
+
+/* o <p> existe so para dar linha propria a pilula; ele nao pinta nada. */
+#hero .rotulo{margin:0}
+
+/* medida do titulo: 10 das 12 colunas. Legitimo porque o h1 e filho
+   DIRETO do .wrap (contrato 7.1) — o percentual de --col-10 resolve
+   contra a largura do .wrap, que e o que se quer. */
+#hero h1{max-width:var(--col-10)}
+
+/* o unico realce de cor do hero. --acento-ink sobre --bg mede 5,49:1
+   (tabela 6.2) e, contra o --text ao lado, separa L*=43,2 x L*=9,0 —
+   ou seja, 34 pontos de CIE L*, nao so de matiz. font-style:normal
+   porque o italico do <em> nao pertence a este desenho. */
+#hero h1 em{font-style:normal;color:var(--acento-ink)}
+
+/* 20px do gap + 32px daqui = 52px = --e-6 entre o h1 e a grade. */
+#hero .grid{width:100%;margin-top:var(--e-5);row-gap:var(--e-6)}
+
+/* --- coluna da esquerda -------------------------------------------- */
+#hero .intro{
+  grid-column:span 7;
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-5);
+}
+
+#hero .nota{
+  font-family:var(--font-mono);
+  font-size:var(--t-2);
+  color:var(--text-soft);
+}
+/* o prompt herda a cor da linha DE PROPOSITO: em --acento-ink ele
+   ficaria a 1,9 ponto de L* do --text-soft vizinho — mesma claridade,
+   so outro matiz. */
+#hero .nota .prompt{margin-right:var(--e-1)}
+
+/* --- coluna da direita: a ficha ------------------------------------
+   .card ja traz --surface, o fio de 1px e o raio. Aqui so o conteudo. */
+#hero .ficha{grid-column:span 5}
+#hero .ficha dl{margin:0}
+#hero .ficha dl > div{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-1);
+  padding-block:var(--e-3);
+  border-bottom:1px solid var(--border);
+}
+#hero .ficha dl > div:first-child{padding-top:0}
+#hero .ficha dl > div:last-child{padding-bottom:0;border-bottom:0}
+#hero .ficha dt{
+  font-family:var(--font-mono);
+  font-size:var(--t-1);
+  font-weight:500;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  color:var(--text-soft);
+}
+#hero .ficha dd{
+  margin:0;
+  font-size:var(--t-3);
+  color:var(--text);
+  line-height:var(--lh-corpo);
+}
+
+/* =====================================================================
+   BREAKPOINTS — so 1080px e 768px, em max-width, nesta ordem.
+   ===================================================================== */
+@media (max-width:1080px){
+  /* com o respiro lateral menor o titulo pode ocupar mais da grade. */
+  #hero h1{max-width:var(--col-11)}
+}
+
+@media (max-width:768px){
+  /* --col-N e percentual: a 375px, --col-10 deixaria o titulo com 82%
+     da tela e uma sobra inutil a direita. */
+  #hero h1{max-width:none}
+  #hero .intro{gap:var(--e-4)}
+  #hero .ficha{padding:var(--e-4)}
+}
