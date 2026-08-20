@@ -96,6 +96,12 @@
   gap:var(--e-4);
 }
 
+#prova .series-p{
+  font-size:var(--t-4);
+  color:var(--text);
+  max-width:64ch;
+}
+
 /* .grid traz align-items:start, e com titulos de alturas diferentes os
    dois cartoes de grafico terminavam em alturas diferentes. Stretch
    iguala os dois, e o margin-top:auto do .g-pe encosta as duas notas de
@@ -142,6 +148,14 @@
   align-items:center;
   gap:var(--e-2);
 }
+
+/* o grafico do passivo tem duas colunas; o dos valores tem quatro. Sem
+   teto de largura, as duas do primeiro ficariam com o dobro da grossura
+   das do segundo, e o par lado a lado leria como dois tipos de grafico
+   diferentes. 25% e largura, nao respiro — por isso sai em % e nao da
+   escala de Fibonacci (contrato 7.2). */
+#prova .bars-par{justify-content:center}
+#prova .bars-par .barra{max-width:25%}
 
 #prova .valor{
   font-size:var(--t-2);
