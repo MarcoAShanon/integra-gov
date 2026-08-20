@@ -335,6 +335,25 @@ th,td{text-align:left;padding:0}
   max-width:52rem;
 }
 
+/* .sub — a abertura de SUBSECAO: o h3 e, opcionalmente, o paragrafo que
+   o segue. A .abertura fixa o topo da FAIXA; isto fixa o segundo nivel,
+   que era a unica costura que sobrou na pagina montada: h3 -> paragrafo
+   media 12px numa fatia, 20px em duas e 32px noutra, e a medida de
+   leitura tinha tres bordas direitas (604, 623 e 643px).
+
+   Os tres numeros ficam fixos aqui: 12px entre o h3 e o seu paragrafo
+   (titulo e o texto dele sao um bloco so), 32px ate o conteudo que vem
+   depois, e 62ch de medida — a mesma do .lede, para que blocos de mesmo
+   tamanho de letra partilhem a borda direita. */
+.sub{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:var(--e-3);
+  max-width:62ch;
+  margin-bottom:var(--e-5);
+}
+
 /* .lede — o paragrafo de abertura, um degrau acima do corpo. */
 .lede{
   color:var(--text-soft);
@@ -500,6 +519,44 @@ th,td{text-align:left;padding:0}
   color:var(--text-soft);
   line-height:1.75;
 }
+
+/* .so-com-js / .so-sem-js — a alavanca que faltava as fatias.
+
+   Nenhuma fatia consegue condicionar CSS a classe `js`: o verificador
+   exige que todo seletor comece pelo prefixo dela, e `html:not(.js)`
+   vaza. Entao ou o sistema oferece isto, ou cada fatia deixa no ar um
+   controle inerte (o botao de video sem JS) ou um controle duplicado (o
+   link cru do MP4 aparecendo TAMBEM com JS). Sao os achados A2 e A6, e
+   os dois morrem com a mesma primitiva.
+
+   O padrao (sem a classe .js) mostra .so-sem-js e esconde .so-com-js —
+   assim a rota que nao depende de script e a que sobrevive quando nada
+   roda, inclusive num robo de previa de link. */
+html:not(.js) .so-com-js{display:none !important}
+.js .so-sem-js{display:none !important}
+
+/* Duas consequencias do mesmo raciocinio que o sistema resolve sozinho,
+   sem a fatia precisar marcar nada:
+
+   1. sem JS a .trilha e um retangulo vazio de 188px com rotulos ao lado
+      descrevendo barras que nao existem. O contrato promete "uma lista
+      de numeros legivel" — entao a pista some e ficam os numeros, que
+      ja estao na marcacao.
+   2. sem JS o <button> do .proj[data-video] fica desenhado, focavel e
+      inerte. O 9.3 garante que ha exatamente um; escondelo e correto.
+
+   AS DUAS LEVAM !important, e isso nao e desleixo. Elas existem para a
+   fatia NAO precisar lembrar de nada — e uma rede que a fatia precisa
+   lembrar de nao derrubar nao e rede. Sem o !important, `html:not(.js)
+   .trilha` pesa (0,2,0) e `html:not(.js) .proj[data-video] button` pesa
+   (0,3,2): qualquer `#secao .algo`, que pesa (1,1,0), vence as duas. Foi
+   o que aconteceu — `#oferta .play{display:inline-flex}` manteve o botao
+   de video visivel sem JavaScript, com o CSS correto e o portao passando,
+   e so apareceu porque alguem mediu o `display` computado em vez de
+   confiar na regra. A checagem `rede:` do auditar_contrato.py cobra este
+   !important em toda regra html:not(.js) deste arquivo. */
+html:not(.js) .trilha{display:none !important}
+html:not(.js) .proj[data-video] button{display:none !important}
 
 /* .trilha — a pista de altura definida em que a .col cresce. A .col
    recebe height em %, entao a MAE DIRETA dela precisa ter altura
@@ -789,6 +846,19 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
    inteiro esta acima da dobra (contrato 8.9).
    ===================================================================== */
 
+/* --- a navegacao ----------------------------------------------------
+   Uma regra so, e o prefixo "header" e legitimo: verificar.py concede
+   esse prefixo APENAS a 01-hero.css, porque nav.html e desta fatia e o
+   montador o poe dentro do <header>, fora do #hero.
+
+   .topo e um space-between: quando marca + nav nao cabem, o flexbox
+   encolhe AS DUAS. A .marca aguenta encolher 8px antes de "PROJETO
+   INTEGRA" quebrar em duas linhas — medido a 800px: a caixa fecha em
+   155px para um wordmark que precisa de 165px. Um wordmark partido ao
+   meio e pior que um menu em duas linhas, e a .nav ja sabe quebrar
+   (flex-wrap). flex:none decide qual dos dois cede. */
+header .marca{flex:none}
+
 /* --- o empilhamento do topo da faixa -------------------------------
    .wrap vira coluna para que rotulo, h1 e grade tenham um so ritmo.
    O alinhamento fica em "stretch" (o padrao) DE PROPOSITO: com
@@ -840,32 +910,12 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 #hero .nota .prompt{margin-right:var(--e-1)}
 
 /* --- coluna da direita: a ficha ------------------------------------
-   .card ja traz --surface, o fio de 1px e o raio. Aqui so o conteudo. */
+   Aqui so a largura. Todo o resto — a regua entre pares, o rotulo em
+   mono e o valor em corpo — saiu deste arquivo quando a .ficha virou
+   primitiva do sistema (contrato 8.3-k, promovida desta fatia). Manter
+   a copia prefixada seria pior que redundancia: com especificidade
+   maior, ela venceria em silencio qualquer correcao futura do sistema. */
 #hero .ficha{grid-column:span 5}
-#hero .ficha dl{margin:0}
-#hero .ficha dl > div{
-  display:flex;
-  flex-direction:column;
-  gap:var(--e-1);
-  padding-block:var(--e-3);
-  border-bottom:1px solid var(--border);
-}
-#hero .ficha dl > div:first-child{padding-top:0}
-#hero .ficha dl > div:last-child{padding-bottom:0;border-bottom:0}
-#hero .ficha dt{
-  font-family:var(--font-mono);
-  font-size:var(--t-1);
-  font-weight:500;
-  letter-spacing:.11em;
-  text-transform:uppercase;
-  color:var(--text-soft);
-}
-#hero .ficha dd{
-  margin:0;
-  font-size:var(--t-3);
-  color:var(--text);
-  line-height:var(--lh-corpo);
-}
 
 /* =====================================================================
    BREAKPOINTS — so 1080px e 768px, em max-width, nesta ordem.
@@ -955,37 +1005,38 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 /* =====================================================================
    O RECONHECIMENTO
    ===================================================================== */
-#prova .premio-txt{
-  grid-column:span 7;
-  display:flex;
-  flex-direction:column;
-  gap:var(--e-4);
-}
+/* Bloco simples, SEM flex e SEM gap: quem espaca o cabecalho de
+   subsecao do que vem depois e o margin-bottom da .sub (contrato
+   8.3-m), e um gap aqui somaria por cima dele. O <p> da .sub tambem
+   nao leva regra nenhuma — corpo e --t-4 em --text por padrao, que e
+   exatamente o que ele precisa ser, e a medida de 62ch vem da
+   primitiva para casar com a das outras fatias. */
+#prova .premio-txt{grid-column:span 7}
 
-#prova .premio-p{
-  font-size:var(--t-4);
-  color:var(--text);
-  max-width:64ch;
+/* A foto nasce 400x266 e e a UNICA fotografia da pagina. Sem teto, as 5
+   colunas do .wrap davam 424px a 1280px de viewport — 6% de ampliacao
+   sobre o original, que numa fotografia se ve. O teto e a largura
+   intrinseca do proprio arquivo, e nao um numero escolhido: com o fio de
+   1px da .figura e o box-sizing do sistema, a imagem renderiza a 398px,
+   sempre ABAIXO do nativo. Abaixo de ~1000px de viewport a celula ja e
+   menor que 400 e o teto deixa de valer sozinho.
+   justify-self:end poe os 24px de sobra na calha entre as colunas, onde
+   ninguem os ve, em vez de na margem direita do .wrap, onde apareceriam
+   como um desalinhamento com as outras faixas. */
+#prova .premio-foto{
+  grid-column:span 5;
+  max-width:400px;
+  justify-self:end;
 }
-
-/* a foto nasce 400x266; em 5 colunas do .wrap ela fica em torno de
-   440px, ou seja, praticamente na resolucao nativa. */
-#prova .premio-foto{grid-column:span 5}
 
 /* =====================================================================
    AS SERIES
    ===================================================================== */
-#prova .series{
-  display:flex;
-  flex-direction:column;
-  gap:var(--e-4);
-}
-
-#prova .series-p{
-  font-size:var(--t-4);
-  color:var(--text);
-  max-width:64ch;
-}
+/* .series so agrupa, para que o .wrap trate cabecalho + graficos como um
+   bloco so e aplique os --e-6 dele nas bordas do conjunto. Pelo mesmo
+   motivo do .premio-txt, nao declara gap: o respiro ate os graficos e o
+   margin-bottom da .sub. */
+#prova .series{display:block}
 
 /* .grid traz align-items:start, e com titulos de alturas diferentes os
    dois cartoes de grafico terminavam em alturas diferentes. Stretch
@@ -1047,10 +1098,27 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
   color:var(--text);
 }
 
-/* o fio da linha de base: sem JavaScript a .col fica em altura zero, e
-   este fio e o que mantem o grafico legivel como eixo em vez de virar
-   um vazio. --border e decorativo, e uma regua e exatamente o uso que o
-   contrato 6.3 autoriza para ele. */
+/* O fio da linha de base do grafico. --border e decorativo, e uma regua
+   e exatamente o uso que o contrato 6.3 autoriza para ele.
+
+   NAO DECLARE `display` NESTA REGRA. Nao e preferencia de estilo, e
+   aritmetica de especificidade: a rede do sistema que faz a pista sumir
+   sem JavaScript e `html:not(.js) .trilha{display:none}`, que pesa
+   (0,2,0). Qualquer `display` escrito aqui pesa (1,1,0), e um id vence
+   qualquer numero de classes — a rede perderia CALADA, com o CSS
+   correto e o portao passando. A fatia 4 perdeu uma rodada exatamente
+   assim, com `#oferta .play{display:inline-flex}` vencendo a rede do
+   botao dela.
+
+   Por isso esta regra declara UMA propriedade so, e o `display` da
+   .trilha continua sendo assunto do sistema. Se um dia esta fatia
+   precisar mesmo de `display` aqui, a saida e marcar a .trilha com
+   `.so-com-js` no HTML (a primitiva usa !important e vence), nunca
+   confiar que a rede continua ganhando.
+
+   Conferido por MEDICAO, e nao pela leitura da regra: com a classe `js`
+   fora do <html>, as 6 trilhas computam display:none e o cartao de
+   grafico cai de 523px para 305px. */
 #prova .trilha{border-bottom:1px solid var(--border)}
 
 /* altura ZERO no CSS: quem da altura e o script, a partir de data-h. Dar
@@ -1086,9 +1154,19 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 /* =====================================================================
    BREAKPOINTS — so 768px, em max-width.
 
-   Nao ha bloco de 1080px porque nao ha o que corrigir la: medido, os
-   tres indicadores em 4 colunas e os dois graficos em 6 colunas cabem
-   ate 769px, e abaixo disso o proprio sistema colapsa a .grid para uma
+   A AUSENCIA DO BLOCO DE 1080px E DELIBERADA, e foi remedida depois que a
+   revisao da pagina montada notou que as outras quatro fatias tem um. A
+   1065px de viewport (1080 menos a barra de rolagem), medido na pagina:
+   indicador 326px, cartao de grafico 501px, figura 400px encostada na
+   borda da grade, h2 em duas linhas, nenhum transbordo e nenhuma barra
+   de perto do rotulo do eixo. Nao ha nada para corrigir la — e um bloco
+   vazio ou cosmetico so para igualar a contagem de blocos das outras
+   fatias seria ruido, nao acabamento. Se um dia houver, ele entra AQUI,
+   antes do de 768px (contrato 3).
+
+   O que de fato acontece nas duas reducoes: ate 769px os tres
+   indicadores em 4 colunas e os dois graficos em 6 colunas cabem
+   sozinhos; abaixo disso o proprio sistema colapsa a .grid para uma
    coluna com !important — nenhum span:N precisa ser desfeito aqui.
    ===================================================================== */
 @media (max-width:768px){
@@ -1133,24 +1211,18 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 
 /* cada bloco abre com um fio de cabelo. --border e decorativo (1,27:1 a
    1,43:1) e aqui ele so separa — nao identifica controle nenhum, que e
-   o unico uso que o contrato 6.3 lhe proibe. */
+   o unico uso que o contrato 6.3 lhe proibe.
+
+   O bloco NAO tem mais display:flex nem gap proprio, e nao ha regra de
+   medida de leitura aqui: o h3 e o paragrafo dele agora sao uma .sub do
+   sistema (12px entre os dois, 32px ate o que vem depois, 62ch de
+   medida). Tres regras locais sairam daqui — a cascata do #contexto
+   venceria em silencio qualquer correcao futura da primitiva, que e o
+   mesmo motivo pelo qual a fatia 1 apagou as suas 22 linhas de .ficha. */
 #contexto .bloco{
-  display:flex;
-  flex-direction:column;
-  gap:var(--e-4);
   padding-top:var(--e-5);
   border-top:1px solid var(--border);
 }
-
-/* 20px do gap + 12px daqui = 32px = --e-5 entre o texto e a grade. */
-#contexto .bloco .grid{width:100%;margin-top:var(--e-3)}
-
-/* medida de leitura em ch: nao depende de onde o bloco esta na grade
-   (contrato 7.1). Cor: o padrao do corpo, --text — deliberadamente NAO
-   --text-soft, porque estes paragrafos carregam o argumento e porque o
-   <code> e o fio ambar de .posicao ficariam a 1,07:1 do texto vizinho
-   se ele fosse secundario (contrato 6.2-b). */
-#contexto .intro{max-width:66ch}
 
 /* --- a comparacao ---------------------------------------------------
    As duas colunas sao IDENTICAS no desenho, de proposito: dar realce a
@@ -1171,8 +1243,8 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
    ambar de 2px e o unico realce de cor do bloco; o texto ao lado dele e
    --text, contra o qual --acento-ink mede 3,05:1. */
 #contexto .posicao{
-  margin-top:var(--e-3);
-  max-width:66ch;
+  margin-top:var(--e-5);
+  max-width:62ch;
   padding-left:var(--e-4);
   border-left:2px solid var(--acento-ink);
 }
@@ -1222,9 +1294,21 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
   stroke-width:1;
   vector-effect:non-scaling-stroke;
 }
-/* o no destacado se separa por PREENCHIMENTO, nao so por cor de traco:
-   em escala de cinza e para quem enxerga mal, o que distingue e a
-   mancha clara, nao o matiz do fio. */
+/* O no destacado, com os numeros MEDIDOS em vez de supostos — a versao
+   anterior deste comentario dizia que o preenchimento sobrevivia a
+   escala de cinza, e nao sobrevive:
+
+     --acento-soft x --surface (o fundo da figura): 1,18:1 no claro,
+     1,07:1 no escuro — o preenchimento e ornamento, nao sinal.
+     --acento-ink x --text-soft (o traco dos outros nos): 1,07:1 no
+     claro, 1,19:1 no escuro — mesmo caso da lei da vizinhanca.
+
+   O que de fato distingue este no em escala de cinza sao dois canais
+   NAO cromaticos: o traco de 2px contra os de 1px e a caixa 4 unidades
+   mais alta. E, acima dos dois, o rotulo escrito dentro dela — nenhuma
+   informacao do diagrama e portada so por cor. Contra o FUNDO, que e o
+   que a WCAG cobra de objeto grafico, o traco mede 5,73:1 no claro e
+   8,58:1 no escuro. */
 #contexto .fluxo .no-integra{
   fill:var(--acento-soft);
   stroke:var(--acento-ink);
@@ -1255,13 +1339,10 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
    contra --text e 1,05:1 contra --text-soft (contrato 8.3-h). */
 #contexto .lista-ok li > span{display:block;max-width:62ch}
 #contexto .lista-ok b{display:block;margin-bottom:var(--e-1)}
-/* DEFEITO DA FATIA 0, contornado aqui e RELATADO, nao consertado no
-   arquivo alheio: em 00-sistema.css o content de .lista-ok li::before
-   esta gravado como os bytes C2 93 (um caractere de controle invisivel)
-   em vez de E2 9C 93 — ou seja, o "visto" nao aparece. Reescrever o
-   glifo por escape CSS resolve dentro do meu prefixo e e imune a
-   codificacao de arquivo. A cor continua vindo da primitiva. */
-#contexto .lista-ok li::before{content:"\2713"}
+/* O contorno do "visto" corrompido SAIU daqui: a primitiva foi
+   consertada (a causa era um escape \2713 dentro de uma string Python,
+   onde \271 e octal). Manter a copia prefixada seria deixar o #contexto
+   vencendo em silencio qualquer correcao futura da primitiva. */
 
 #contexto .escopo{grid-column:span 5}
 #contexto .escopo p{margin-top:var(--e-3)}
@@ -1305,7 +1386,11 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
       tem fundo proprio e a palavra escrita.
    3. O botao de play tem 56x56 — acima dos 44 da bateria de toque —, e
       o link direto do video carrega min-height:44px pelo mesmo motivo.
-      Os chips e as tags NAO sao clicaveis, entao nao entram nessa conta.
+      NADA MAIS desta fatia tem aparencia de controle: a lista de blocos
+      perdeu a moldura e o raio justamente por isso (A9.4). Um retangulo
+      arredondado com fio em volta E um botao aos olhos de quem toca a
+      tela, e 18 botoes que nao fazem nada e o pior tipo de affordance:
+      a que so falha depois do gesto.
    ===================================================================== */
 
 /* --- ritmo interno da fatia -----------------------------------------
@@ -1377,24 +1462,43 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 /* a lista de blocos: mono porque sao NOMES DE OPERACAO do pacote, o
    mesmo papel dos "trechos de terminal" do contrato 5.4 — e --t-3
    porque o contrato 8.6 manda usar texto em --t-3 para lista de termos,
-   em vez de transformar cada termo numa .pill. Nao sao clicaveis. */
+   em vez de transformar cada termo numa .pill.
+
+   SEM MOLDURA E SEM RAIO (A9.4). A primeira versao dava a cada termo
+   um fio de 1px e --raio-s, que o contrato 7.3 define como o raio de
+   "botao, campo, chip": 18 silhuetas de controle que nao sao controle.
+   No lugar do quadro, um marcador de item — a lista se le como indice,
+   nao como fileira de botoes, e nada aqui convida ao toque.
+
+   O marcador vai em TODO item, inclusive no primeiro, e nao entre
+   itens: como a lista quebra em tres linhas, um separador entre itens
+   abriria linha com um ponto orfao. Marcador de item nunca fica orfao,
+   porque pertence ao item. */
 #oferta .blocos{
   list-style:none;
   margin:0;
   padding:0;
   display:flex;
   flex-wrap:wrap;
-  gap:var(--e-2);
+  gap:var(--e-2) var(--e-4);
+  font-family:var(--font-mono);
+  font-size:var(--t-3);
+  line-height:1.5;
+  color:var(--text);
 }
 #oferta .blocos li{
   margin:0;
-  font-family:var(--font-mono);
-  font-size:var(--t-3);
-  line-height:1.3;
-  color:var(--text);
-  border:1px solid var(--border);
-  border-radius:var(--raio-s);
-  padding:var(--e-1) var(--e-3);
+  display:flex;
+  gap:var(--e-2);
+}
+/* ponto medio escapado (\00B7) para nao depender da codificacao do
+   arquivo. Em --text-soft: mede 5,69:1 contra o cartao (legivel) e se
+   separa do termo em --text por 32 pontos de L*, entao marca sem
+   competir. Nao e --acento-ink nem --ok — o 6.2-b vale aqui tambem. */
+#oferta .blocos li::before{
+  content:"\00B7";
+  color:var(--text-soft);
+  flex:none;
 }
 
 /* =====================================================================
@@ -1469,7 +1573,25 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
    e o glifo fica sobre COR SOLIDA (--on-acento sobre --acento, 7,21:1
    no claro e 9,56:1 no escuro) — nunca sobre a imagem, que e o que o
    contrato 6.4 proibe. Sem hover: o contrato 10 so autoriza movimento
-   de hover no .btn. O anel de foco vem do sistema. */
+   de hover no .btn. O anel de foco vem do sistema.
+
+   RAIO --raio-s, NAO 999px (A9.3). A primeira versao usava o circulo
+   por convencao de player de video, e isso era um TERCEIRO raio numa
+   pagina que declara dois (contrato 7.3). Nao ha argumento para o
+   circulo aqui: o ▶ centrado num poster ja carrega a affordance, o
+   rotulo acessivel diz o resto, e --raio-s e literalmente o raio de
+   "botao" — este e o unico botao do cartao, entao ele passa a ser um
+   irmao do .btn em vez de um objeto de outra familia. De quebra, o anel
+   de foco do sistema (que assume --raio-s) volta a acompanhar a forma.
+
+   O display:inline-flex daqui e a razao de o botao levar .so-com-js NA
+   MARCACAO em vez de confiar na rede do sistema. A regra automatica
+   `html:not(.js) .proj[data-video] button{display:none}` nao tem
+   !important e pesa (0,3,2); esta regra pesa (1,1,0), e um id vence
+   qualquer numero de classes — entao ela venceria a rede em silencio e
+   o botao inerte continuaria desenhado sem JS. A primitiva marcada tem
+   !important e ganha. Vale para qualquer fatia que declare `display`
+   num elemento que a rede do sistema queira esconder. */
 #oferta .play{
   position:absolute;
   top:50%;
@@ -1481,7 +1603,7 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
   align-items:center;
   justify-content:center;
   border:1px solid var(--acento-ink);
-  border-radius:999px;
+  border-radius:var(--raio-s);
   background:var(--acento);
   color:var(--on-acento);
   font-family:var(--font-corpo);
@@ -1637,14 +1759,18 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 }
 
 /* --- os tres cartoes ------------------------------------------------
-   .card ja traz --surface, o fio de 1px e o raio; aqui so o ritmo
-   interno. h3 em --t-5: e um degrau da escala (5.5), escolhido porque
-   --t-6 dentro de um cartao de 5 colunas competiria com o h2 da faixa. */
-#conversao .card{
-  display:flex;
-  flex-direction:column;
-  gap:var(--e-4);
-}
+   .card ja traz --surface, o fio de 1px e o raio.
+
+   NAO HA MAIS gap AQUI, e a ausencia e o conserto do A8: o cartao era
+   um flex de gap:--e-4, e esses 20px eram o meu numero para
+   h3 -> paragrafo. Agora quem fixa o segundo nivel e a primitiva .sub
+   (12px do h3 ao seu paragrafo, 32px ate o conteudo, 62ch de medida).
+   Manter o gap somaria os 20px do cartao aos 32px da primitiva. O que
+   sobrou de espacamento local sao as margens dos paragrafos de fecho,
+   que nao sao subsecao nenhuma — sao remate de cartao.
+
+   h3 em --t-5: e um degrau da escala (5.5), escolhido porque --t-6
+   dentro de um cartao de 5 colunas competiria com o h2 da faixa. */
 #conversao .card h3{font-size:var(--t-5)}
 #conversao .card ul{font-size:var(--t-3)}
 
@@ -1657,6 +1783,7 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 
 /* a ressalva de dado pessoal, apartada por fio — nao e passo da lista. */
 #conversao .aviso{
+  margin-top:var(--e-4);
   padding-top:var(--e-4);
   border-top:1px solid var(--border);
   font-size:var(--t-2);
@@ -1667,10 +1794,12 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
    --text-soft) DE PROPOSITO: e a frase que desarma a expectativa de
    acompanhamento, e apagar justamente ela seria o defeito. */
 #conversao .fecha{
+  margin-top:var(--e-4);
   font-size:var(--t-3);
   color:var(--text-soft);
 }
 #conversao .limite{
+  margin-top:var(--e-4);
   padding-top:var(--e-4);
   border-top:1px solid var(--border);
   font-size:var(--t-3);
@@ -1679,14 +1808,14 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 
 /* --- as objecoes derrubadas pelo nome -------------------------------
    .lista-ok e a primitiva das garantias (8.3-h); o texto dos itens fica
-   em --text, que e o padrao — o gliffo em --ok so e sinal contra
+   em --text, que e o padrao — o glifo em --ok so e sinal contra
    --text. Duas colunas no desktop: nao usa .grid, por isso o colapso
-   abaixo de 768px e escrito aqui. */
-#conversao .garantias{
-  display:flex;
-  flex-direction:column;
-  gap:var(--e-5);
-}
+   abaixo de 768px e escrito aqui.
+
+   O bloco .garantias nao tem regra nenhuma: era um flex de gap:--e-5, e
+   aqueles 32px eram o extremo que a revisao mediu. Quem da o respiro
+   agora e o margin-bottom da .sub — mesmo valor, so que uma vez, no
+   sistema, e valendo para as quatro fatias. */
 #conversao .lista-ok{
   grid-template-columns:repeat(2,minmax(0,1fr));
   column-gap:var(--e-5);
@@ -1701,14 +1830,25 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
   gap:var(--e-4);
 }
 
-/* o endereco fica em TEXTO, nao em link: quem esta no desktop copia, e
-   quem esta no celular usa o botao logo abaixo. Mono pelo mesmo motivo
-   do .nota do hero — e um trecho literal, para transcrever sem erro. */
+/* o endereco escrito por extenso, para quem prefere transcrever a
+   clicar. Mono pelo mesmo motivo do .nota do hero — e um trecho
+   literal, e o zero cortado do Plex evita transcricao errada.
+   E TAMBEM E LINK: um e-mail exibido em destaque, num celular, e um
+   gesto obvio de toque, e a versao anterior nao respondia a ele. Usa
+   .link-neutro (nao .link) pelo mesmo motivo do rodape — aqui dentro
+   --acento-ink mede 1,68:1 contra o --text ao redor. */
 #conversao .endereco{
   font-family:var(--font-mono);
   font-size:var(--t-5);
   color:var(--text);
   overflow-wrap:anywhere;
+}
+/* inline-flex, e nao flex: a caixa de toque acompanha a largura do
+   endereco em vez de tomar a linha inteira. */
+#conversao .endereco a{
+  display:inline-flex;
+  align-items:center;
+  min-height:44px;
 }
 
 /* ALVO DE TOQUE DO BOTAO: nao ha regra aqui, DE PROPOSITO.
@@ -1721,11 +1861,13 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
    preenchimento ambar do .btn-p, que nenhum outro botao da pagina tem.
    Botao igual ao resto da pagina, entao. */
 
-#conversao .fuga{
-  max-width:70ch;
-  font-size:var(--t-3);
-  color:var(--text);
-}
+/* 62ch e --t-4 (o corpo, que e o default) porque este paragrafo era um
+   dos tres que a revisao mediu com bordas direitas diferentes: os 70ch
+   em --t-3 davam 603px. Na medida e no tamanho de letra da .sub ele
+   passa a partilhar a borda direita com os paragrafos de subsecao —
+   que e exatamente o que o 8.3-m pede. As outras duas declaracoes
+   sairam: --t-4 e --text ja sao o padrao do corpo. */
+#conversao .fuga{max-width:62ch}
 
 /* --- o rodape institucional -----------------------------------------
    .rodape ja e flex, com fio no topo, --t-2 e --text-soft. */
@@ -1755,8 +1897,9 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 /* ALVO DE TOQUE DO LINK DE RODAPE: a area cresce pela CAIXA, nao pela
    letra — a licao que a fatia 0 tirou ao consertar a navegacao. O texto
    continua em --t-2 (linha de ~23px); quem sobe para os 44px da bateria
-   e o bloco. O .val, que nao e link, recebe a mesma caixa so para as
-   quatro linhas do bloco terem o mesmo ritmo.
+   e o bloco. O .val — hoje so o nome do contato, o unico campo do
+   bloco que nao e link — recebe a mesma caixa para as quatro linhas
+   terem o mesmo ritmo.
    A COR do link vem do .link-neutro do sistema — primitiva que nasceu
    deste caso: aqui dentro --acento-ink mede 1,19:1 contra o texto
    vizinho, entao o link se marca pelo sublinhado e herda a cor. */
@@ -1793,7 +1936,16 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
      O .wrap e daqui: fora de uma .faixa nao ha quem centralize.
      A marca segue a marcacao EXATA do contrato 8.11: cubo decorativo
      (alt="" + aria-hidden) mais wordmark em texto, sem aria-label e sem
-     virar link — o link morto do logo da pagina no ar morre aqui. -->
+     virar link — o link morto do logo da pagina no ar morre aqui.
+
+     ROTULOS: cada um repete a PILULA da faixa de destino, para o leitor
+     reconhecer onde caiu. "Nucleo aberto" -> "O nucleo aberto ·
+     integra-gov"; "Piloto assistido" -> "Piloto assistido no arranque".
+     Os rotulos antigos ("Adocao", "Contato") descreviam o que o leitor
+     esperava encontrar, nao o que ele encontra: o e-mail fica 2.107px
+     abaixo da ancora #conversao a 800px de largura (achado A4). Um menu
+     nomeia destino, nao intencao. -->
+
 <div class="wrap">
   <div class="topo">
     <span class="marca">
@@ -1807,8 +1959,8 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
     <nav class="nav" aria-label="Seções da página">
       <a href="#prova">Resultados</a>
       <a href="#contexto">Contexto</a>
-      <a href="#oferta">Adoção</a>
-      <a href="#conversao">Contato</a>
+      <a href="#oferta">Núcleo aberto</a>
+      <a href="#conversao">Piloto assistido</a>
       <a href="https://github.com/MarcoAShanon/integra-gov">Repositório</a>
     </nav>
   </div>
@@ -1819,7 +1971,19 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
      O id="conteudo" tambem nao: quem o emite e o <main> do montador.
      Sem .rise em lugar nenhum: o hero inteiro esta acima da dobra, e o
      contrato 8.9 proibe .rise ali e no titulo. Consequencia pratica: com
-     JavaScript bloqueado esta secao nasce identica. -->
+     JavaScript bloqueado esta secao nasce identica.
+
+     DESVIO DELIBERADO DO TEXTO VALIDADO (achado A5): o CTA da pagina no
+     ar diz "Falar com a equipe". Aqui diz "Falar com quem fez", e a
+     mudanca NAO deve ser "restaurada". Motivo: a faixa 05 fecha com "do
+     outro lado do e-mail ha um servidor publico com o proprio trabalho
+     para tocar, nao uma central de atendimento" — e "a equipe" promete
+     exatamente a central que ela passa 700 palavras negando. A pagina no
+     ar nao tinha a faixa 05, entao o texto validado nunca precisou
+     concordar com ela. O verbo continua sendo "falar" porque a faixa 05
+     de fato entrega uma conversa (videoconferencia de diagnostico); o
+     que mudou foi o substantivo, que era maior que a entrega. -->
+
 <section id="hero" class="faixa">
   <div class="wrap">
 
@@ -1835,7 +1999,7 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
         <p class="lede">O INTEGRA nasceu na ponta, na CGPAG/DECIPEX, para tirar do servidor o trabalho repetitivo entre os dois sistemas. Virou caso publicado, e hoje o núcleo está em código aberto — para outro órgão replicar.</p>
 
         <div class="acoes">
-          <a class="btn btn-p" href="#conversao">Falar com a equipe</a>
+          <a class="btn btn-p" href="#conversao">Falar com quem fez</a>
           <a class="btn btn-s" href="https://github.com/MarcoAShanon/integra-gov">Ver o repositório</a>
         </div>
 
@@ -1895,7 +2059,7 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 
     <div class="abertura rise">
       <span class="pill"><span class="ponto"></span>Resultados · medidos</span>
-      <h2>Na unidade que administra <span class="num">~200 mil</span> vidas, o passivo de exercícios anteriores caiu de <span class="num">~4.800</span> para <span class="num">~800</span> processos.</h2>
+      <h2>O passivo de exercícios anteriores caiu de <span class="num">~4.800</span> para <span class="num">~800</span> processos.</h2>
       <p class="lede">Aconteceu na CGPAG/DECIPEX, entre <span class="num">mai/2023</span> e <span class="num">jan/2024</span>. Os números desta seção saem do histórico de movimentações do SEI e dos registros agregados da unidade — sem informação pessoal — e cada um traz a sua fonte.</p>
     </div>
 
@@ -1929,8 +2093,10 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
     <div class="premio grid rise">
 
       <div class="premio-txt">
-        <h3><span class="num">1º lugar</span> nacional em Experiências Inspiradoras em Gestão de Pessoas.</h3>
-        <p class="premio-p">A experiência da CGPAG/DECIPEX foi selecionada pelo MGI / Secretaria de Gestão de Pessoas e depois publicada como caso na revista da pasta.</p>
+        <div class="sub">
+          <h3><span class="num">1º</span> lugar nacional em Experiências Inspiradoras em Gestão de Pessoas.</h3>
+          <p>A experiência da CGPAG/DECIPEX foi selecionada pelo MGI / Secretaria de Gestão de Pessoas e depois publicada como caso na revista da pasta.</p>
+        </div>
 
         <div class="card ficha">
           <dl>
@@ -1969,8 +2135,10 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
          contar a linha do valor e a do eixo, e a barra maxima
          transbordaria. -->
     <div class="series">
-      <h3>O histórico por trás dos indicadores.</h3>
-      <p class="series-p">Entre <span class="num">2023</span> e <span class="num">2026</span>, a área recebeu <span class="num">15.440</span> processos de exercícios anteriores — a demanda que a automação passou a absorver. As séries abaixo saem dos registros agregados da unidade.</p>
+      <div class="sub">
+        <h3>O histórico por trás dos indicadores.</h3>
+        <p>Entre <span class="num">2023</span> e <span class="num">2026</span>, a área recebeu <span class="num">15.440</span> processos de exercícios anteriores — a demanda que a automação passou a absorver. As séries abaixo saem dos registros agregados da unidade.</p>
+      </div>
 
       <div class="graficos grid">
 
@@ -1991,7 +2159,7 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
             </div>
           </div>
 
-          <p class="g-pe">As colunas são a mesma série, medida no início e no fim do período — por isso têm a mesma cor. Passivo é o estoque de processos ainda à espera de tratamento na unidade.</p>
+          <p class="g-pe">As medições são da mesma série, no início e no fim do período. Passivo é o estoque de processos ainda à espera de tratamento na unidade.</p>
         </div>
 
         <div class="card grafico rise" data-atraso="2">
@@ -2021,7 +2189,7 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
             </div>
           </div>
 
-          <p class="g-pe">* mês parcial. As barras de período incompleto são as mais claras, e trazem o asterisco. A soma dos meses exibidos difere do total por arredondamento: cada mês está arredondado a duas casas.</p>
+          <p class="g-pe">* o asterisco marca mês parcial. A soma dos meses exibidos difere do total por arredondamento: cada mês está arredondado a duas casas.</p>
         </div>
 
       </div>
@@ -2055,8 +2223,10 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 
     <!-- ---------- a comparacao honesta ---------- -->
     <div class="bloco rise">
-      <h3>Os dois caminhos cobram alguma coisa.</h3>
-      <p class="intro">Na ponta, o cenário é o típico do serviço público: demanda alta, equipe pequena e o mesmo ritual manual repetido à exaustão. Diante disso há dois caminhos, e nenhum deles é de graça. Quem for propor a automação à chefia precisa saber o preço dela antes de ser perguntado.</p>
+      <div class="sub">
+        <h3>Os dois caminhos cobram alguma coisa.</h3>
+        <p>Na ponta, o cenário é o típico do serviço público: demanda alta, equipe pequena e o mesmo ritual manual repetido à exaustão. Diante disso há dois caminhos, e nenhum deles é de graça. Quem for propor a automação à chefia precisa saber o preço dela antes de ser perguntado.</p>
+      </div>
 
       <div class="grid vias">
         <div class="card ficha via">
@@ -2089,8 +2259,10 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 
     <!-- ---------- a mecanica: por que nao e gambiarra ---------- -->
     <div class="bloco rise">
-      <h3>Por que isto não é gambiarra.</h3>
-      <p class="intro">A automação reproduz a interação do servidor na interface dos sistemas: não abre o banco de dados por trás, não pede integração privilegiada e não recebe credencial própria. É por isso que funciona em qualquer órgão, sem depender de habilitação institucional.</p>
+      <div class="sub">
+        <h3>Por que isto não é gambiarra.</h3>
+        <p>A automação reproduz a interação do servidor na interface dos sistemas: não abre o banco de dados por trás, não pede integração privilegiada e não recebe credencial própria. É por isso que funciona em qualquer órgão, sem depender de habilitação institucional.</p>
+      </div>
 
       <div class="grid">
         <ul class="mecanica">
@@ -2151,8 +2323,10 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
 
     <!-- ---------- governanca ---------- -->
     <div class="bloco rise">
-      <h3>Rastreável por princípio, não por acaso.</h3>
-      <p class="intro">Automação em serviço público só se sustenta com segurança e transparência. Os pontos abaixo são regra do projeto, não recomendação.</p>
+      <div class="sub">
+        <h3>Rastreável por princípio, não por acaso.</h3>
+        <p>Automação em serviço público só se sustenta com segurança e transparência. Os pontos abaixo são regra do projeto, não recomendação.</p>
+      </div>
 
       <div class="grid">
         <ul class="lista-ok">
@@ -2185,9 +2359,13 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
      ignora o cartao inteiro. Nenhuma linha de JavaScript aqui.
 
      Sem JavaScript esta secao nasce inteira: .rise so esconde sob .js
-     (contrato 9.1), nao ha grafico, e o unico controle que depende de
-     script — o botao do lightbox — tem ao lado um link direto ao arquivo
-     de video, que funciona sem script nenhum. -->
+     (contrato 9.1) e nao ha grafico. O unico controle que depende de
+     script e o botao do lightbox, e as DUAS rotas do video se excluem
+     pela primitiva nova do sistema: o sistema esconde sozinho o botao
+     quando o <html> nao tem .js, e o link cru para o arquivo leva
+     .so-sem-js, entao ele so aparece quando e a UNICA rota (A2 e A6).
+     Nunca ha dois controles com o mesmo rotulo semantico ao mesmo
+     tempo, e nunca ha um controle desenhado que nao faz nada. -->
 <section id="oferta" class="faixa alt">
   <div class="wrap">
 
@@ -2292,7 +2470,7 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
             <img src="assets/img-08-6ad7082f.jpg"
                  alt="Janela do INTEGRA Exante sobreposta à tela do SEI, com a árvore de documentos do processo à esquerda e o log da automação; os números de processo aparecem pixelizados."
                  loading="lazy" width="1000" height="541">
-            <button type="button" class="play" aria-label="Assistir ao vídeo de execução do INTEGRA Exante">▶</button>
+            <button type="button" class="play so-com-js" aria-label="Assistir ao vídeo de execução do INTEGRA Exante">▶</button>
           </div>
           <div class="corpo">
             <h4>INTEGRA Exante — Exercícios Anteriores</h4>
@@ -2302,7 +2480,7 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
               <li>SEI</li>
               <li>mainframe SIAPE</li>
             </ul>
-            <p class="direto"><a class="link" href="/media/exante.mp4">Abrir o vídeo de execução</a></p>
+            <p class="direto so-sem-js"><a class="link" href="/media/exante.mp4">Abrir o vídeo de execução</a></p>
           </div>
         </article>
 
@@ -2450,8 +2628,10 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
     <div class="grid">
 
       <div class="card ficha pedido rise" data-atraso="1">
-        <h3>O que mandar no e-mail.</h3>
-        <p class="intro">Não há formulário nesta página, e não vai haver. O que faz a conversa render é o e-mail já chegar com estas seis coisas — em texto corrido mesmo, na ordem que você quiser.</p>
+        <div class="sub">
+          <h3>O que mandar no e-mail.</h3>
+          <p class="intro">Não há formulário nesta página, e não vai haver. O que faz a conversa render é o e-mail já chegar com estas seis coisas — em texto corrido mesmo, na ordem que você quiser.</p>
+        </div>
         <dl>
           <div>
             <dt>O gargalo</dt>
@@ -2484,7 +2664,7 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
       <div class="lateral">
 
         <div class="card rise" data-atraso="2">
-          <h3>Faz sentido escrever se você…</h3>
+          <div class="sub"><h3>Faz sentido escrever se você…</h3></div>
           <ul>
             <li>…vê a mesma tarefa manual entre o SEI e o SIAPE se repetir na sua unidade, mês após mês;</li>
             <li>…programa, ou tem aí alguém que programe, e quer saber o que reaproveitar antes de escrever código do zero;</li>
@@ -2494,7 +2674,7 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
         </div>
 
         <div class="card rise" data-atraso="3">
-          <h3>O que acontece depois do e-mail.</h3>
+          <div class="sub"><h3>O que acontece depois do e-mail.</h3></div>
           <ul>
             <li>Começa pelo seu e-mail, escrito com os seis itens da lista.</li>
             <li>Uma videoconferência de diagnóstico, para olhar o seu fluxo e dizer o que dá e o que não dá.</li>
@@ -2510,7 +2690,7 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
     <hr class="hairline">
 
     <div class="garantias rise">
-      <h3>O que você não precisa ter para começar.</h3>
+      <div class="sub"><h3>O que você não precisa ter para começar.</h3></div>
       <ul class="lista-ok">
         <li><span><b>Sem contrato.</b> Não há nada para assinar entre órgãos, nem termo de cooperação, nem adesão.</span></li>
         <li><span><b>Sem fornecedor.</b> Não há empresa por trás, nada para contratar e nada para renovar depois.</span></li>
@@ -2521,12 +2701,12 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
     </div>
 
     <div class="fecho rise">
-      <p class="endereco">marco.aurelio-silva@gestao.gov.br</p>
+      <p class="endereco"><a class="link-neutro" href="mailto:marco.aurelio-silva@gestao.gov.br?subject=INTEGRA%20%E2%80%94%20conversa%20de%20diagn%C3%B3stico">marco.aurelio-silva@gestao.gov.br</a></p>
       <div class="acoes">
-        <a class="btn btn-p" href="mailto:marco.aurelio-silva@gestao.gov.br?subject=INTEGRA%20%E2%80%94%20piloto%20assistido">Escrever o e-mail</a>
+        <a class="btn btn-p" href="mailto:marco.aurelio-silva@gestao.gov.br?subject=INTEGRA%20%E2%80%94%20conversa%20de%20diagn%C3%B3stico">Escrever o e-mail</a>
         <a class="btn btn-s" href="https://github.com/MarcoAShanon/integra-gov">Abrir o repositório</a>
       </div>
-      <p class="fuga">O link abre o seu programa de e-mail com o assunto preenchido; acrescente nele a sigla do seu órgão. E se você prefere não escrever para ninguém, o caminho não depende disso: o núcleo está no GitHub sob licença MIT, com documentação e exemplos — clonar, ler e testar não passa por conversa nenhuma.</p>
+      <p class="fuga">O endereço acima e o botão abrem o seu programa de e-mail com o assunto preenchido; acrescente nele a sigla do seu órgão. E se você prefere não escrever para ninguém, o caminho não depende disso: o núcleo está no GitHub sob licença MIT, com documentação e exemplos — clonar, ler e testar não passa por conversa nenhuma.</p>
     </div>
 
     <div class="rodape">
@@ -2537,7 +2717,7 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
         <p>Em construção · licença MIT · sem dados pessoais no repositório.</p>
       </div>
       <div class="contato">
-        <p><span class="rot">site</span><span class="val">projeto.govintegra.com.br</span></p>
+        <p><span class="rot">site</span><a class="link-neutro" href="https://projeto.govintegra.com.br">projeto.govintegra.com.br</a></p>
         <p><span class="rot">repositório</span><a class="link-neutro" href="https://github.com/MarcoAShanon/integra-gov">github.com/MarcoAShanon/integra-gov</a></p>
         <p><span class="rot">contato</span><span class="val">Marco Aurélio Silva</span></p>
         <p><span class="rot">e-mail</span><a class="link-neutro" href="mailto:marco.aurelio-silva@gestao.gov.br">marco.aurelio-silva@gestao.gov.br</a></p>
@@ -2563,6 +2743,9 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
                             e o unico acesso por teclado.
      data-video-titulo      nomeia o dialogo daquele video (opcional,
                             mas necessario quando ha mais de um).
+     data-video-duracao     ex.: "5min28s". Entra no nome acessivel do
+                            dialogo. A fatia TAMBEM tem de mostrar a
+                            duracao ao lado do controle (contrato 9.3).
      #lightbox-video        id RESERVADO. O elemento e criado por este
                             script; nenhuma fatia escreve essa marcacao.
 
@@ -2690,15 +2873,26 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
       });
     }
 
-    function abrir(src, disparador, titulo) {
+    function abrir(src, disparador, titulo, duracao) {
       if (!src || aberto()) return;
       origem = disparador || document.activeElement;
-      lb.setAttribute('aria-label', titulo || 'Vídeo de execução');
+      var nome = titulo || 'Vídeo de execução';
+      if (duracao) { nome += ' — ' + duracao; }
+      lb.setAttribute('aria-label', nome);
       video.setAttribute('src', src);
       lb.hidden = false;
       trancarFundo(true);
       document.documentElement.style.overflow = 'hidden';
       botaoFechar.focus();
+
+      /* MUDO ao comecar. O contrato diz "nada toca sozinho", e um video
+         de mais de cinco minutos que arranca com audio num orgao publico
+         — sala aberta, fone de ouvido de ninguem — e o pior caso disso.
+         O <video> tem controls: quem quiser som da um clique. */
+      video.muted = true;
+      /* e com movimento reduzido nem comeca: abre parado, e a pessoa
+         decide. */
+      if (parado) return;
       var p = video.play();
       if (p && typeof p.catch === 'function') { p.catch(function () {}); }
     }
@@ -2757,18 +2951,19 @@ a.card:hover,a.card:focus-visible{border-color:var(--acento-ink)}
          de acessibilidade em producao. */
       if (!src || !botao) return;
       var titulo = cartao.getAttribute('data-video-titulo');
+      var duracao = cartao.getAttribute('data-video-duracao');
       var poster = cartao.querySelector('.poster');
 
       botao.addEventListener('click', function (ev) {
         ev.preventDefault();
-        abrir(src, botao, titulo);
+        abrir(src, botao, titulo, duracao);
       });
       if (poster) {
         poster.style.cursor = 'pointer';
         poster.addEventListener('click', function (ev) {
           /* o clique no proprio <button> ja foi tratado acima */
           if (ev.target === botao || (botao.contains && botao.contains(ev.target))) return;
-          abrir(src, botao, titulo);
+          abrir(src, botao, titulo, duracao);
         });
       }
     });
