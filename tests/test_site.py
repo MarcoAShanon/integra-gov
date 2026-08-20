@@ -169,3 +169,109 @@ def test_fatia_bem_comportada_nao_gera_achado(tmp_path):
     (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
     (tmp_path / "01-hero.css").write_text("#hero .card{color:var(--brand)}", encoding="utf-8")
     assert v.verificar_partes(tmp_path) == []
+
+
+# --------------------------------------- correcoes da revisao cega (Task 1)
+# CRITICO: a guarda de at-rule nunca disparava — @media/@keyframes eram
+# capturados como "seletor" e acusados de vazar, o que bloquearia a UNICA
+# forma correta de obedecer a Restricao Global 7 (movimento so dentro de
+# @media prefers-reduced-motion).
+def test_media_query_nao_e_seletor_mas_conteudo_interno_e_verificado(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text(
+        "#hero .card{transition:transform .2s}\n"
+        "@media (prefers-reduced-motion: reduce){#hero .card{transition:none}}",
+        encoding="utf-8",
+    )
+    achados = v.verificar_partes(tmp_path)
+    assert achados == []
+
+
+def test_seletor_sem_prefixo_dentro_de_media_query_e_achado(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text(
+        "@media (prefers-reduced-motion: reduce){.card{transition:none}}",
+        encoding="utf-8",
+    )
+    achados = v.verificar_partes(tmp_path)
+    assert any("prefixo" in a for a in achados)
+
+
+def test_keyframes_nao_e_seletor(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text(
+        "@keyframes hero-spin{0%{opacity:0}100%{opacity:1}}",
+        encoding="utf-8",
+    )
+    achados = v.verificar_partes(tmp_path)
+    assert not any("keyframes" in a for a in achados)
+
+
+# IMPORTANTE 1: fonte vetada so era vista na primeira declaracao do token.
+def test_fonte_vetada_em_declaracao_subsequente_e_achado():
+    html = (
+        ":root{--font-display:Fraunces,Georgia,serif}\n"
+        "@media print{:root{--font-display:Arial,sans-serif}}"
+    )
+    achados = v.verificar(html)
+    assert any("vetada" in a for a in achados)
+
+
+# IMPORTANTE 2: protocolo-relativo, @import e url() sao rotas reais para um
+# CDN entrar sem o verificador acusar, ja que o CSS final vive inline.
+def test_recurso_protocolo_relativo_e_achado():
+    achados = v.verificar('<script src="//cdn.jsdelivr.net/npm/x.js"></script>')
+    assert any("externo" in a for a in achados)
+
+
+def test_import_css_externo_e_achado():
+    html = '<style>@import url("https://cdn.exemplo.com/f.css");</style>'
+    achados = v.verificar(html)
+    assert any("externo" in a for a in achados)
+
+
+def test_url_css_externo_e_achado():
+    html = '<style>.x{background:url(https://cdn.exemplo.com/bg.png)}</style>'
+    achados = v.verificar(html)
+    assert any("externo" in a for a in achados)
+
+
+def test_google_fonts_via_import_e_permitido():
+    html = '<style>@import url("https://fonts.googleapis.com/css2?family=X");</style>'
+    assert not any("externo" in a for a in v.verificar(html))
+
+
+def test_google_fonts_via_url_e_permitido():
+    html = "<style>@font-face{src:url(https://fonts.gstatic.com/s/x.woff2)}</style>"
+    assert not any("externo" in a for a in v.verificar(html))
+
+
+# IMPORTANTE 3: animacao por propriedade longhand escapava da guarda de
+# movimento reduzido.
+def test_animacao_longhand_sem_reduced_motion_e_achado():
+    html = "<style>.x{animation-name:spin;animation-duration:1s}</style>"
+    achados = v.verificar(html)
+    assert any("reduced-motion" in a for a in achados)
+
+
+# MENOR 1: href com aspas simples tambem deve ser reconhecido como link morto.
+def test_link_morto_com_aspas_simples_e_achado():
+    achados = v.verificar("<a href='#'>x</a>")
+    assert any("href" in a for a in achados)
+
+
+# MENOR 2: CPF sem pontuacao deve ser reconhecido, sem gerar falso positivo
+# em numeros grandes formatados (contagens, valores em reais, datas).
+def test_cpf_sem_pontuacao_e_achado():
+    achados = v.verificar("<p>12345678900</p>")
+    assert any("CPF" in a for a in achados)
+
+
+def test_numero_grande_formatado_nao_e_falso_positivo_de_cpf():
+    html = "<p>15.440 processos concluidos, R$ 12,11 milhões economizados.</p>"
+    assert not any("CPF" in a for a in v.verificar(html))
+
+
+def test_sequencia_de_mais_de_onze_digitos_nao_e_falso_positivo_de_cpf():
+    achados = v.verificar("<p>123456789012</p>")
+    assert not any("CPF" in a for a in achados)
