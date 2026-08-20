@@ -6,6 +6,49 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não publicado]
 
 ### Adicionado
+- **A landing de divulgação passa a viver no repositório, em `site/`** —
+  publicada em <https://projeto.govintegra.com.br>. Antes ela existia apenas no
+  ar e num diretório temporário que já não existia: o ponto de partida deste
+  trabalho foi baixar de volta a própria página com `curl`, porque não havia
+  fonte. Agora há histórico, diff e rollback junto do pacote que ela anuncia.
+  - **A página é montada, não editada.** `site/parts/` tem uma fatia por seção;
+    `montar.py` concatena em `index.html`. Alterar a página é alterar uma
+    fatia — não é caçar dentro de um arquivo de centenas de linhas. O nginx
+    continua servindo HTML puro: o montador é ferramenta local, não build.
+  - **`site/parts/contrato.md` é o sistema de design, e é lei.** Tokens, escala
+    tipográfica, grid, primitivas e as regras que as fatias não podem
+    renegociar. Ele existe porque cinco seções foram construídas em paralelo
+    por agentes que não se viam: congelar o contrato antes de paralelizar é o
+    que faz cinco autores produzirem uma página em vez de cinco coladas.
+  - **Dois portões automáticos, versionados.** `verificar.py` reprova
+    acessibilidade (hierarquia de títulos, `alt`, foco, `prefers-reduced-motion`,
+    skip link, âncora quebrada, `id` duplicado), privacidade (CPF por dígito
+    verificador) e violação de contrato (fonte vetada, seletor vazando entre
+    fatias, recurso de terceiro por host exato). `auditar_contrato.py`
+    recalcula **236 razões de contraste a partir do próprio CSS** e exige que
+    todo número afirmado no contrato tenha lastro — inclusive resolvendo
+    `var()` e checando cascata, porque a conta pode estar certa sobre um CSS
+    que não faz o que a conta supõe.
+  - **Medido, na página montada, nos dois temas:** zero contrastes reprovados e
+    **zero elementos não mensuráveis** — a versão anterior tinha 18, por pôr
+    texto sobre gradiente. Todo texto está sobre fundo sólido, e por isso todo
+    contraste dela é verificável por máquina em vez de opinável.
+  - **De 648,7 KB para 123,3 KB.** As nove imagens embutidas em base64 saíram
+    para `site/assets/`, nomeadas por hash do conteúdo — asset que muda de
+    conteúdo muda de nome, e o navegador nunca serve o antigo.
+  - Acessibilidade que a versão anterior não tinha: os três landmarks
+    (`header`, `main`, `nav`), skip link que **de fato pula** a navegação (o
+    montador emite o `<header>` antes do `<main>`), 14 alvos de toque todos com
+    44px, e nenhum conteúdo dependente de JavaScript — sem script, nada some.
+  - **Seção nova de piloto assistido**, com a promessa delimitada por escrito:
+    conversa inicial e orientação pontual, sem acompanhamento de implantação. A
+    página anterior terminava num `mailto:` solto.
+  - **−90% virou −89%**: a conta dá −89,06%, e arredondar **para cima** numa
+    página cujo argumento é que os números são medidos custa mais que o ponto
+    percentual. Pela mesma razão, uma série anual saiu da página — a soma dava
+    763 a mais que o total publicado, e enquanto não se souber qual dos dois
+    está certo, publica-se só o que tem lastro.
+
 - **Novo subpacote `integra_gov.ficha_financeira`** — leitura de ficha
   financeira em PDF **como dados**. Recebe o arquivo (servidor, aposentado,
   pensionista ou instituidor) e devolve os lançamentos estruturados: rubrica,
