@@ -70,18 +70,13 @@
 /* =====================================================================
    O RECONHECIMENTO
    ===================================================================== */
-#prova .premio-txt{
-  grid-column:span 7;
-  display:flex;
-  flex-direction:column;
-  gap:var(--e-4);
-}
-
-#prova .premio-p{
-  font-size:var(--t-4);
-  color:var(--text);
-  max-width:64ch;
-}
+/* Bloco simples, SEM flex e SEM gap: quem espaca o cabecalho de
+   subsecao do que vem depois e o margin-bottom da .sub (contrato
+   8.3-m), e um gap aqui somaria por cima dele. O <p> da .sub tambem
+   nao leva regra nenhuma — corpo e --t-4 em --text por padrao, que e
+   exatamente o que ele precisa ser, e a medida de 62ch vem da
+   primitiva para casar com a das outras fatias. */
+#prova .premio-txt{grid-column:span 7}
 
 /* A foto nasce 400x266 e e a UNICA fotografia da pagina. Sem teto, as 5
    colunas do .wrap davam 424px a 1280px de viewport — 6% de ampliacao
@@ -102,17 +97,11 @@
 /* =====================================================================
    AS SERIES
    ===================================================================== */
-#prova .series{
-  display:flex;
-  flex-direction:column;
-  gap:var(--e-4);
-}
-
-#prova .series-p{
-  font-size:var(--t-4);
-  color:var(--text);
-  max-width:64ch;
-}
+/* .series so agrupa, para que o .wrap trate cabecalho + graficos como um
+   bloco so e aplique os --e-6 dele nas bordas do conjunto. Pelo mesmo
+   motivo do .premio-txt, nao declara gap: o respiro ate os graficos e o
+   margin-bottom da .sub. */
+#prova .series{display:block}
 
 /* .grid traz align-items:start, e com titulos de alturas diferentes os
    dois cartoes de grafico terminavam em alturas diferentes. Stretch
@@ -174,10 +163,27 @@
   color:var(--text);
 }
 
-/* o fio da linha de base: sem JavaScript a .col fica em altura zero, e
-   este fio e o que mantem o grafico legivel como eixo em vez de virar
-   um vazio. --border e decorativo, e uma regua e exatamente o uso que o
-   contrato 6.3 autoriza para ele. */
+/* O fio da linha de base do grafico. --border e decorativo, e uma regua
+   e exatamente o uso que o contrato 6.3 autoriza para ele.
+
+   NAO DECLARE `display` NESTA REGRA. Nao e preferencia de estilo, e
+   aritmetica de especificidade: a rede do sistema que faz a pista sumir
+   sem JavaScript e `html:not(.js) .trilha{display:none}`, que pesa
+   (0,2,0). Qualquer `display` escrito aqui pesa (1,1,0), e um id vence
+   qualquer numero de classes — a rede perderia CALADA, com o CSS
+   correto e o portao passando. A fatia 4 perdeu uma rodada exatamente
+   assim, com `#oferta .play{display:inline-flex}` vencendo a rede do
+   botao dela.
+
+   Por isso esta regra declara UMA propriedade so, e o `display` da
+   .trilha continua sendo assunto do sistema. Se um dia esta fatia
+   precisar mesmo de `display` aqui, a saida e marcar a .trilha com
+   `.so-com-js` no HTML (a primitiva usa !important e vence), nunca
+   confiar que a rede continua ganhando.
+
+   Conferido por MEDICAO, e nao pela leitura da regra: com a classe `js`
+   fora do <html>, as 6 trilhas computam display:none e o cartao de
+   grafico cai de 523px para 305px. */
 #prova .trilha{border-bottom:1px solid var(--border)}
 
 /* altura ZERO no CSS: quem da altura e o script, a partir de data-h. Dar
