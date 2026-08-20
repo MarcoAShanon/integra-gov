@@ -1356,9 +1356,12 @@ cada uma com a fonte ao lado:
 - 1º lugar nacional, Edital nº 1/2025 "Seleção de Experiências Inspiradoras em
   Gestão de Pessoas no Setor Público" (MGI/SGP), média 93,83.
 - Caso publicado na revista Gestão de Pessoas em Ação (MGI), vol. 3, jun/2025.
-- −90% no tempo por processo (~32 min → ~3,5 min).
+- −**89**% no tempo por processo (~32 min → ~3,5 min). A conta dá −89,06%;
+  arredonda-se para BAIXO. Ver spec §6.
 - Passivo de ~4.800 para ~800 processos (mai/2023 → jan/2024).
 - +6.500 processos concluídos; 15.440 recebidos entre 2023 e 2026.
+  **A quebra por ano não é publicada** — a soma não fecha com o total.
+  Ver spec §6.
 - Equipe de 8 para 4 técnicos; ~200 mil vidas na DECIPEX.
 - R$ 12,11 milhões lançados de forma controlada no SIAPE em 304 processos
   (abr–jul/2026).

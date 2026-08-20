@@ -206,9 +206,22 @@ Deve conter:
   Pessoas no Setor Público" (MGI/SGP), média 93,83.
 - Caso publicado na revista *Gestão de Pessoas em Ação* (MGI), vol. 3,
   jun/2025.
-- −90% no tempo por processo (~32 min → ~3,5 min).
+- −**89**% no tempo por processo (~32 min → ~3,5 min).
+
+  **Decisão do usuário, 20/08/2026:** era −90%, e a conta dá **−89,06%**. A
+  fatia 2 mediu e reportou em vez de publicar o arredondado. Numa página cujo
+  argumento é que os números são medidos e citam a fonte, arredondar **para
+  cima** custa mais do que vale o ponto percentual. Arredonda-se para baixo.
+  Vale também nas três metas do `head.html` (description, OG e Twitter).
 - Passivo ~4.800 → ~800 processos (mai/2023 → jan/2024).
 - +6.500 processos concluídos; 15.440 recebidos entre 2023 e 2026.
+
+  **A quebra por ano NÃO é publicada** (decisão do usuário, 20/08/2026). A
+  fatia 2 detalhou os recebidos por ano — 7.139 + 3.609 + 3.462 + 1.993 — e a
+  soma dá **16.203**, contra os 15.440 do total autorizado. Diferença de 763,
+  grande demais para arredondamento: ou a série anual está errada, ou o total
+  está. Enquanto não se souber qual, publica-se só o total e omite-se o
+  detalhamento — nenhuma afirmação some, nenhuma fica sem lastro.
 - Equipe de 8 → 4 técnicos; ~200 mil vidas na DECIPEX.
 - R$ 12,11 mi lançados de forma controlada no SIAPE em 304 processos
   (abr–jul/2026).
