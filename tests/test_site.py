@@ -1050,3 +1050,57 @@ def test_og_image_tem_exatamente_1200x630():
     imagem = SITE / "assets" / "og-image.png"
     assert imagem.exists(), "rode: python site/gerar_og.py"
     assert gerar_og.dimensoes_png(imagem) == (1200, 630)
+
+# --------------------------- a rampa, o JS ausente e a subsecao (ciclo 7)
+def test_auditor_exige_ordem_de_destaque_invariante_ao_tema():
+    """A luminancia dos tres tons de grafico INVERTE entre os temas: no
+    claro --dado-fraco e o mais claro, no escuro e o mais escuro. Foi por
+    descrever a rampa como "o degrau mais claro" que a legenda da fatia 2
+    virou falsa no escuro. O que nao inverte e o destaque contra a faixa,
+    e e isso que o auditor cobra."""
+    trocado = CSS_SISTEMA.replace("--dado:#EFD7AF", "--dado:#6B5A3C", 1)
+    assert trocado != CSS_SISTEMA
+    achados = a.auditar(trocado, CONTRATO)
+    assert any(
+        achado.startswith("rampa:") and "ordem de destaque" in achado
+        for achado in achados
+    )
+
+
+def test_ordem_de_destaque_vale_hoje_nos_seis_escopos():
+    achados = a.auditar(CSS_SISTEMA, CONTRATO)
+    assert not [x for x in achados if x.startswith("rampa:")]
+
+
+def test_sistema_oferece_a_chave_de_javascript():
+    """Nenhuma fatia consegue condicionar CSS a classe js — o verificador
+    exige prefixo da fatia e html:not(.js) vaza. Sem estas duas regras no
+    sistema, a fatia so tem saidas ruins: controle inerte ou duplicado."""
+    assert "html:not(.js) .so-com-js{display:none !important}" in CSS_SISTEMA
+    assert ".js .so-sem-js{display:none !important}" in CSS_SISTEMA
+
+
+def test_sem_js_a_trilha_e_o_botao_de_video_somem():
+    """Sem script a .trilha e um retangulo vazio com rotulos descrevendo
+    barras que nao existem, e o <button> do video fica desenhado e inerte.
+    O sistema resolve os dois sozinho, sem a fatia marcar nada."""
+    assert "html:not(.js) .trilha{display:none}" in CSS_SISTEMA
+    assert "html:not(.js) .proj[data-video] button{display:none}" in CSS_SISTEMA
+
+
+def test_o_video_abre_mudo():
+    """O contrato diz "nada toca sozinho"; o lightbox chamava play() sem
+    muted."""
+    js = (SITE / "parts" / "script.js").read_text(encoding="utf-8")
+    assert "video.muted = true" in js
+    assert js.index("video.muted = true") < js.index("var p = video.play();")
+
+
+def test_a_subsecao_tem_primitiva_com_as_tres_medidas_fixas():
+    """A .abertura fixava o topo da faixa e nada fixava o segundo nivel:
+    mediu-se h3->paragrafo a 12, 20 e 32px, e tres medidas de leitura."""
+    bloco = CSS_SISTEMA[CSS_SISTEMA.index(".sub{"):]
+    bloco = bloco[:bloco.index("}")]
+    assert "gap:var(--e-3)" in bloco
+    assert "margin-bottom:var(--e-5)" in bloco
+    assert "max-width:62ch" in bloco

@@ -13,6 +13,9 @@
                             e o unico acesso por teclado.
      data-video-titulo      nomeia o dialogo daquele video (opcional,
                             mas necessario quando ha mais de um).
+     data-video-duracao     ex.: "5min28s". Entra no nome acessivel do
+                            dialogo. A fatia TAMBEM tem de mostrar a
+                            duracao ao lado do controle (contrato 9.3).
      #lightbox-video        id RESERVADO. O elemento e criado por este
                             script; nenhuma fatia escreve essa marcacao.
 
@@ -140,15 +143,26 @@
       });
     }
 
-    function abrir(src, disparador, titulo) {
+    function abrir(src, disparador, titulo, duracao) {
       if (!src || aberto()) return;
       origem = disparador || document.activeElement;
-      lb.setAttribute('aria-label', titulo || 'Vídeo de execução');
+      var nome = titulo || 'Vídeo de execução';
+      if (duracao) { nome += ' — ' + duracao; }
+      lb.setAttribute('aria-label', nome);
       video.setAttribute('src', src);
       lb.hidden = false;
       trancarFundo(true);
       document.documentElement.style.overflow = 'hidden';
       botaoFechar.focus();
+
+      /* MUDO ao comecar. O contrato diz "nada toca sozinho", e um video
+         de mais de cinco minutos que arranca com audio num orgao publico
+         — sala aberta, fone de ouvido de ninguem — e o pior caso disso.
+         O <video> tem controls: quem quiser som da um clique. */
+      video.muted = true;
+      /* e com movimento reduzido nem comeca: abre parado, e a pessoa
+         decide. */
+      if (parado) return;
       var p = video.play();
       if (p && typeof p.catch === 'function') { p.catch(function () {}); }
     }
@@ -207,18 +221,19 @@
          de acessibilidade em producao. */
       if (!src || !botao) return;
       var titulo = cartao.getAttribute('data-video-titulo');
+      var duracao = cartao.getAttribute('data-video-duracao');
       var poster = cartao.querySelector('.poster');
 
       botao.addEventListener('click', function (ev) {
         ev.preventDefault();
-        abrir(src, botao, titulo);
+        abrir(src, botao, titulo, duracao);
       });
       if (poster) {
         poster.style.cursor = 'pointer';
         poster.addEventListener('click', function (ev) {
           /* o clique no proprio <button> ja foi tratado acima */
           if (ev.target === botao || (botao.contains && botao.contains(ev.target))) return;
-          abrir(src, botao, titulo);
+          abrir(src, botao, titulo, duracao);
         });
       }
     });

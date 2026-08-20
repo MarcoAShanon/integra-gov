@@ -413,9 +413,9 @@ Tema claro (o padrão):
 | `--on-acento` | `#20160A` | texto sobre `--acento` |
 | `--ok` | `#0A7355` | esmeralda — **sinal de estado positivo**, ver 6.5 |
 | `--ok-soft` | `#E3F1EA` | fundo do sinal de estado |
-| `--dado` | `#563506` | série cheia do gráfico — o degrau mais escuro |
+| `--dado` | `#563506` | série cheia — o degrau de **maior** destaque contra a faixa |
 | `--dado-neutro` | `#695E54` | referência / cenário manual — degrau do meio, dessaturado |
-| `--dado-fraco` | `#AA8046` | período parcial — o degrau mais claro |
+| `--dado-fraco` | `#AA8046` | período parcial — o degrau de **menor** destaque contra a faixa |
 
 Tema escuro (`@media (prefers-color-scheme: dark)`), e **os mesmos valores**
 valem dentro de `.faixa.tinta` no tema claro:
@@ -644,6 +644,20 @@ e os números do alvo estão aqui para que ela possa ser conferida:
 | `--dado-neutro` | referência / cenário manual | `#695E54` | `#ABA69C` |
 | `--dado-fraco` | período parcial | `#AA8046` | `#92764F` |
 
+> **Cuidado com a palavra que você usa para descrever a rampa — e este aviso
+> nasceu de um defeito real.** No tema claro `--dado-fraco` é o tom **mais
+> claro** dos três; no escuro é o **mais escuro**. A luminância dos três
+> **inverte** com o tema. Uma versão anterior deste contrato dizia "o degrau
+> mais claro", a fatia 02 transcreveu isso de boa-fé para uma legenda visível
+> ("as barras de período incompleto são as mais claras"), e a página passou a
+> afirmar algo **falso em metade das entregas**.
+>
+> O que **não** inverte é o **destaque contra a faixa**: `--dado` sempre
+> contrasta mais com o fundo que `--dado-neutro`, e este mais que
+> `--dado-fraco` — verificado nos seis escopos e nos dois fundos, e cobrado
+> pelo `auditar_contrato.py` a cada execução. Descreva a rampa por isto, nunca
+> por claro/escuro.
+
 **O alvo de separação, como número:**
 
 - **`--dado` × `--dado-fraco` ≥ 3:1.** É o par que aparece lado a lado no mesmo
@@ -690,6 +704,22 @@ não dado.
 E a regra que fecha, que nenhuma calibragem substitui: **nenhuma informação de
 gráfico é transmitida só por cor.** Toda barra tem o seu valor escrito ao lado,
 em `.num`, e todo período parcial tem asterisco e nota de rodapé.
+
+**A legenda visível do gráfico é texto de usuário, e obedece à mesma regra da
+caixa acima: nada de "mais clara" ou "mais escura".** Essas palavras invertem
+de sentido entre os temas e tornam a legenda falsa em um deles. Descreva pelo
+que é invariante — o **asterisco**, que é o mesmo glifo nos dois temas, e a
+**intensidade reduzida**, que é verdadeira nos dois porque é contraste contra a
+faixa, não claridade absoluta.
+
+Redação sancionada, e pode ser copiada literalmente:
+
+> As barras de período incompleto trazem asterisco e aparecem com intensidade
+> reduzida.
+
+O que **não** pode aparecer numa legenda: "as mais claras", "as mais escuras",
+"em tom claro", "esmaecidas" — e qualquer outra descrição que dependa de qual
+tema o leitor está usando.
 
 ## 7. Grade e espaçamento
 
@@ -938,11 +968,67 @@ do meio flutua sem alinhamento previsível. Links aqui são `.link-neutro`
 (§ 8.3-c), porque o bloco inteiro é `--text-soft`.
 **Não use** como faixa própria; não existe fatia 06.
 
+### 8.3-l `.so-com-js` e `.so-sem-js`
+As duas faces da mesma chave: `.so-com-js` aparece **apenas** quando o
+JavaScript está vivo; `.so-sem-js`, **apenas** quando não está.
+
+Existem porque **nenhuma fatia consegue condicionar CSS à classe `js`**: o
+`verificar.py` exige que todo seletor comece pelo prefixo da fatia, e
+`html:not(.js)` vaza. Sem isto, a fatia só tem duas saídas ruins — deixar no ar
+um controle inerte, ou deixar no ar um controle duplicado. As duas aconteceram
+na página montada.
+
+O padrão, quando nenhuma classe existe ainda, mostra `.so-sem-js` e esconde
+`.so-com-js`: a rota que não depende de script é a que sobrevive quando nada
+roda, inclusive num robô de prévia de link.
+
+```html
+<button type="button" class="play so-com-js">Assistir</button>
+<a class="link so-sem-js" href="/media/exante.mp4">Abrir o vídeo (5min28s)</a>
+```
+
+**Não use** para esconder conteúdo de texto — só para alternar **controles** e
+**ornamentos**. Informação não pode depender de script (§ 9.1).
+
+Duas coisas o sistema já faz sozinho, e você não precisa marcar:
+
+- **sem JS a `.trilha` some.** Ela seria um retângulo vazio de 188px com os
+  rótulos ao lado descrevendo barras que não existem; escondida, sobram os
+  números — que é a "lista de números legível" que o § 9.1 promete.
+- **sem JS o `<button>` do `.proj[data-video]` some**, pelo motivo do § 9.3.
+
 ### 8.3-j `.trilha`
 A pista de altura definida onde a `.col` de um gráfico cresce (§ 9.2). Altura
 188px por padrão, ajustável no seu prefixo.
 **Não use** para nada além de barra de gráfico, e nunca ponha rótulo dentro
 dela — é isso que quebraria a conta da porcentagem.
+
+### 8.3-m `.sub` — a abertura de subseção
+A `.abertura` fixa o topo da **faixa**; a `.sub` fixa o **segundo nível**: um
+`<h3>` e, opcionalmente, o parágrafo que o explica.
+
+```html
+<div class="sub">
+  <h3>Séries que sustentam os números</h3>
+  <p>Duas medições independentes, cada uma com a sua fonte.</p>
+</div>
+<div class="grid"> … o conteúdo da subseção … </div>
+```
+
+Três medidas ficam fixas nela, e são exatamente as três que divergiam na página
+montada: **12px** entre o `h3` e o seu parágrafo (título e o texto dele são um
+bloco só), **32px** até o conteúdo que vem depois, e **62ch** de medida — a
+mesma do `.lede`, para que blocos de mesmo tamanho de letra partilhem a borda
+direita descendo a página.
+
+Sem esta primitiva cada fatia decidiu sozinha: mediu-se `h3`→parágrafo a 12px
+numa, 20px em duas e 32px noutra, e três medidas de leitura diferentes (604,
+623 e 643px). O leitor não nomeia isso — sente a página afrouxar e apertar.
+
+**Não declare `gap`, `margin-bottom` nem `max-width` no seu bloco de
+subseção**; é isso que a primitiva já resolve. **Não use** `.sub` para o topo
+da faixa — ali é `.abertura`. **Não use** para um `h4`: o terceiro nível não
+tem primitiva, e se você precisa dele, provavelmente a seção quer ser duas.
 
 ### 8.4 `.card`
 Painel: `--surface`, fio de 1px, `--raio`, padding `--e-5`.
@@ -1210,6 +1296,20 @@ Contrato do gancho:
   opcional com um vídeo só, e **obrigatório a partir do segundo** — sem ele
   todos os diálogos se anunciam "Vídeo de execução" e o leitor de tela não os
   distingue.
+- `data-video-duracao="5min28s"` entra no nome acessível do diálogo. **E a
+  duração também tem de aparecer, visível, ao lado do controle** — quem decide
+  se clica precisa saber se são trinta segundos ou cinco minutos e meio, e isso
+  vale mais no celular do que em qualquer outro lugar.
+- **O vídeo abre MUDO**, sempre. O § 10 diz "nada toca sozinho", e um vídeo de
+  mais de cinco minutos que arranca com áudio num órgão público — sala aberta,
+  fone de ouvido de ninguém — é o pior caso da regra. O `<video>` tem
+  `controls`: quem quiser som dá um clique. Com `prefers-reduced-motion:
+  reduce` ele nem começa a tocar: abre parado e a pessoa decide.
+- **O `<button>` some quando não há JavaScript**, por regra do sistema — sem
+  script ele seria um controle desenhado, focável e inerte. Ponha a rota
+  alternativa (um link direto para o arquivo) numa `.so-sem-js`, para ela
+  aparecer **só** quando é a única rota que existe; sem isso o leitor com
+  JavaScript vê dois controles com o mesmo rótulo e destinos diferentes.
 - Se houver um `.poster`, ele também abre no clique (mouse), sem duplicar o
   evento do botão.
 - O id `lightbox-video` é **reservado**. O elemento é criado pelo script no
@@ -1289,6 +1389,11 @@ E confira à mão, item por item:
       seu prefixo (§ 8.4-b)
 - [ ] mono só nos cinco papéis do § 5.4-b
 - [ ] nenhum glifo colado em `content:` — use escape CSS (`"\2713"`)
+- [ ] toda subseção usa `.sub`, e você não redeclarou gap/medida nela (§ 8.3-m)
+- [ ] nenhuma legenda de gráfico descreve cor por "mais clara"/"mais escura"
+      (§ 6.6)
+- [ ] controle que só funciona com JS está em `.so-com-js`, e a rota
+      alternativa em `.so-sem-js` (§ 8.3-l)
 - [ ] nenhum `href="#"`; toda âncora aponta para um `id` existente
 - [ ] a hierarquia de títulos não pula degrau
 - [ ] você olhou a seção nos dois temas, claro e escuro

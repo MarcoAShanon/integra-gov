@@ -39,7 +39,11 @@ O QUE ELE CHECA
    objeto-grafico/fundo passa 3:1. Vale nos seis escopos: claro, claro em
    faixa par, escuro, escuro em faixa par, e a faixa de tinta nos dois temas.
 2. RAMPA — os extremos da rampa de dados (`--dado` x `--dado-fraco`) se
-   separam por >= 3:1 e os vizinhos por >= 1,7:1.
+   separam por >= 3:1 e os vizinhos por >= 1,7:1. E a ORDEM DE DESTAQUE
+   contra a faixa e invariante ao tema: --dado sempre se destaca mais que
+   --dado-neutro, e este mais que --dado-fraco. A luminancia dos tres
+   inverte entre os temas; o contraste contra o fundo, nao — e e por isso
+   que a legenda do grafico so pode ser escrita em cima dele.
 3. COBERTURA — cada razao que o contrato publica nas duas tabelas cheias
    (tema claro e tema escuro) tem que bater com o valor recalculado. E esta
    a checagem que pega a celula esquecida.
@@ -470,6 +474,34 @@ def auditar(css: str, contrato: str, *, verboso: bool = False) -> list[str]:
                 )
             else:
                 passou.append(f"ok {formatar(valor):>9}  [{nome}] {rotulo}")
+
+        # 2-b — a ORDEM da rampa contra o fundo tem de ser invariante ao tema.
+        # A luminancia dos tres INVERTE entre claro e escuro: no claro
+        # --dado-fraco e o mais claro, no escuro e o mais escuro. Descrever a
+        # codificacao por "mais clara" faz a legenda ficar falsa em metade das
+        # entregas — foi o defeito A1, e a fatia 2 so transcreveu o que o
+        # contrato dizia. O que NAO inverte e o contraste contra a faixa:
+        # --dado sempre se destaca mais, --dado-fraco sempre menos. E essa
+        # propriedade que o contrato agora descreve, entao e essa que se cobra.
+        for fundo in ("--bg", "--surface"):
+            if fundo not in paleta:
+                continue
+            cheia, meio, parcial = (
+                razao(paleta[t], paleta[fundo]) for t in TOKENS_GRAFICO
+            )
+            if not cheia > meio > parcial:
+                achados.append(
+                    f"rampa: [{nome}] contra {fundo} a ordem de destaque e "
+                    f"{formatar(cheia)} / {formatar(meio)} / {formatar(parcial)} — "
+                    f"--dado precisa se destacar MAIS que --dado-neutro, e este "
+                    f"mais que --dado-fraco, em todo tema; senao a legenda do "
+                    f"grafico deixa de ser verdadeira num deles"
+                )
+            else:
+                passou.append(
+                    f"ok  ordem   [{nome}] destaque contra {fundo}: "
+                    f"dado > neutro > fraco"
+                )
 
     # 5 — vizinhanca, em TODOS os escopos (ver 5-b da docstring)
     visitados: set[str] = set()

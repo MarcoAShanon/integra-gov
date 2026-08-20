@@ -284,6 +284,25 @@ th,td{text-align:left;padding:0}
   max-width:52rem;
 }
 
+/* .sub — a abertura de SUBSECAO: o h3 e, opcionalmente, o paragrafo que
+   o segue. A .abertura fixa o topo da FAIXA; isto fixa o segundo nivel,
+   que era a unica costura que sobrou na pagina montada: h3 -> paragrafo
+   media 12px numa fatia, 20px em duas e 32px noutra, e a medida de
+   leitura tinha tres bordas direitas (604, 623 e 643px).
+
+   Os tres numeros ficam fixos aqui: 12px entre o h3 e o seu paragrafo
+   (titulo e o texto dele sao um bloco so), 32px ate o conteudo que vem
+   depois, e 62ch de medida — a mesma do .lede, para que blocos de mesmo
+   tamanho de letra partilhem a borda direita. */
+.sub{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:var(--e-3);
+  max-width:62ch;
+  margin-bottom:var(--e-5);
+}
+
 /* .lede — o paragrafo de abertura, um degrau acima do corpo. */
 .lede{
   color:var(--text-soft);
@@ -449,6 +468,33 @@ th,td{text-align:left;padding:0}
   color:var(--text-soft);
   line-height:1.75;
 }
+
+/* .so-com-js / .so-sem-js — a alavanca que faltava as fatias.
+
+   Nenhuma fatia consegue condicionar CSS a classe `js`: o verificador
+   exige que todo seletor comece pelo prefixo dela, e `html:not(.js)`
+   vaza. Entao ou o sistema oferece isto, ou cada fatia deixa no ar um
+   controle inerte (o botao de video sem JS) ou um controle duplicado (o
+   link cru do MP4 aparecendo TAMBEM com JS). Sao os achados A2 e A6, e
+   os dois morrem com a mesma primitiva.
+
+   O padrao (sem a classe .js) mostra .so-sem-js e esconde .so-com-js —
+   assim a rota que nao depende de script e a que sobrevive quando nada
+   roda, inclusive num robo de previa de link. */
+html:not(.js) .so-com-js{display:none !important}
+.js .so-sem-js{display:none !important}
+
+/* Duas consequencias do mesmo raciocinio que o sistema resolve sozinho,
+   sem a fatia precisar marcar nada:
+
+   1. sem JS a .trilha e um retangulo vazio de 188px com rotulos ao lado
+      descrevendo barras que nao existem. O contrato promete "uma lista
+      de numeros legivel" — entao a pista some e ficam os numeros, que
+      ja estao na marcacao.
+   2. sem JS o <button> do .proj[data-video] fica desenhado, focavel e
+      inerte. O 9.3 garante que ha exatamente um; escondelo e correto. */
+html:not(.js) .trilha{display:none}
+html:not(.js) .proj[data-video] button{display:none}
 
 /* .trilha — a pista de altura definida em que a .col cresce. A .col
    recebe height em %, entao a MAE DIRETA dela precisa ter altura
