@@ -42,6 +42,11 @@ _RE_CSS_RECURSO = re.compile(
     r"""(?:@import\s+(?:url\(\s*)?|url\(\s*)['"]?((?:https?:)?//[^'"\)\s]+)""",
     re.I,
 )
+# um passo de keyframe e "from", "to" ou um percentual (0%, 50%, 50.5%) —
+# note que e ancorado nas duas pontas (^...$), nao um startswith: "0%"
+# TERMINA em "%", nao comeca, e um seletor de verdade tambem pode conter "%"
+# (atributo, calc()) sem ser um passo de keyframe.
+_RE_PASSO_KEYFRAMES = re.compile(r"^(?:from|to|\d+(?:\.\d+)?%)$", re.I)
 
 
 def _sem_comentarios(css: str) -> str:
@@ -50,6 +55,14 @@ def _sem_comentarios(css: str) -> str:
 
 def _titulos(html: str) -> list[int]:
     return [int(m.group(1)) for m in _RE_TITULO.finditer(html)]
+
+
+def _e_passo_keyframes(seletores: str) -> bool:
+    """True se TODA parte separada por virgula for um passo de keyframe
+    (from/to/percentual). Uma parte so que nao seja passo devolve False, e o
+    bloco volta a ser verificado como seletor normal."""
+    partes = [p.strip() for p in seletores.split(",")]
+    return bool(partes) and all(_RE_PASSO_KEYFRAMES.match(p) for p in partes)
 
 
 def verificar(html: str) -> list[str]:
@@ -164,7 +177,7 @@ def verificar_partes(parts: pathlib.Path) -> list[str]:
         # dentro — e la que alguem poderia esconder um seletor vazando.
         for bloco in re.finditer(r"([^{}]+)\{", css):
             seletores = bloco.group(1).strip()
-            if not seletores or seletores.startswith(("@", "from", "to", "%")):
+            if not seletores or seletores.startswith("@") or _e_passo_keyframes(seletores):
                 continue
             for seletor in seletores.split(","):
                 seletor = seletor.strip()

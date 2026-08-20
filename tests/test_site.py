@@ -207,6 +207,58 @@ def test_keyframes_nao_e_seletor(tmp_path):
     assert not any("keyframes" in a for a in achados)
 
 
+# --------------------------- falso positivo de keyframe percentual (pos-revisao)
+# 0% e 100% NAO comecam com "%" (terminam) — a guarda startswith(("@", "from",
+# "to", "%")) nunca reconhecia um passo percentual de verdade.
+def test_keyframes_percentual_nao_e_achado(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text(
+        "@keyframes brilho{0%{opacity:0}100%{opacity:1}}",
+        encoding="utf-8",
+    )
+    assert v.verificar_partes(tmp_path) == []
+
+
+def test_keyframes_percentual_agrupado_por_virgula_nao_e_achado(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text(
+        "@keyframes brilho{0%,100%{opacity:0}50%{opacity:.5}}",
+        encoding="utf-8",
+    )
+    assert v.verificar_partes(tmp_path) == []
+
+
+def test_keyframes_from_to_nao_e_achado(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text(
+        "@keyframes brilho{from{opacity:0}to{opacity:1}}",
+        encoding="utf-8",
+    )
+    assert v.verificar_partes(tmp_path) == []
+
+
+def test_seletor_com_porcentagem_em_atributo_sem_prefixo_ainda_e_achado(tmp_path):
+    """A guarda de keyframe nao pode virar 'qualquer coisa com %' — um seletor
+    de verdade com % (ex.: atributo) continua tendo que ser verificado."""
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text(
+        '.card[data-progresso="50%"]{color:red}',
+        encoding="utf-8",
+    )
+    achados = v.verificar_partes(tmp_path)
+    assert any("prefixo" in a for a in achados)
+
+
+def test_seletor_com_calc_sem_prefixo_ainda_e_achado(tmp_path):
+    (tmp_path / "00-sistema.css").write_text(":root{--brand:#E7920D}", encoding="utf-8")
+    (tmp_path / "01-hero.css").write_text(
+        ".card{width:calc(50% - 4px)}",
+        encoding="utf-8",
+    )
+    achados = v.verificar_partes(tmp_path)
+    assert any("prefixo" in a for a in achados)
+
+
 # IMPORTANTE 1: fonte vetada so era vista na primeira declaracao do token.
 def test_fonte_vetada_em_declaracao_subsequente_e_achado():
     html = (
