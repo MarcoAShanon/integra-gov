@@ -1241,8 +1241,18 @@ há captura. Então:
    julgar um design com as imagens faltando, ou a reportar defeitos que não
    existem. O servidor estático resolve isso e ainda faz `/media/exante.mp4`
    (caminho absoluto no `data-video`) resolver como resolve em produção.
-2. `resize_window` 1280×800, tema claro → `computer screenshot`.
-3. `resize_window` 1280×800, `colorScheme: dark` → `computer screenshot`.
+2. `resize_window` 1280×800, tema claro → **recarregar** → `computer screenshot`.
+3. `resize_window` 1280×800, `colorScheme: dark` → **recarregar** →
+   `computer screenshot`.
+
+> **RECARREGUE a página depois de trocar o esquema de cor ou o tamanho da
+> janela. Nunca meça depois de um flip ao vivo.** Lição paga em 20/08/2026:
+> a sessão de revisão acusou seis reprovações de contraste que eram artefato
+> do método — num painel que não está compondo quadros, a troca de tema ao
+> vivo congela as transições de 220ms no meio do voo, e o script lê cores
+> **presas do tema anterior**. Com recarga limpa sob cada esquema, os mesmos
+> 321 elementos por tema deram zero reprovações.
+
 4. `resize_window` preset `mobile` (375) → recarregar → `computer screenshot`.
 5. `read_console_messages onlyErrors: true` → esperado: vazio.
 6. `read_page` → conferir a árvore de acessibilidade (h1 único, nomes de link).
@@ -1761,7 +1771,11 @@ Acima de 100 KB, investigue antes de seguir.
 
 Peça ao usuário que deixe o painel Browser visível. Rode, na página **inteira**:
 
-1. 1280×800 claro e escuro; 768 tablet; 375 mobile — captura de cada.
+1. 1280×800 claro e escuro; 768 tablet; 375 mobile — captura de cada,
+   **com uma recarga por combinação de tema e tamanho** (ver o aviso da
+   Task 4 Step 5). Para capturar mais que a primeira dobra, **aumente a
+   altura da janela em vez de rolar**: o painel só perde a composição
+   depois de rolagem, não em carga.
 2. `read_console_messages onlyErrors: true` → vazio.
 3. `read_network_requests` → nenhuma requisição para host que não seja
    `projeto.govintegra.com.br`, `fonts.googleapis.com` ou `fonts.gstatic.com`.
