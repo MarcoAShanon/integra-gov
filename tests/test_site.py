@@ -1083,9 +1083,18 @@ def test_sistema_oferece_a_chave_de_javascript():
 def test_sem_js_a_trilha_e_o_botao_de_video_somem():
     """Sem script a .trilha e um retangulo vazio com rotulos descrevendo
     barras que nao existem, e o <button> do video fica desenhado e inerte.
-    O sistema resolve os dois sozinho, sem a fatia marcar nada."""
-    assert "html:not(.js) .trilha{display:none}" in CSS_SISTEMA
-    assert "html:not(.js) .proj[data-video] button{display:none}" in CSS_SISTEMA
+    O sistema resolve os dois sozinho, sem a fatia marcar nada.
+
+    O !important nao e enfeite: sem ele a rede pesa (0,2,0) e (0,3,2), e
+    QUALQUER seletor de fatia com id — `#oferta .play`, (1,1,0) — a vence.
+    A fatia 4 pagou isso: o botao continuava visivel sem JS, e o CSS estava
+    "certo". Ela so descobriu medindo o display computado. Uma rede que perde
+    para uma regra normal nao e rede, entao o teste cobra a arma."""
+    assert "html:not(.js) .trilha{display:none !important}" in CSS_SISTEMA
+    assert (
+        "html:not(.js) .proj[data-video] button{display:none !important}"
+        in CSS_SISTEMA
+    )
 
 
 def test_o_video_abre_mudo():

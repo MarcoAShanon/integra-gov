@@ -51,6 +51,10 @@ O QUE ELE CHECA
    aposentada, o ambar da marca que nao pode ser barra, a faixa do fio de
    cabelo) tambem sao recalculadas, em vez de ficarem de fora so por nao
    estarem numa tabela.
+5-c. REDE — toda regra `html:not(.js)` leva `!important`. Elas existem
+   para a fatia nao precisar lembrar de nada, e sem o !important perdem
+   para qualquer seletor com id — que e como toda regra de fatia comeca.
+
 5-b. ESCOPO — TODA checagem roda em TODOS os escopos, e o auditor prova
    que rodou: ao final ele confere que a lista de escopos visitados e a
    lista de escopos que existem. Nenhuma checagem pode trazer a sua
@@ -358,6 +362,47 @@ def auditar_cascata(css: str) -> list[str]:
     return achados
 
 
+def auditar_rede_js(css: str) -> list[str]:
+    """Rede de ausencia de JavaScript sem !important nao e rede.
+
+    Toda regra `html:not(.js) ...` do sistema existe para esconder um
+    elemento que, sem script, seria uma casca inerte: a .trilha vazia, o
+    botao de video que nao abre nada. Elas precisam ganhar de QUALQUER
+    coisa que uma fatia escreva, e o que uma fatia escreve comeca sempre
+    por um id — `#oferta .play` pesa (1,1,0), enquanto
+    `html:not(.js) .proj[data-video] button` pesa (0,3,2) e
+    `html:not(.js) .trilha` pesa (0,2,0). As duas perdiam.
+
+    E perdiam EM SILENCIO: o CSS continuava valido, o verificador
+    continuava passando, e a degradacao simplesmente nao acontecia. So
+    apareceu porque alguem mediu o `display` computado em vez de confiar
+    na regra — a mesma familia do cartao branco no tema escuro, em que a
+    conta estava certa sobre um CSS que nao fazia o que a conta supunha.
+
+    Havia ainda uma assimetria dentro do proprio sistema: as duas
+    primitivas que a fatia marca a mao (.so-com-js/.so-sem-js) levavam
+    !important, e as duas redes automaticas — as que existem justamente
+    para a fatia nao precisar lembrar de nada — nao levavam.
+    """
+    achados: list[str] = []
+    limpo = _RE_COMENTARIO.sub("", css)
+    for regra in _RE_REGRA.finditer(limpo):
+        seletor = " ".join(regra.group(1).split())
+        if "html:not(.js)" not in seletor:
+            continue
+        for declaracao in regra.group(2).split(";"):
+            if not declaracao.strip():
+                continue
+            if "!important" not in declaracao:
+                achados.append(
+                    f"rede: {seletor!r} declara {declaracao.strip()!r} sem "
+                    f"!important — qualquer seletor de fatia com id vence esta "
+                    f"regra, e a degradacao sem JavaScript deixa de acontecer "
+                    f"em silencio"
+                )
+    return achados
+
+
 def auditar_glifos(nome: str, css: str) -> list[str]:
     """`content:` com byte nao-ASCII, e caractere invisivel em qualquer lugar.
 
@@ -586,6 +631,7 @@ def main() -> int:
     contrato = (PARTS / "contrato.md").read_text(encoding="utf-8")
     achados = auditar(css, contrato, verboso=verboso)
     achados += auditar_cascata(css)
+    achados += auditar_rede_js(css)
     # glifo se checa em TODO CSS de parts, nao so no sistema: qualquer
     # fatia pode colar um caractere e o defeito e o mesmo.
     for arquivo in sorted(PARTS.glob("*.css")):

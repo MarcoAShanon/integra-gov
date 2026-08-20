@@ -492,9 +492,20 @@ html:not(.js) .so-com-js{display:none !important}
       de numeros legivel" — entao a pista some e ficam os numeros, que
       ja estao na marcacao.
    2. sem JS o <button> do .proj[data-video] fica desenhado, focavel e
-      inerte. O 9.3 garante que ha exatamente um; escondelo e correto. */
-html:not(.js) .trilha{display:none}
-html:not(.js) .proj[data-video] button{display:none}
+      inerte. O 9.3 garante que ha exatamente um; escondelo e correto.
+
+   AS DUAS LEVAM !important, e isso nao e desleixo. Elas existem para a
+   fatia NAO precisar lembrar de nada — e uma rede que a fatia precisa
+   lembrar de nao derrubar nao e rede. Sem o !important, `html:not(.js)
+   .trilha` pesa (0,2,0) e `html:not(.js) .proj[data-video] button` pesa
+   (0,3,2): qualquer `#secao .algo`, que pesa (1,1,0), vence as duas. Foi
+   o que aconteceu — `#oferta .play{display:inline-flex}` manteve o botao
+   de video visivel sem JavaScript, com o CSS correto e o portao passando,
+   e so apareceu porque alguem mediu o `display` computado em vez de
+   confiar na regra. A checagem `rede:` do auditar_contrato.py cobra este
+   !important em toda regra html:not(.js) deste arquivo. */
+html:not(.js) .trilha{display:none !important}
+html:not(.js) .proj[data-video] button{display:none !important}
 
 /* .trilha — a pista de altura definida em que a .col cresce. A .col
    recebe height em %, entao a MAE DIRETA dela precisa ter altura
