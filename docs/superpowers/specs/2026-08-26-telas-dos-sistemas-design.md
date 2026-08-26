@@ -4,7 +4,7 @@
 capturas reais das telas por onde o trabalho manual passa, e o vídeo da
 automação como fecho. Mais a troca da abertura da fatia.*
 
-*Depende de duas capturas que ainda não existem — ver § 11.*
+*As cinco capturas existem e foram auditadas — ver § 11.*
 
 ## 0. Enquadramento
 
@@ -92,13 +92,21 @@ usuário escolheu o rótulo sem ela (§ 5).
 Uma `<ol>` de cinco itens. Cada item traz uma captura e uma legenda que nomeia
 **o que o gestor faz ali** — não o que a imagem mostra.
 
-| # | tela | legenda (texto exato) |
-|---|---|---|
-| 1 | SEI — árvore do processo | "O processo chega. Você abre a árvore para ver o que ele pede." |
-| 2 | e-SIAPE (Sigepe) — folha | "Para responder, você emite a ficha financeira em outro sistema." |
-| 3 | SEI — instrução | "Volta ao processo e redigita, à mão, o que leu na outra tela." |
-| 4 | Terminal 3270 | "O lançamento é numa terceira tela, que não conversa com nenhuma das duas." |
-| 5 | SEI — fechamento | "Volta de novo, para fechar." |
+| # | tela | arquivo de origem | legenda (texto exato) |
+|---|---|---|---|
+| 1 | SEI — árvore do processo | `SEI.png` | "O processo chega. Você abre a árvore para ver o que ele pede." |
+| 2 | e-SIAPE (Sigepe) — folha | `eSIAPE.png` | "Para responder, você emite a ficha financeira em outro sistema." |
+| 3 | SEI — Registrar Documento Externo | `instrucao.png` | "Volta ao processo e redigita, à mão, o que leu na outra tela." |
+| 4 | Terminal 3270 — menu | `SIAPE_TERMINAL.png` | "O lançamento é numa terceira tela, que não conversa com nenhuma das duas." |
+| 5 | SEI — Conclusão de Processo | `conclusao.png` | "Volta de novo, para fechar." |
+
+**A parada 3 e a sua legenda se sustentam uma na outra, e isso não é acaso.** A
+captura é o formulário "Registrar Documento Externo" com **todos os campos
+vazios** — Tipo do Documento, Nome na Árvore, Remetente, Interessados,
+Classificação por Assuntos. O formulário em branco **é** a redigitação de que a
+legenda fala. Uma captura anterior mostrava um visualizador de PDF com página em
+branco ocupando ~70% da imagem; foi substituída pelo usuário em 26/08 porque a
+legenda dizia uma coisa e a figura mostrava outra. **Não a restaure.**
 
 E o fecho do bloco, **a única frase em que a página fala**, porque o leitor já
 contou sozinho:
@@ -262,24 +270,42 @@ Além deles, três checagens que os portões não fazem:
 **Publicação:** o redeploy do `site/README.md` (assets primeiro, página por
 último) só com **ordem explícita do usuário**.
 
-## 11. Pré-requisito bloqueante
+## 11. As capturas — resolvido em 26/08/2026
 
-**Faltam duas capturas do SEI**, e sem elas o desenho aprovado não pode ser
-implementado como está:
+As cinco existem em `site/media/` e **todas foram auditadas**:
 
-| parada | o que precisa | existe? |
-|---|---|---|
-| 1 | SEI — árvore do processo | ✔ `site/media/SEI.png` |
-| 3 | SEI — **a instrução** (editor, ou a tela de incluir documento) | ✘ |
-| 5 | SEI — **o fechamento** (concluir processo) | ✘ |
+| parada | arquivo | o que mostra | privacidade |
+|---|---|---|---|
+| 1 | `SEI.png` | árvore do processo, três documentos "teste" | limpa |
+| 2 | `eSIAPE.png` | menu da folha no Sigepe, "EMITE INFORMACOES FINANCEIRAS" | nome do autor |
+| 3 | `instrucao.png` | "Registrar Documento Externo", campos vazios | limpa |
+| 4 | `SIAPE_TERMINAL.png` | menu inicial do 3270, tela preta e verde | nome do autor |
+| 5 | `conclusao.png` | "Conclusão de Processo", "Somente concluir" | limpa |
 
-Repetir a mesma imagem nas três paradas mata o que o desenho tem de bom: o leitor
-vê a mesma figura e lê como erro de montagem, não como *"voltei aqui de novo"*.
+Nenhuma tem CPF, matrícula, nome de servidor ou dado de terceiro. As três do SEI
+são da unidade de testes (`MGI-SGP-DECIPEX-CGPAG-NUTEC`), com processos que o
+usuário confirmou serem fictícios. Nas duas do SIAPE aparece o primeiro nome do
+próprio autor, já publicado no rodapé da página como contato — decisão dele.
 
-**Se as duas capturas não vierem**, a alternativa registrada é cair para o
-desenho B — três telas distintas e as cinco paradas ditas pela numeração
-("passos 1, 3 e 5" na figura do SEI). É uma decisão do usuário, não do
-implementador.
+**O `SIAPEnet.png` continua fora** (D3), e é a única das seis que traz o nome
+completo do autor.
+
+## 11-b. Ferramenta de preparo — precisa ser resolvida no plano
+
+**Este repositório não tem hoje como redimensionar nem converter imagem.**
+Verificado em 26/08: `Pillow` não está no venv, `ImageMagick` não está instalado.
+O que existe no `PATH` como `convert` é
+`C:\Windows\system32\convert.exe` — **o utilitário do Windows que converte
+volume de FAT para NTFS**. Nunca o invoque para imagem.
+
+Foi por essa ausência que o ciclo anterior escreveu `site/recortar_cubo.py`, um
+decodificador de PNG em zlib puro. Aqui não serve: é preciso **codificar** JPEG,
+não só decodificar PNG.
+
+**Decisão para o plano:** instalar `Pillow` no venv do repo como ferramenta local
+de preparo de asset. Não entra no `pyproject.toml` e não vira dependência do
+pacote `integra-gov` — é o mesmo estatuto de `extrair_assets.py` e
+`gerar_og.py`.
 
 ## 12. O que fica em aberto
 
