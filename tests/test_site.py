@@ -1,6 +1,7 @@
 """Testes do montador e do verificador da landing (site/)."""
 from __future__ import annotations
 
+import html.parser
 import pathlib
 import re
 import sys
@@ -1336,4 +1337,88 @@ def test_a_porta_do_gestor_convida_sem_repetir_a_faixa_seguinte():
     assert "o seu caso pode ser diferente" in texto
     assert "Quem implanta, configura e opera é a sua equipe" not in texto
     assert "o seu caso é outro" not in texto
+
+
+# Blocos que o CSS ja poe em mono, onde um numero cumpre o proposito do § 5.4
+# sem a classe. Cada entrada e uma DIVERGENCIA REGISTRADA do contrato, que diz
+# ter uma excecao unica (.pill) e "nao ha segunda excecao" — nao um atalho.
+# Ampliar esta tabela exige decisao humana; nao e espaco para um agente futuro
+# calar um achado.
+MONO_POR_CSS = {
+    "endereco": (
+        "#conversao .endereco declara font-family:var(--font-mono) "
+        "(05-conversao.css:136), entao o telefone e o e-mail ali ja saem em "
+        "mono. A spec de 26/08 § 5.6 criou esta segunda excecao sem emendar o "
+        "contrato. Fica registrada AQUI, a vista, em vez de invisivel no CSS. "
+        "Quem for resolver tem duas saidas: emendar o contrato, ou por mono em "
+        "#conversao .rodape .contato a e tirar o .num do telefone de la, "
+        "ficando simetrico com o .fecho."
+    ),
+}
+CLASSES_DE_MONO = ("num", "num-g", "pill") + tuple(MONO_POR_CSS)
+_VAZIAS = ("br", "img", "hr", "input", "meta", "link", "path", "use", "source")
+
+
+class _CacaNumeros(html.parser.HTMLParser):
+    """Percorre o HTML mantendo a PILHA de ancestrais e anota todo no de texto
+    com digito que nao esta sob nenhuma classe de mono.
+
+    Pilha de ancestrais, e nao regex: a primeira tentativa de medir isto usou
+    r'<span class="num"[^>]*>' e produziu 12 falsos positivos, porque
+    class="num valor" quebra o padrao logo depois de 'num'. Um numero pode
+    estar a qualquer profundidade dentro do elemento que o poe em mono."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.pilha = []
+        self.fora_de_mono = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag not in _VAZIAS:
+            self.pilha.append((tag, tuple(dict(attrs).get("class", "").split())))
+
+    def handle_endtag(self, tag):
+        for i in range(len(self.pilha) - 1, -1, -1):
+            if self.pilha[i][0] == tag:
+                del self.pilha[i:]
+                return
+
+    def handle_data(self, dados):
+        if not dados.strip() or not re.search(r"\d", dados):
+            return
+        if any(tag in ("script", "style") for tag, _ in self.pilha):
+            return
+        if any(c in CLASSES_DE_MONO for _, classes in self.pilha for c in classes):
+            return
+        caminho = " > ".join(
+            tag + ("." + ".".join(cs) if cs else "") for tag, cs in self.pilha[-3:]
+        )
+        self.fora_de_mono.append((dados.strip()[:60], caminho))
+
+
+def _numeros_fora_de_mono(nome: str) -> list[tuple[str, str]]:
+    caca = _CacaNumeros()
+    caca.feed(_fatia(nome))
+    return caca.fora_de_mono
+
+
+def test_nenhum_numero_visivel_escapa_do_mono():
+    """O § 5.4 do contrato diz que TODO numero visivel vai em mono, dentro de
+    .num (ou .num-g), com uma excecao unica: numero dentro de .pill.
+
+    Ate 26/08/2026 NENHUM dos dois portoes automaticos olhava essa regra —
+    nem o verificar.py nem o auditar_contrato.py. Ela se cumpria a olho, e foi
+    assim que divergencias viveram meses sem ninguem ver. Este teste existe
+    porque a Revisao mediu o custo disso e concluiu que uma varredura de
+    dezenas de linhas valeria mais que varios dos testes de texto desta branch.
+
+    O que ele cobra: 124 nos de texto com digito nas sete partes, e cada um
+    tem de estar sob uma classe de mono. As excecoes conhecidas estao em
+    MONO_POR_CSS, cada uma com o motivo escrito."""
+    achados = []
+    for nome in list(m.FATIAS) + ["nav"]:
+        achados += [(nome, txt, cam) for txt, cam in _numeros_fora_de_mono(nome)]
+    assert not achados, "numero visivel fora de mono -> " + "; ".join(
+        f"{n}: {txt!r} em {cam}" for n, txt, cam in achados
+    )
 
