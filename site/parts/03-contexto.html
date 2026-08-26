@@ -20,6 +20,70 @@
       <p class="lede">O SEI tramita documentos na web desde <span class="num">2009</span>. O SIAPE guarda os dados funcionais numa emulação de terminal de mainframe — a tela preta <span class="num">3270</span>, que existe desde <span class="num">1989</span>. Entre os dois fica o servidor: copiando, digitando e conferindo matrícula por matrícula.</p>
     </div>
 
+    <!-- ---------- as cinco paradas: o percurso a mao ----------
+         RECONHECIMENTO, nao comparacao. O objetivo nao e o leitor comparar as
+         telas — e ele RECONHECER o proprio dia. Por isso cada tela vem grande,
+         uma por vez, na rolagem, e nao em grade de miniaturas: miniatura a 25%
+         da largura nao dispara memoria nenhuma. Decisao do usuario em
+         26/08/2026, corrigindo o controlador, que havia proposto a grade.
+
+         A SEQUENCIA E REAL, dada pelo usuario: SEI (verificar), e-SIAPE
+         (emitir a ficha), SEI (instruir), terminal 3270 (lancar), SEI (fechar).
+         O SEI aparece TRES VEZES porque o trabalho volta a ele tres vezes — e o
+         vaivem e o argumento inteiro. O leitor conta nos dedos; a pagina so diz
+         a frase do fecho.
+
+         O SIAPEnet ficou de fora: nao esta na sequencia, e entrar so porque a
+         captura existe seria decoracao.
+
+         <ol> e nao <ul>: a ordem e semantica, e quem usa leitor de tela precisa
+         dela. .figura e a primitiva do contrato 8.3-g — legenda FORA da imagem,
+         que e o que o 6.4 exige. -->
+    <ol class="paradas" role="list">
+      <li>
+        <figure class="figura parada">
+          <img src="assets/tela-01-a53768db.png"
+               alt="Tela do SEI: barra azul no topo, árvore do processo à esquerda com três documentos, e a barra de ícones de ações."
+               loading="lazy" width="1000" height="470">
+          <figcaption><span class="num">1</span> O processo chega. Você abre a árvore para ver o que ele pede.</figcaption>
+        </figure>
+      </li>
+      <li>
+        <figure class="figura parada">
+          <img src="assets/tela-02-f96d8541.png"
+               alt="Tela do Sigepe: barra azul e laranja, e seis ícones de opções da folha, entre eles Emite Informações Financeiras."
+               loading="lazy" width="1000" height="628">
+          <figcaption><span class="num">2</span> Para responder, você emite a ficha financeira em outro sistema.</figcaption>
+        </figure>
+      </li>
+      <li>
+        <figure class="figura parada">
+          <img src="assets/tela-03-1dab1813.png"
+               alt="Tela do SEI: formulário Registrar Documento Externo, com os campos Tipo do Documento, Número, Nome na Árvore, Remetente, Interessados e Nível de Acesso, todos vazios."
+               loading="lazy" width="1000" height="479">
+          <figcaption><span class="num">3</span> Volta ao processo e redigita, à mão, o que leu na outra tela.</figcaption>
+        </figure>
+      </li>
+      <li>
+        <figure class="figura parada">
+          <img src="assets/tela-04-964b6db9.png"
+               alt="Terminal 3270 do SIAPE: tela preta com texto verde e um menu em caixa alta — ADMINIST, CADSIAPE, CONSULTAS, FOLHA."
+               loading="lazy" width="960" height="893">
+          <figcaption><span class="num">4</span> O lançamento é numa terceira tela, que não conversa com nenhuma das duas.</figcaption>
+        </figure>
+      </li>
+      <li>
+        <figure class="figura parada">
+          <img src="assets/tela-05-86d901e4.png"
+               alt="Tela do SEI: Conclusão de Processo, com o número do processo listado e a opção Somente concluir marcada."
+               loading="lazy" width="1000" height="471">
+          <figcaption><span class="num">5</span> Volta de novo, para fechar.</figcaption>
+        </figure>
+      </li>
+    </ol>
+
+    <p class="fecho-paradas rise">Três voltas ao mesmo lugar. Nenhum dado passou sozinho.</p>
+
     <!-- ---------- a comparacao honesta ---------- -->
     <div class="bloco rise">
       <div class="sub">

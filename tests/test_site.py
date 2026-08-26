@@ -1462,3 +1462,25 @@ def test_a_abertura_do_contexto_conta_as_paradas():
     assert "1989" in texto
     assert "que existe desde <span class=\"num\">1989</span>" in texto
 
+
+def test_as_cinco_paradas_contam_a_ida_e_a_volta():
+    """O bloco existe para RECONHECIMENTO, nao para comparacao: o gestor tem de
+    ver as telas do proprio dia. A sequencia e a real, dada pelo usuario — SEI,
+    e-SIAPE, SEI, terminal, SEI — e o vaivem E o argumento: tres voltas ao mesmo
+    lugar, com o dado carregado na mao.
+
+    <ol> e nao <ul>: a ordem e semantica. Quem usa leitor de tela precisa saber
+    que a parada 3 vem depois da 2."""
+    texto = _fatia("03-contexto")
+    assert '<ol class="paradas"' in texto
+    assert texto.count("<figure class=\"figura parada\">") == 5
+    assert "O processo chega. Você abre a árvore para ver o que ele pede." in texto
+    assert "Volta ao processo e redigita, à mão, o que leu na outra tela." in texto
+    assert "Volta de novo, para fechar." in texto
+    assert "Três voltas ao mesmo lugar. Nenhum dado passou sozinho." in texto
+    # toda imagem nova entra preguicosa e com dimensao declarada — sem isso a
+    # pagina pula quando elas chegam
+    bloco = texto[texto.index('<ol class="paradas"'):texto.index("</ol>")]
+    assert bloco.count('loading="lazy"') == 5
+    assert bloco.count("width=") == 5 and bloco.count("height=") == 5
+

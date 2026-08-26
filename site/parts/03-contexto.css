@@ -177,3 +177,32 @@
   #contexto .escopo{padding:var(--e-4)}
   #contexto .fluxo .tela{padding:var(--e-3)}
 }
+
+/* --- as cinco paradas -------------------------------------------------
+   A .figura do sistema ja da o fundo, a borda, o raio e a legenda em bloco
+   separado por fio (contrato 8.3-g). Falta so a lista: tirar o marcador do
+   <ol> e por o ritmo vertical entre as paradas.
+
+   As cinco capturas tem proporcoes muito diferentes (de 1,08 na tela do
+   terminal a 2,13 na do SEI). NAO se impoe proporcao unica aqui: recortar
+   para alinhar mataria justamente o que faz a tela ser reconhecida. Cada uma
+   guarda a sua, e a largura e que e comum. */
+#contexto .paradas{
+  list-style:none;
+  margin:var(--e-6) 0 0;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-5);
+}
+/* o numero da parada, na legenda: mono pelo .num do sistema, e so precisa do
+   respiro ate o texto. */
+#contexto .paradas figcaption .num{margin-right:var(--e-2)}
+
+/* o fecho e a UNICA frase em que a pagina fala aqui — o leitor ja contou as
+   tres voltas sozinho. Fica com a medida de leitura da .sub. */
+#contexto .fecho-paradas{
+  margin:var(--e-5) 0 0;
+  max-width:62ch;
+  font-size:var(--t-4);
+}
