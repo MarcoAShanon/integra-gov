@@ -1200,3 +1200,18 @@ def test_o_convite_nao_nega_o_formulario_nem_termina_ai():
     assert "não vai haver" not in texto
     assert "termina aí" not in texto.lower()
     assert "não uma central de atendimento" in texto
+
+
+def test_o_convite_oferece_mais_de_um_caminho():
+    """D3: "nao quero limitar no texto que estamos limitados a contato por
+    e-mail e nada mais". O e-mail continua e continua sendo o primario; o que
+    entra e um segundo caminho, para quem prefere falar a escrever.
+
+    O numero foi conferido contra o portao de privacidade antes de entrar:
+    24988493257 nao passa no digito verificador do modulo 11, entao nao e
+    falso positivo de CPF (ver test_telefone_de_onze_digitos_...)."""
+    texto = _fatia("05-conversao")
+    assert "mailto:marco.aurelio-silva@gestao.gov.br" in texto
+    assert "tel:+5524988493257" in texto
+    assert "https://wa.me/5524988493257" in texto
+    assert "(24) 98849-3257" in texto
