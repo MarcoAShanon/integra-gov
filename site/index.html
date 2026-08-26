@@ -983,18 +983,12 @@ header .marca{flex:none}
    rotulo encosta no titulo. Sem fio embaixo do h4: o #contexto ja usa
    esse recurso nas duas colunas da comparacao, e repeti-lo faria as duas
    secoes lerem como a mesma tabela. */
-#gestor .precisa{grid-column:span 7}
+/* O cartao ficou sozinho quando o bloco vizinho saiu (26/08), e com ele
+   saiu a .grid: grade de um filho so e grade sem funcao. A medida de
+   leitura vem no lugar da coluna — 64ch aqui poe o <dd> na mesma faixa
+   de 62ch que a .sub usa logo acima, contando o respiro do cartao. */
+#gestor .precisa{max-width:64ch}
 #gestor .precisa h4{margin-bottom:var(--e-4)}
-
-/* --- o que nao da para prometer -------------------------------------
-   Coluna de texto ao lado do cartao, sem cartao proprio: dois fios
-   concentricos seriam ruido, e a assimetria (painel x texto) e a mesma
-   que o #contexto usa entre a lista e a figura. O texto fica em --text
-   (o padrao), e nao em --text-soft, porque ele carrega um .link: contra
-   --text-soft o ambar mede 1,07:1 e o link desapareceria no paragrafo
-   (contrato 6.2-b). */
-#gestor .limite{grid-column:span 5}
-#gestor .limite p{margin-top:var(--e-3);max-width:62ch}
 
 /* --- o mapa da pagina ------------------------------------------------
    Quatro linhas: o nome da secao a esquerda, a frase que diz o que ha
@@ -1073,13 +1067,6 @@ header .marca{flex:none}
 /* =====================================================================
    BREAKPOINTS — so 1080px e 768px, em max-width, nesta ordem.
    ===================================================================== */
-@media (max-width:1080px){
-  /* com o respiro lateral menor a coluna de 5 fica estreita antes da de
-     7, e e ela que tem os dois paragrafos mais densos. Meio a meio. */
-  #gestor .precisa{grid-column:span 6}
-  #gestor .limite{grid-column:span 6}
-}
-
 @media (max-width:768px){
   /* o .mapa nao e uma .grid do sistema — o colapso e por conta desta
      fatia. Uma coluna: o rotulo em cima, a frase embaixo. */
@@ -2250,9 +2237,17 @@ header .marca{flex:none}
 
      NUMEROS: nenhum numero novo. Os quatro daqui (8 -> 4 tecnicos, o passivo
      de ~4.800 para ~800, os -89% de tempo e o 1o lugar) ja estao publicados
-     na fatia 02, e a fonte fecha o bloco do mapa. O numero que FALTA —
-     quanto tempo leva um piloto — nao esta aqui porque nao foi medido, e
-     dizer isso e o conteudo do cartao "O que nao da para prometer".
+     na fatia 02, e a fonte fecha o bloco do mapa. Nenhum numero de prazo
+     aparece porque nenhum foi medido.
+
+     O QUE SAIU EM 26/08, por decisao do usuario: o cartao "O que nao da para
+     prometer", que ficava ao lado deste. Motivo dado: antipatico, "principalmente
+     por que fala de preco" — e falar de custo na secao que existe para ABRIR uma
+     porta e receber o visitante com uma fatura na mao. A comparacao honesta nao
+     se perdeu: o cartao dos dois precos continua no #contexto, que e onde quem
+     foi procurar por ela chega. O que a pagina deixou de dizer, e fica
+     registrado: que o prazo de um piloto e desconhecido. Com o cartao saiu
+     tambem a .grid — grade de um filho so e grade sem funcao.
 
      SEM DEPENDENCIA DE JAVASCRIPT: o unico gancho e .rise, cuja regra de
      esconder mora em ".js .rise" (contrato 9.1). Com JS bloqueado a secao
@@ -2268,8 +2263,8 @@ header .marca{flex:none}
 
     <div class="abertura">
       <span class="pill"><span class="ponto"></span>Para quem chefia a área</span>
-      <h2>A equipe encolheu. O trabalho repetitivo, não.</h2>
-      <p class="lede">Se a sua unidade recebe sempre o mesmo tipo de processo, alguém aí passa o dia lendo uma tela do SIAPE e redigitando o mesmo dado no SEI. Não é falta de capricho: é o desenho do trabalho. E, enquanto a fila cresce, quem mais entende do assunto é quem está digitando.</p>
+      <h2>Parte da equipe se aposenta. A demanda, não.</h2>
+      <p class="lede">Quem se aposenta muitas vezes não é reposto, e a demanda não diminui junto. Se a sua unidade recebe sempre o mesmo tipo de processo, alguém aí passa o dia lendo uma tela do SIAPE e redigitando o mesmo dado no SEI. Não é falta de capricho: é o desenho do trabalho. E, enquanto a fila cresce, quem mais entende do assunto é quem está digitando.</p>
     </div>
 
     <!-- ---------- a objecao, escrita e respondida ---------- -->
@@ -2279,36 +2274,26 @@ header .marca{flex:none}
         <p>É a objeção mais comum, e a resposta não é um contra-argumento: é o tamanho do começo. A CGPAG/DECIPEX também não tinha equipe de TI — a automação saiu de dentro da própria área, feita por servidores que já faziam aquele trabalho à mão. No período, os técnicos na rotina de exercícios anteriores caíram de <span class="num">8</span> para <span class="num">4</span>, e a outra metade foi para outras frentes. Ninguém foi contratado, e não há o que contratar: o núcleo é código aberto sob licença MIT. E você não precisa decidir nada agora: o primeiro passo é conhecer o que já existe e ver se alguma parte serve para o seu caso.</p>
       </div>
 
-      <div class="grid">
-
-        <div class="card ficha precisa">
-          <h4>O que já basta para começar</h4>
-          <dl>
-            <div>
-              <dt>Uma pessoa da própria área</dt>
-              <dd>Quem já faz esse trabalho hoje e conhece a regra por dentro. Não precisa ser da área de TI, nem cuidar só disso.</dd>
-            </div>
-            <div>
-              <dt>Um fluxo, não o setor</dt>
-              <dd>A tarefa repetitiva que mais consome a unidade hoje. Uma só, escolhida por você.</dd>
-            </div>
-            <div>
-              <dt>O acesso que já existe</dt>
-              <dd>As transações do SIAPE e as unidades do SEI que o perfil dela já alcança. Nenhuma habilitação nova.</dd>
-            </div>
-            <div>
-              <dt>A sua autorização</dt>
-              <dd>Um piloto dentro da sua própria unidade. Não depende de projeto institucional, de orçamento novo nem de licitação.</dd>
-            </div>
-          </dl>
-        </div>
-
-        <div class="limite">
-          <h4>O que não dá para prometer</h4>
-          <p><b>Quanto tempo leva.</b> Não foi medido, e depende do fluxo que você escolher. Esta página só publica número com fonte declarada; este não tem, então não está aqui.</p>
-          <p><b>Que compense no seu caso.</b> A automação troca um custo de repetição, que não termina nunca, por um custo de manutenção, que aparece quando um dos sistemas muda de tela. Onde o volume é alto e a regra é estável, vale; onde cada caso é diferente do anterior, não. <a class="link" href="#contexto">A comparação está adiante</a>, com os dois preços à vista.</p>
-        </div>
-
+      <div class="card ficha precisa">
+        <h4>O que já basta para começar</h4>
+        <dl>
+          <div>
+            <dt>Uma pessoa da própria área</dt>
+            <dd>Quem já faz esse trabalho hoje e conhece a regra por dentro. Não precisa ser da área de TI, nem cuidar só disso.</dd>
+          </div>
+          <div>
+            <dt>Um fluxo, não o setor</dt>
+            <dd>A tarefa repetitiva que mais consome a unidade hoje. Uma só, escolhida por você.</dd>
+          </div>
+          <div>
+            <dt>O acesso que já existe</dt>
+            <dd>As transações do SIAPE e as unidades do SEI que o perfil dela já alcança. Nenhuma habilitação nova.</dd>
+          </div>
+          <div>
+            <dt>A sua autorização</dt>
+            <dd>Um piloto dentro da sua própria unidade. Não depende de projeto institucional, de orçamento novo nem de licitação.</dd>
+          </div>
+        </dl>
       </div>
     </div>
 

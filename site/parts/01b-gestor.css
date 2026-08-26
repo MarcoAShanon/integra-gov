@@ -48,18 +48,12 @@
    rotulo encosta no titulo. Sem fio embaixo do h4: o #contexto ja usa
    esse recurso nas duas colunas da comparacao, e repeti-lo faria as duas
    secoes lerem como a mesma tabela. */
-#gestor .precisa{grid-column:span 7}
+/* O cartao ficou sozinho quando o bloco vizinho saiu (26/08), e com ele
+   saiu a .grid: grade de um filho so e grade sem funcao. A medida de
+   leitura vem no lugar da coluna — 64ch aqui poe o <dd> na mesma faixa
+   de 62ch que a .sub usa logo acima, contando o respiro do cartao. */
+#gestor .precisa{max-width:64ch}
 #gestor .precisa h4{margin-bottom:var(--e-4)}
-
-/* --- o que nao da para prometer -------------------------------------
-   Coluna de texto ao lado do cartao, sem cartao proprio: dois fios
-   concentricos seriam ruido, e a assimetria (painel x texto) e a mesma
-   que o #contexto usa entre a lista e a figura. O texto fica em --text
-   (o padrao), e nao em --text-soft, porque ele carrega um .link: contra
-   --text-soft o ambar mede 1,07:1 e o link desapareceria no paragrafo
-   (contrato 6.2-b). */
-#gestor .limite{grid-column:span 5}
-#gestor .limite p{margin-top:var(--e-3);max-width:62ch}
 
 /* --- o mapa da pagina ------------------------------------------------
    Quatro linhas: o nome da secao a esquerda, a frase que diz o que ha
@@ -138,13 +132,6 @@
 /* =====================================================================
    BREAKPOINTS — so 1080px e 768px, em max-width, nesta ordem.
    ===================================================================== */
-@media (max-width:1080px){
-  /* com o respiro lateral menor a coluna de 5 fica estreita antes da de
-     7, e e ela que tem os dois paragrafos mais densos. Meio a meio. */
-  #gestor .precisa{grid-column:span 6}
-  #gestor .limite{grid-column:span 6}
-}
-
 @media (max-width:768px){
   /* o .mapa nao e uma .grid do sistema — o colapso e por conta desta
      fatia. Uma coluna: o rotulo em cima, a frase embaixo. */
