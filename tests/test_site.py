@@ -1422,3 +1422,26 @@ def test_nenhum_numero_visivel_escapa_do_mono():
         f"{n}: {txt!r} em {cam}" for n, txt, cam in achados
     )
 
+
+def test_as_cinco_telas_estao_nos_assets():
+    """As capturas dos sistemas sao servidas de site/assets/ com nome por hash
+    do conteudo (regra de cache do site/README.md), e nao de site/media/, que e
+    gitignored e nao vai para a VPS junto com a pagina.
+
+    A largura maxima e 1000px: e a mesma da maior imagem ja publicada
+    (img-08, 1000x541). Mais que isso e peso sem ganho — a coluna de texto da
+    pagina nao passa disso."""
+    import gerar_og
+
+    for nome in (
+        "tela-01-a53768db.png",
+        "tela-02-f96d8541.png",
+        "tela-03-1dab1813.png",
+        "tela-04-964b6db9.png",
+        "tela-05-86d901e4.png",
+    ):
+        caminho = SITE / "assets" / nome
+        assert caminho.exists(), f"{nome} — rode: python site/preparar_telas.py"
+        largura, _ = gerar_og.dimensoes_png(caminho)
+        assert largura <= 1000, f"{nome} tem {largura}px de largura"
+
