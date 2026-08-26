@@ -1209,9 +1209,16 @@ def test_o_convite_oferece_mais_de_um_caminho():
 
     O numero foi conferido contra o portao de privacidade antes de entrar:
     24988493257 nao passa no digito verificador do modulo 11, entao nao e
-    falso positivo de CPF (ver test_telefone_de_onze_digitos_...)."""
+    falso positivo de CPF (ver test_telefone_de_onze_digitos_...).
+
+    As quatro asserções originais so pegavam o .fecho: ele sozinho ja traz
+    tel:, wa.me e o numero formatado, entao a linha do .rodape podia sumir
+    sem que nenhuma delas reclamasse. A contagem == 2 e o rotulo do rodape
+    amarram os DOIS lugares de publicacao, nao so o primeiro."""
     texto = _fatia("05-conversao")
     assert "mailto:marco.aurelio-silva@gestao.gov.br" in texto
     assert "tel:+5524988493257" in texto
     assert "https://wa.me/5524988493257" in texto
     assert "(24) 98849-3257" in texto
+    assert texto.count("(24) 98849-3257") == 2
+    assert '<span class="rot">telefone</span>' in texto
