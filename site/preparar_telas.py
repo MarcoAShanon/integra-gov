@@ -50,9 +50,15 @@ def preparar() -> list[dict]:
                 imagem = imagem.resize((LARGURA_MAX, nova_alt), Image.LANCZOS)
             largura, altura = imagem.size
             temporario = ASSETS / "_preparar_telas.tmp.png"
-            imagem.save(temporario, format="PNG", optimize=True)
-        dados = temporario.read_bytes()
-        temporario.unlink()
+            # try/finally, e nao a sequencia direta: se o save falhar no meio
+            # (disco cheio, permissao, interrupcao) o temporario ficaria para
+            # tras dentro de assets/, que e o diretorio que sobe para a VPS.
+            # missing_ok porque o save pode ter falhado antes de criar o arquivo.
+            try:
+                imagem.save(temporario, format="PNG", optimize=True)
+                dados = temporario.read_bytes()
+            finally:
+                temporario.unlink(missing_ok=True)
         digest = hashlib.sha256(dados).hexdigest()[:8]
         nome = f"tela-{indice:02d}-{digest}.png"
         (ASSETS / nome).write_bytes(dados)
