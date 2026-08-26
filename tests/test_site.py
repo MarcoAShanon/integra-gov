@@ -1113,3 +1113,53 @@ def test_a_subsecao_tem_primitiva_com_as_tres_medidas_fixas():
     assert "gap:var(--e-3)" in bloco
     assert "margin-bottom:var(--e-5)" in bloco
     assert "max-width:62ch" in bloco
+
+
+# ---------------------------------------------------------------- o texto
+def _fatia(nome: str) -> str:
+    """O HTML de uma fatia SEM os comentarios de projeto — ou seja, o texto
+    que o leitor ve.
+
+    Tirar o comentario nao e detalhe: os vetos abaixo cobram o texto
+    PUBLICADO, e o comentario de cada fatia precisa poder dizer o que saiu e
+    por que ("aqui exigia-se Python; saiu em 26/08"). Sem esta linha, o
+    proprio registro da decisao derrubaria o teste que a decisao criou."""
+    bruto = (SITE / "parts" / f"{nome}.html").read_text(encoding="utf-8")
+    return re.sub(r"<!--.*?-->", " ", bruto, flags=re.S)
+
+
+def test_a_porta_do_gestor_nao_exige_programador_nem_maquina():
+    """A 01b existe para derrubar "isso e coisa de TI, eu nao tenho equipe" e,
+    no mesmo bloco, reintroduzia a objecao como requisito: exigia alguem que
+    lesse Python e uma maquina Windows.
+
+    Decisao do usuario em 26/08/2026 (spec 2026-08-26-landing-porta-do-gestor,
+    D1 e D2): o degrau de entrada e querer conhecer o projeto, nao ter um
+    programador. O Windows sai junto porque dizer "Windows so se for o SIAPE"
+    abre a pergunta seguinte, cuja resposta e servidor online pago do proprio
+    bolso."""
+    texto = _fatia("01b-gestor")
+    assert "Python" not in texto
+    assert "Windows" not in texto
+    assert "3270" not in texto
+
+
+def test_a_porta_do_gestor_nao_fecha_no_e_mail_nem_termina_ai():
+    """D3 e D4: nao limitar o contato ao e-mail, e nao fechar portas. O
+    limite continua DITO (quem implanta e a equipe do orgao) — o que sai e a
+    porta batendo."""
+    texto = _fatia("01b-gestor")
+    assert "termina aí" not in texto.lower()
+    assert "por e-mail" not in texto
+    assert "não há acompanhamento" not in texto
+
+
+def test_a_porta_do_gestor_diz_o_que_basta_e_quem_faz():
+    """O cartao passa a dizer o que basta, e mantem UM item sobre pessoa. Sem
+    ele os tres restantes (fluxo, acesso, autorizacao) nao respondem "quem
+    faz?" — e o leitor completa a lacuna com "entao e TI mesmo", que e
+    exatamente a objecao que a secao existe para derrubar."""
+    texto = _fatia("01b-gestor")
+    assert "O que já basta para começar" in texto
+    assert "Uma pessoa da própria área" in texto
+    assert "O que a sua unidade precisa ter" not in texto
