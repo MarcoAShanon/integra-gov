@@ -1163,7 +1163,7 @@ def test_a_porta_do_gestor_diz_o_que_basta_e_quem_faz():
     um programador"), que virou texto no paragrafo da objecao e nao tinha
     asserção nenhuma."""
     texto = _fatia("01b-gestor")
-    assert "O que já basta para começar" in texto
+    assert "Por onde isso começa" in texto
     assert "Uma pessoa da própria área" in texto
     assert "O que a sua unidade precisa ter" not in texto
     assert "E você não precisa decidir nada agora" in texto
@@ -1282,8 +1282,13 @@ def test_a_pagina_nao_vende_uma_solucao():
     para nao virarem falso positivo: "cliente" e "atendimento" aparecem em
     texto visivel NEGADOS — "nao ha empresa nem cliente", "nao uma central de
     atendimento" —, que e o oposto de adotar o registro comercial."""
-    for fatia in ("01-hero", "01b-gestor", "03-contexto", "04-oferta", "05-conversao"):
-        assert "solução" not in _fatia(fatia).casefold(), fatia
+    # RADICAL, nao a palavra: o portao nascido em 26/08 testava "solucao" e
+    # deixava passar "Dos blocos as SOLUCOES que ja rodam", um <h3> visivel da
+    # fatia 04 — plural nao contem singular. Achado da Revisao, que varreu o
+    # texto visivel do index.html montado em vez de confiar no teste.
+    for fatia in ("01-hero", "01b-gestor", "02-prova", "03-contexto",
+                  "04-oferta", "05-conversao", "nav"):
+        assert "soluç" not in _fatia(fatia).casefold(), fatia
 
 
 def test_a_secao_da_conversa_nao_tem_nome_de_plano_de_servico():
