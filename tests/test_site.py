@@ -1492,7 +1492,6 @@ def test_as_cinco_paradas_contam_a_ida_e_a_volta():
     # pagina pula quando elas chegam
     bloco = texto[texto.index('<ol class="paradas rise" role="list">'):texto.index("</ol>")]
     assert bloco.count('loading="lazy"') == 5
-    assert bloco.count("width=") == 5 and bloco.count("height=") == 5
 
 
 def test_o_video_fecha_o_percurso_com_a_duracao_a_vista():
@@ -1517,3 +1516,32 @@ def test_o_video_fecha_o_percurso_com_a_duracao_a_vista():
     assert "data-video" not in texto
     assert "class=\"play" not in texto
 
+
+def test_as_paradas_declaram_a_dimensao_REAL_de_cada_arquivo():
+    """O width/height de uma imagem existe para o navegador RESERVAR o espaco
+    antes de ela chegar. Se o valor declarado nao for o do arquivo, a reserva
+    sai errada e a pagina PULA quando a imagem carrega — e como as cinco entram
+    com loading="lazy", isso acontece embaixo do dedo do leitor.
+
+    E o defeito invisivel desta secao: nao quebra teste, nao aparece em revisao
+    de texto, e o portao anterior so CONTAVA que havia cinco width= e cinco
+    height=, sem olhar o valor. A parada 4 e a armadilha concreta — a captura do
+    terminal tem 960px, nao 1000, porque o preparo nunca amplia, e "corrigir"
+    para 1000 por simetria seria exatamente o erro.
+
+    Achado da Revisao de 26/08/2026."""
+    import gerar_og
+
+    texto = _fatia("03-contexto")
+    bloco = texto[texto.index('<ol class="paradas'):texto.index("</ol>")]
+    declarados = re.findall(
+        r'src="assets/(tela-[^"]+)"[^>]*?width="(\d+)"\s+height="(\d+)"', bloco, re.S
+    )
+    assert len(declarados) == 5, f"esperava 5 imagens declaradas, achei {len(declarados)}"
+    for nome, larg, alt in declarados:
+        caminho = SITE / "assets" / nome
+        assert caminho.exists(), nome
+        real = gerar_og.dimensoes_png(caminho)
+        assert real == (int(larg), int(alt)), (
+            f"{nome}: declarado {larg}x{alt}, arquivo {real[0]}x{real[1]}"
+        )

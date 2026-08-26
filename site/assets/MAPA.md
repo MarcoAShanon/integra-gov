@@ -62,5 +62,5 @@ primeiro nome do próprio autor, já publicado no rodapé da página como contat
 | `tela-01-a53768db.png` | 52.3 | SEI — árvore do processo, três documentos de teste. Parada 1. |
 | `tela-02-f96d8541.png` | 81.7 | e-SIAPE (Sigepe) — menu da folha, com "EMITE INFORMACOES FINANCEIRAS". Parada 2. |
 | `tela-03-1dab1813.png` | 58.5 | SEI — formulário "Registrar Documento Externo" com todos os campos vazios. Parada 3. |
-| `tela-04-964b6db9.png` | 26.0 | Terminal 3270 do SIAPE — menu inicial, tela preta com texto verde. Parada 4. |
+| `tela-04-964b6db9.png` | 26.0 | Terminal 3270 do SIAPE — menu inicial, fundo preto com texto em azul-claro e branco. Parada 4. |
 | `tela-05-86d901e4.png` | 38.8 | SEI — tela "Conclusão de Processo", opção "Somente concluir". Parada 5. |

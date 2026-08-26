@@ -204,7 +204,6 @@
 #contexto .fecho-paradas{
   margin:var(--e-5) 0 0;
   max-width:62ch;
-  font-size:var(--t-4);
 }
 
 /* --- o video que fecha o percurso ------------------------------------

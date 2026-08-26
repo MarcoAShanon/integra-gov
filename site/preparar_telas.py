@@ -6,7 +6,7 @@ site/README.md, que garante que um asset alterado muda de nome e o navegador
 nunca serve o antigo.
 
 POR QUE PNG, E NAO JPEG: sao capturas de INTERFACE — cor chapada, texto de
-11px, e a do terminal e preto com verde. JPEG produz chiado em volta da letra,
+11px, e a do terminal e texto azul-claro e branco sobre preto. JPEG produz chiado em volta da letra,
 que e exatamente o que destroi o RECONHECIMENTO — o unico objetivo do bloco que
 usa estas imagens. PNG e lossless e comprime bem area chapada.
 
@@ -30,7 +30,7 @@ TELAS = [
     ("SEI.png", "SEI: arvore do processo, tres documentos de teste"),
     ("eSIAPE.png", "e-SIAPE (Sigepe): menu da folha"),
     ("instrucao.png", "SEI: formulario Registrar Documento Externo, campos vazios"),
-    ("SIAPE_TERMINAL.png", "Terminal 3270 do SIAPE: menu inicial, tela preta e verde"),
+    ("SIAPE_TERMINAL.png", "Terminal 3270 do SIAPE: menu inicial, azul-claro e branco sobre preto"),
     ("conclusao.png", "SEI: tela Conclusao de Processo"),
 ]
 
