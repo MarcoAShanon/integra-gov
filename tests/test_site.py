@@ -1261,3 +1261,43 @@ def test_a_porta_do_gestor_abre_pela_aposentadoria_sem_reposicao():
     assert "Parte da equipe se aposenta" in texto
     assert "muitas vezes não é reposto" in texto
     assert "A equipe encolheu" not in texto
+
+
+def test_a_pagina_nao_vende_uma_solucao():
+    """"Solucao" esta na lista de palavras vetadas por implicar transacao
+    (§ 0 da spec de 20/08, junto com cliente, atendimento, oferta e proposta
+    de valor). Nenhum portao cobrava essa lista — ela se cumpria a olho — e em
+    26/08/2026 a palavra quase entrou na .promessa da 01b, sugerida por quem
+    tinha acabado de pedir um texto MENOS comercial. E exatamente o risco: em
+    texto de trabalho "solucao" passa despercebida.
+
+    So "solucao" entra neste portao. As outras da lista precisam de allowlist
+    para nao virarem falso positivo: "cliente" e "atendimento" aparecem em
+    texto visivel NEGADOS — "nao ha empresa nem cliente", "nao uma central de
+    atendimento" —, que e o oposto de adotar o registro comercial."""
+    for fatia in ("01-hero", "01b-gestor", "03-contexto", "04-oferta", "05-conversao"):
+        assert "solução" not in _fatia(fatia).casefold(), fatia
+
+
+def test_a_secao_da_conversa_nao_tem_nome_de_plano_de_servico():
+    """A faixa 05 chamava-se "Piloto assistido" na navegacao, no mapa da 01b,
+    na pilula e no h2 — e a lede existia para definir o que "assistido" queria
+    dizer. Saiu em 26/08/2026 por decisao do usuario: e nome de plano de
+    servico, soa a fornecedor descrevendo um pacote, e esse e o registro que o
+    § 0 veta. A secao passou a se chamar "Conversa", que e a palavra que a
+    propria pagina ja usava em todo lugar."""
+    for parte in ("nav", "01b-gestor", "05-conversao"):
+        assert "Piloto assistido" not in _fatia(parte), parte
+    assert '<a href="#conversao">Conversa</a>' in _fatia("nav")
+
+
+def test_o_gestor_descobre_o_que_e_MIT_onde_encontra_o_termo():
+    """"Licenca MIT" nao diz nada a quem nao e tecnico, e aparece justamente
+    no paragrafo que existe para TIRAR o peso da decisao ("nao ha o que
+    contratar"). Ate 26/08/2026 a explicacao so chegava na fatia 04, tres
+    secoes adiante. A glosa passou a entrar na primeira vez que o gestor
+    encontra o termo em prosa."""
+    texto = _fatia("01b-gestor")
+    assert "sem pagar nada e sem pedir autorização" in texto
+    assert "basta manter o aviso de autoria" in texto
+
