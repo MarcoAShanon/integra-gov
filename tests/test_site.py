@@ -1158,11 +1158,15 @@ def test_a_porta_do_gestor_diz_o_que_basta_e_quem_faz():
     """O cartao passa a dizer o que basta, e mantem UM item sobre pessoa. Sem
     ele os tres restantes (fluxo, acesso, autorizacao) nao respondem "quem
     faz?" — e o leitor completa a lacuna com "entao e TI mesmo", que e
-    exatamente a objecao que a secao existe para derrubar."""
+    exatamente a objecao que a secao existe para derrubar. Cobre tambem a
+    frase de D1 ("o degrau de entrada e querer conhecer o projeto, nao ter
+    um programador"), que virou texto no paragrafo da objecao e nao tinha
+    asserção nenhuma."""
     texto = _fatia("01b-gestor")
     assert "O que já basta para começar" in texto
     assert "Uma pessoa da própria área" in texto
     assert "O que a sua unidade precisa ter" not in texto
+    assert "E você não precisa decidir nada agora" in texto
 
 
 def test_a_comparacao_honesta_nao_transforma_python_em_pre_requisito():
@@ -1183,11 +1187,15 @@ def test_o_convite_nao_exige_programador_nem_maquina():
     """A 05 e o destino do botao da 01b. Ela pedia a versao do SEI, se as
     maquinas eram Windows e se havia alguem que programasse — ou seja, a
     barreira de que a 01b acabara de dispensar o leitor, tres telas abaixo.
-    Uma pagina que se desmente no clique que ela mesma pediu."""
+    Uma pagina que se desmente no clique que ela mesma pediu. A frase
+    "alguém que programe" nao contem nenhuma das tres palavras acima, entao
+    o teste passaria intacto com ela de volta — e e a edicao que mais
+    diretamente qualifica o leitor, por isso ganha asserção propria."""
     texto = _fatia("05-conversao")
     assert "Python" not in texto
     assert "Windows" not in texto
     assert "3270" not in texto
+    assert "alguém que programe" not in texto
 
 
 def test_o_convite_nao_nega_o_formulario_nem_termina_ai():
