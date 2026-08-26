@@ -99,6 +99,24 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   extração `layout` — de que a leitura da ficha depende, porque no relatório
   do SIAPE a informação está na **posição** do caractere — só existe a partir
   do 4.0. Com o piso antigo o pacote instalava e quebrava em runtime.
+- **A landing para de barrar o gestor não-técnico na porta.** A fatia do gestor
+  existia para derrubar "isso é coisa de TI, eu não tenho equipe" e, no mesmo
+  bloco, reintroduzia a objeção como requisito: exigia alguém que lesse Python e
+  uma máquina Windows, e mandava o leitor para uma seção que pedia a versão do
+  SEI e se havia quem programasse. A página se desmentia no clique que ela mesma
+  pedia.
+  - **Sai a exigência técnica das três fatias que o leitor percorre** (`01b`,
+    `03` e `05`). O custo continua dito — a automação exige alguém por perto, e
+    o roteiro quebra se a tela mudar —, mas como preço à vista, não como
+    condição de entrada. A `04-oferta` não muda: lá é catálogo técnico.
+  - **O contato deixa de ser só o e-mail.** Entra `(24) 98849-3257`, no WhatsApp
+    e por ligação, ao lado do endereço institucional. O número foi conferido
+    contra o portão de privacidade antes de entrar.
+  - **O limite continua dito, sem fechar a porta.** Some o "Termina aí" e a
+    negação em série; fica a divisão de trabalho — quem implanta e opera é a
+    equipe do órgão — e a conversa segue se fizer sentido para os dois lados.
+  - **Sete testes novos em `tests/test_site.py`** cobram cada uma dessas
+    decisões no texto publicado, lendo a fatia sem os comentários de projeto.
 
 ### Alterado
 - `integra_gov.siape.TrocaHabilitacao`: **`upag` vira opcional** — o módulo
