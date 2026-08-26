@@ -1163,3 +1163,17 @@ def test_a_porta_do_gestor_diz_o_que_basta_e_quem_faz():
     assert "O que já basta para começar" in texto
     assert "Uma pessoa da própria área" in texto
     assert "O que a sua unidade precisa ter" not in texto
+
+
+def test_a_comparacao_honesta_nao_transforma_python_em_pre_requisito():
+    """A 01b dispensa o requisito tecnico e, no mapa, manda o leitor para o
+    #contexto — onde o cartao "Automatizar com o INTEGRA" dizia "Para comecar:
+    alguem da equipe le e ajusta Python". O leitor saia pela porta da frente e
+    reencontrava a exigencia tres secoes abaixo.
+
+    O CUSTO continua dito: o cartao existe para por os dois precos a vista, e
+    "acompanha o roteiro" mantem que a automacao exige alguem por perto. O que
+    sai e a linguagem de programacao como condicao de entrada."""
+    texto = _fatia("03-contexto")
+    assert "Python" not in texto
+    assert "Alguém da própria área acompanha o roteiro." in texto
