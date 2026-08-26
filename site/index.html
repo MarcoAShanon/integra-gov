@@ -932,6 +932,161 @@ header .marca{flex:none}
   #hero .intro{gap:var(--e-4)}
   #hero .ficha{padding:var(--e-4)}
 }
+/* ===== 01b-gestor ===== */
+/* =====================================================================
+   01b-gestor — o degrau de entrada do gestor publico.
+
+   Regras que este arquivo respeita e que nao aparecem sozinhas na
+   leitura: todo seletor comeca por "#gestor"; nenhum token novo, nenhum
+   bloco :root; nenhuma box-shadow; nenhum outline (o do sistema usa
+   :where() e qualquer regra prefixada o venceria); nenhum z-index cru;
+   nenhum atributo style no HTML; @media so em 1080px e 768px, em
+   max-width, nesta ordem.
+
+   O UNICO controle da faixa e o .btn-s do fim. Ele nao recebe conserto
+   de alvo de toque aqui: os 44px vem do min-height da primitiva
+   (contrato 8.4-b), e a .acoes em volta garante a largura cheia abaixo
+   de 768px mesmo com um botao so.
+   ===================================================================== */
+
+/* --- ritmo interno --------------------------------------------------
+   O .wrap empilha a abertura e os tres blocos com --e-6, o mesmo passo
+   que o #contexto usa. O padding vertical e o fundo da <section>
+   continuam sendo da .faixa (contrato 4). */
+#gestor .wrap{
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-6);
+}
+
+/* cada bloco abre com um fio de cabelo. --border e decorativo (1,27:1 a
+   1,43:1 contra o fundo) e aqui ele so separa — nao identifica controle
+   nenhum, que e o unico uso que o contrato 6.3 lhe proibe.
+   Nenhuma medida de leitura, gap ou margem de subsecao mora aqui: o h3 e
+   o paragrafo dele sao uma .sub do sistema (12px entre os dois, 32px ate
+   o que vem depois, 62ch de medida). Uma copia prefixada venceria em
+   silencio qualquer correcao futura da primitiva. */
+#gestor .bloco{
+  padding-top:var(--e-5);
+  border-top:1px solid var(--border);
+}
+
+/* --- o que a unidade precisa ter ------------------------------------
+   A .ficha e a primitiva certa aqui: sao cinco pares rotulo/valor curtos,
+   e o rotulo em mono/caixa alta e o registro de uma lista de requisitos,
+   nao de prosa. Nenhum numero entra num <dt>: ali o letter-spacing de
+   .11em do micro-rotulo brigaria com o -.02em do .num, e o contrato so
+   isenta a .pill dessa colisao (5.4). Por isso o 3270 vive no <dd>.
+
+   O <h4> ganha respiro proprio porque a primitiva zera o padding-top do
+   primeiro par (.ficha dl > div:first-child) — sem isto o primeiro
+   rotulo encosta no titulo. Sem fio embaixo do h4: o #contexto ja usa
+   esse recurso nas duas colunas da comparacao, e repeti-lo faria as duas
+   secoes lerem como a mesma tabela. */
+#gestor .precisa{grid-column:span 7}
+#gestor .precisa h4{margin-bottom:var(--e-4)}
+
+/* --- o que nao da para prometer -------------------------------------
+   Coluna de texto ao lado do cartao, sem cartao proprio: dois fios
+   concentricos seriam ruido, e a assimetria (painel x texto) e a mesma
+   que o #contexto usa entre a lista e a figura. O texto fica em --text
+   (o padrao), e nao em --text-soft, porque ele carrega um .link: contra
+   --text-soft o ambar mede 1,07:1 e o link desapareceria no paragrafo
+   (contrato 6.2-b). */
+#gestor .limite{grid-column:span 5}
+#gestor .limite p{margin-top:var(--e-3);max-width:62ch}
+
+/* --- o mapa da pagina ------------------------------------------------
+   Quatro linhas: o nome da secao a esquerda, a frase que diz o que ha
+   nela a direita. E a unica coisa parecida com um resumo na pagina, que
+   tem 2.640 palavras e nenhum.
+
+   A largura da coluna esquerda em --col-3 e legitima: subindo do <li>
+   ate o .wrap so ha .mapa (padding 0, margem 0) e .bloco (so
+   padding-top), os dois de largura cheia — o teste mecanico do contrato
+   7.1. .bloco e item de um flex column, que estica no eixo cruzado, e
+   por isso resolve contra a largura util do .wrap. */
+#gestor .mapa{list-style:none;margin:0;padding:0}
+
+#gestor .mapa li{
+  margin:0;
+  display:grid;
+  grid-template-columns:var(--col-3) minmax(0,1fr);
+  gap:0 var(--e-5);
+  padding-block:var(--e-3);
+  border-top:1px solid var(--border);
+}
+#gestor .mapa li:first-child{padding-top:0;border-top:0}
+#gestor .mapa li:last-child{padding-bottom:0}
+
+/* A caixa de 44px e a MESMA tecnica que o sistema usa no .nav a
+   (inline-flex + min-height), e nao um conserto de primitiva no prefixo:
+   .link e definido como link de texto corrido e nao tem — nem deve ter —
+   altura de alvo, mas aqui ele nao esta em prosa, e sim sozinho numa
+   linha, servindo de destino tocavel. align-items:flex-start mantem a
+   primeira linha do rotulo alinhada com a do paragrafo ao lado; os 44px
+   crescem para baixo, para dentro do respiro que a linha ja tem.
+
+   align-self e justify-self NAO sao enfeite, e foram postos depois de
+   MEDIR o display computado em vez de confiar na regra — que e a
+   armadilha que o proprio contrato manda checar. O <a> e item de uma
+   grade, e item de grade e BLOQUIFICADO: o inline-flex declarado aqui
+   computa "flex", o alvo estica para os 246px da coluna e para a altura
+   da linha inteira (medido: 246 x 82,6px). Ficava um retangulo invisivel
+   de meia coluna reagindo a hover e a clique longe de qualquer texto.
+   Com align-self:start + justify-self:start o alvo volta a ser do
+   tamanho do rotulo, com os 44px de dedo e mais nada. */
+#gestor .mapa a{
+  display:inline-flex;
+  align-items:flex-start;
+  align-self:start;
+  justify-self:start;
+  min-height:44px;
+  font-weight:600;
+}
+#gestor .mapa p{max-width:62ch}
+
+/* a fonte dos numeros do mapa, no registro de legenda. Nenhum link e
+   nenhum glifo colorido aqui dentro: o bloco e --text-soft, e contra ele
+   --acento-ink mede 1,07:1 (contrato 6.2-b). */
+#gestor .fonte{
+  margin-top:var(--e-5);
+  max-width:70ch;
+  font-size:var(--t-2);
+  color:var(--text-soft);
+}
+
+/* --- entre pares: o fecho -------------------------------------------
+   O paragrafo que repete, em uma frase, o limite que a faixa 05 gasta
+   700 palavras estabelecendo. Ele existe para quem ler SO esta secao
+   chegar ao e-mail com a mesma expectativa de quem leu a pagina inteira.
+   Fio a esquerda em --acento-ink: e o unico realce de cor da faixa, e o
+   texto ao lado dele e --text, contra o qual o ambar mede 3,05:1 no tema
+   claro. O fio nao carrega informacao — quem a carrega e a frase. */
+#gestor .promessa{
+  max-width:62ch;
+  padding-left:var(--e-4);
+  border-left:2px solid var(--acento-ink);
+}
+#gestor .acoes{margin-top:var(--e-5)}
+
+/* =====================================================================
+   BREAKPOINTS — so 1080px e 768px, em max-width, nesta ordem.
+   ===================================================================== */
+@media (max-width:1080px){
+  /* com o respiro lateral menor a coluna de 5 fica estreita antes da de
+     7, e e ela que tem os dois paragrafos mais densos. Meio a meio. */
+  #gestor .precisa{grid-column:span 6}
+  #gestor .limite{grid-column:span 6}
+}
+
+@media (max-width:768px){
+  /* o .mapa nao e uma .grid do sistema — o colapso e por conta desta
+     fatia. Uma coluna: o rotulo em cima, a frase embaixo. */
+  #gestor .mapa li{grid-template-columns:minmax(0,1fr)}
+  /* respiro interno do cartao a 375px, como as outras fatias fazem. */
+  #gestor .precisa{padding:var(--e-4)}
+}
 /* ===== 02-prova ===== */
 /* =====================================================================
    02-prova — reconhecimento, indicadores e as series do historico.
@@ -2034,6 +2189,161 @@ header .marca{flex:none}
       </div>
 
     </div>
+  </div>
+</section>
+<!-- Fatia 01b — o degrau de entrada do gestor. Entra entre o hero e a prova.
+
+     PARA QUEM: quem chefia uma area, conhece o SEI e o SIAPE COMO USUARIO e
+     nao e tecnico. O hero fala com quem ja sabe por que isso e dificil; esta
+     fatia fala com quem sente a dor e acha que a saida exige equipe de TI.
+     A objecao unica que ela existe para derrubar esta escrita no proprio h3.
+
+     A RELACAO E ENTRE PARES, e isto governa cada palavra daqui: nao ha
+     empresa, produto, cliente nem atendimento — ha um servidor publico que
+     passou pelo problema e outro que esta passando. Por isso a secao fecha
+     com "nos resolvemos assim, o seu caso e outro" e nao com um convite a
+     avaliar coisa nenhuma: numa relacao comercial um lado julga o produto do
+     outro; aqui os dois lados sabem coisas que o outro nao sabe. As palavras
+     de transacao (solucao, cliente, oferta, proposta, adotar o produto) nao
+     aparecem, e o imperativo publicitario tambem nao.
+
+     FUNDO — .faixa (--bg), a mesma cor do hero, e isto e uma DECISAO, nao
+     descuido. O contrato 4.1 fixa a alternancia das CINCO fatias que ele
+     conhece e nao tem linha para uma sexta: inserida aqui, ou esta faixa
+     encosta no hero (--bg) ou encosta na prova (--fundo-alt) — nao existe
+     terceira saida sem renumerar as outras quatro. Escolhida a primeira
+     porque hero e gestor sao um par (a proposicao e a objecao a ela), o
+     sistema ja emite o fio de 1px entre faixas vizinhas para separa-las, e
+     assim a primeira troca de papel da pagina cai exatamente onde comeca a
+     EVIDENCIA. Registrado no relatorio da fatia.
+
+     O CONTROLE: um .btn-s para #conversao, e o unico da faixa. Ele existe
+     porque os dois unicos controles da pagina montada estao no hero e no
+     rodape, com 12.000px entre eles. E e SECUNDARIO de proposito: um segundo
+     ambar preenchido uma tela abaixo do hero leria como pressao — que e
+     exatamente o registro que uma conversa entre pares nao tem. Ele aponta
+     para a faixa 05, e nao direto para o mailto, porque e la que estao os
+     seis itens que fazem a conversa render e o paragrafo que fecha a porta;
+     quem pula direto para o e-mail chega com a expectativa errada.
+
+     A PROMESSA e a mesma da faixa 05, repetida aqui em uma frase para quem
+     ler SO esta secao: conversa de diagnostico e indicacao do caminho, sem
+     acompanhamento, sem prazo e sem ninguem implantando nada la dentro.
+
+     NUMEROS: nenhum numero novo. Os quatro daqui (8 -> 4 tecnicos, o passivo
+     de ~4.800 para ~800, os -89% de tempo e o 1o lugar) ja estao publicados
+     na fatia 02, e a fonte fecha o bloco do mapa. O numero que FALTA —
+     quanto tempo leva um piloto — nao esta aqui porque nao foi medido, e
+     dizer isso e o conteudo do cartao "O que nao da para prometer".
+
+     SEM DEPENDENCIA DE JAVASCRIPT: o unico gancho e .rise, cuja regra de
+     esconder mora em ".js .rise" (contrato 9.1). Com JS bloqueado a secao
+     nasce inteira. A .abertura nem .rise leva: ela e o primeiro bloco depois
+     do hero e pode nascer parcialmente acima da dobra (contrato 8.9).
+
+     O QUE ESTA FATIA NAO FAZ, de proposito: nao repete a comparacao honesta
+     do #contexto (aponta para ela), nao repete a lista "o que voce nao
+     precisa ter" do #conversao (ela e o espelho positivo dela) e nao promete
+     acompanhamento, prazo, plantao nem suporte. -->
+<section id="gestor" class="faixa">
+  <div class="wrap">
+
+    <div class="abertura">
+      <span class="pill"><span class="ponto"></span>Para quem chefia a área</span>
+      <h2>A equipe encolheu. O trabalho repetitivo, não.</h2>
+      <p class="lede">Se a sua unidade recebe sempre o mesmo tipo de processo, alguém aí passa o dia lendo uma tela do SIAPE e redigitando o mesmo dado no SEI. Não é falta de capricho: é o desenho do trabalho. E, enquanto a fila cresce, quem mais entende do assunto é quem está digitando.</p>
+    </div>
+
+    <!-- ---------- a objecao, escrita e respondida ---------- -->
+    <div class="bloco rise">
+      <div class="sub">
+        <h3>“Isso é coisa de TI, eu não tenho equipe.”</h3>
+        <p>É a objeção mais comum, e a resposta não é um contra-argumento: é o tamanho do começo. A CGPAG/DECIPEX também não tinha equipe de TI — a automação saiu de dentro da própria área, feita por servidores que já faziam aquele trabalho à mão. No período, os técnicos na rotina de exercícios anteriores caíram de <span class="num">8</span> para <span class="num">4</span>, e a outra metade foi para outras frentes. Ninguém foi contratado, e não há o que contratar: o núcleo é código aberto sob licença MIT.</p>
+      </div>
+
+      <div class="grid">
+
+        <div class="card ficha precisa">
+          <h4>O que a sua unidade precisa ter</h4>
+          <dl>
+            <div>
+              <dt>Uma pessoa</dt>
+              <dd>Alguém que leia e ajuste código Python — ou que topa aprender. Não precisa ser da área de TI, nem cuidar só disso.</dd>
+            </div>
+            <div>
+              <dt>Um fluxo, não o setor</dt>
+              <dd>A tarefa repetitiva que mais consome a unidade hoje. Uma só, escolhida por você.</dd>
+            </div>
+            <div>
+              <dt>O acesso que ela já tem</dt>
+              <dd>As transações do SIAPE e as unidades do SEI que o perfil dela já alcança. Nenhuma habilitação nova.</dd>
+            </div>
+            <div>
+              <dt>Uma máquina Windows</dt>
+              <dd>Só se o fluxo passar pelo terminal <span class="num">3270</span> do SIAPE, que roda apenas lá. O resto do pacote não depende disso.</dd>
+            </div>
+            <div>
+              <dt>A sua autorização</dt>
+              <dd>Um piloto dentro da sua própria unidade. Não depende de projeto institucional, de orçamento novo nem de licitação.</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="limite">
+          <h4>O que não dá para prometer</h4>
+          <p><b>Quanto tempo leva.</b> Não foi medido, e depende do fluxo que você escolher. Esta página só publica número com fonte declarada; este não tem, então não está aqui.</p>
+          <p><b>Que compense no seu caso.</b> A automação troca um custo de repetição, que não termina nunca, por um custo de manutenção, que aparece quando um dos sistemas muda de tela. Onde o volume é alto e a regra é estável, vale; onde cada caso é diferente do anterior, não. <a class="link" href="#contexto">A comparação está adiante</a>, com os dois preços à vista.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ---------- o mapa: a pagina inteira, para quem tem dois minutos ---------- -->
+    <div class="bloco rise">
+      <div class="sub">
+        <h3>Se você tem dois minutos, é isto que está abaixo.</h3>
+        <p>A página segue por mais quatro seções. Vá direto à sua.</p>
+      </div>
+
+      <!-- role="list" nao e enfeite: list-style:none faz o VoiceOver do
+           Safari descartar a semantica de lista, e este <ul> e o unico
+           auxilio de navegacao da pagina para quem nao ve a grade. -->
+      <ul class="mapa" role="list">
+        <li>
+          <a class="link" href="#prova">Resultados</a>
+          <p>O passivo de exercícios anteriores caiu de <span class="num">~4.800</span> para <span class="num">~800</span> processos; o tempo de cada processo, <span class="num">−89%</span>; a experiência levou o <span class="num">1º</span> lugar nacional. Cada número com a sua fonte.</p>
+        </li>
+        <li>
+          <a class="link" href="#contexto">Contexto</a>
+          <p>Por que o SEI e o SIAPE não se falam e o que a automação faz por dentro — e o que ela cobra: se a tela mudar, o roteiro quebra e precisa de conserto.</p>
+        </li>
+        <li>
+          <a class="link" href="#oferta">Núcleo aberto</a>
+          <p>Os blocos que o pacote publica para o SEI, para o SIAPE e para a ficha financeira, sob licença MIT, e o que já roda na unidade com eles.</p>
+        </li>
+        <li>
+          <a class="link" href="#conversao">Piloto assistido</a>
+          <p>Uma conversa de diagnóstico e a indicação do caminho, por e-mail. Termina aí: quem implanta, testa e opera depois é a sua equipe.</p>
+        </li>
+      </ul>
+
+      <p class="fonte">Números do artigo na revista <cite>Gestão de Pessoas em Ação</cite> (MGI), vol.&nbsp;<span class="num">3</span>, <span class="num">jun/2025</span>, do Edital nº <span class="num">1/2025</span> (MGI / Secretaria de Gestão de Pessoas) e dos registros agregados da CGPAG/DECIPEX — a seção de resultados traz a fonte de cada um.</p>
+    </div>
+
+    <!-- ---------- entre pares: o caminho para a conversa ---------- -->
+    <div class="bloco rise">
+      <div class="sub">
+        <h3>Nós resolvemos assim. O seu caso é outro.</h3>
+        <p>Do outro lado não há empresa nem cliente: há servidores públicos que enfrentaram esse problema numa unidade e podem contar como foi, inclusive onde tropeçaram. O seu órgão tem equipe, restrições e regras que ninguém aqui conhece, e é você quem sabe onde o seu fluxo trava.</p>
+      </div>
+
+      <p class="promessa">A conversa é uma videoconferência de diagnóstico sobre o seu fluxo e a indicação do caminho — quais blocos servem e onde isso costuma travar. E termina aí: não há acompanhamento depois dela, não há prazo combinado e ninguém do INTEGRA implanta, configura ou opera nada dentro do seu órgão.</p>
+
+      <div class="acoes">
+        <a class="btn btn-s" href="#conversao">Ver como a conversa funciona</a>
+      </div>
+    </div>
+
   </div>
 </section>
 <!-- Fatia 02 — a prova: reconhecimento, indicadores e as series do historico.

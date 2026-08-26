@@ -1,0 +1,155 @@
+<!-- Fatia 01b — o degrau de entrada do gestor. Entra entre o hero e a prova.
+
+     PARA QUEM: quem chefia uma area, conhece o SEI e o SIAPE COMO USUARIO e
+     nao e tecnico. O hero fala com quem ja sabe por que isso e dificil; esta
+     fatia fala com quem sente a dor e acha que a saida exige equipe de TI.
+     A objecao unica que ela existe para derrubar esta escrita no proprio h3.
+
+     A RELACAO E ENTRE PARES, e isto governa cada palavra daqui: nao ha
+     empresa, produto, cliente nem atendimento — ha um servidor publico que
+     passou pelo problema e outro que esta passando. Por isso a secao fecha
+     com "nos resolvemos assim, o seu caso e outro" e nao com um convite a
+     avaliar coisa nenhuma: numa relacao comercial um lado julga o produto do
+     outro; aqui os dois lados sabem coisas que o outro nao sabe. As palavras
+     de transacao (solucao, cliente, oferta, proposta, adotar o produto) nao
+     aparecem, e o imperativo publicitario tambem nao.
+
+     FUNDO — .faixa (--bg), a mesma cor do hero, e isto e uma DECISAO, nao
+     descuido. O contrato 4.1 fixa a alternancia das CINCO fatias que ele
+     conhece e nao tem linha para uma sexta: inserida aqui, ou esta faixa
+     encosta no hero (--bg) ou encosta na prova (--fundo-alt) — nao existe
+     terceira saida sem renumerar as outras quatro. Escolhida a primeira
+     porque hero e gestor sao um par (a proposicao e a objecao a ela), o
+     sistema ja emite o fio de 1px entre faixas vizinhas para separa-las, e
+     assim a primeira troca de papel da pagina cai exatamente onde comeca a
+     EVIDENCIA. Registrado no relatorio da fatia.
+
+     O CONTROLE: um .btn-s para #conversao, e o unico da faixa. Ele existe
+     porque os dois unicos controles da pagina montada estao no hero e no
+     rodape, com 12.000px entre eles. E e SECUNDARIO de proposito: um segundo
+     ambar preenchido uma tela abaixo do hero leria como pressao — que e
+     exatamente o registro que uma conversa entre pares nao tem. Ele aponta
+     para a faixa 05, e nao direto para o mailto, porque e la que estao os
+     seis itens que fazem a conversa render e o paragrafo que fecha a porta;
+     quem pula direto para o e-mail chega com a expectativa errada.
+
+     A PROMESSA e a mesma da faixa 05, repetida aqui em uma frase para quem
+     ler SO esta secao: conversa de diagnostico e indicacao do caminho, sem
+     acompanhamento, sem prazo e sem ninguem implantando nada la dentro.
+
+     NUMEROS: nenhum numero novo. Os quatro daqui (8 -> 4 tecnicos, o passivo
+     de ~4.800 para ~800, os -89% de tempo e o 1o lugar) ja estao publicados
+     na fatia 02, e a fonte fecha o bloco do mapa. O numero que FALTA —
+     quanto tempo leva um piloto — nao esta aqui porque nao foi medido, e
+     dizer isso e o conteudo do cartao "O que nao da para prometer".
+
+     SEM DEPENDENCIA DE JAVASCRIPT: o unico gancho e .rise, cuja regra de
+     esconder mora em ".js .rise" (contrato 9.1). Com JS bloqueado a secao
+     nasce inteira. A .abertura nem .rise leva: ela e o primeiro bloco depois
+     do hero e pode nascer parcialmente acima da dobra (contrato 8.9).
+
+     O QUE ESTA FATIA NAO FAZ, de proposito: nao repete a comparacao honesta
+     do #contexto (aponta para ela), nao repete a lista "o que voce nao
+     precisa ter" do #conversao (ela e o espelho positivo dela) e nao promete
+     acompanhamento, prazo, plantao nem suporte. -->
+<section id="gestor" class="faixa">
+  <div class="wrap">
+
+    <div class="abertura">
+      <span class="pill"><span class="ponto"></span>Para quem chefia a área</span>
+      <h2>A equipe encolheu. O trabalho repetitivo, não.</h2>
+      <p class="lede">Se a sua unidade recebe sempre o mesmo tipo de processo, alguém aí passa o dia lendo uma tela do SIAPE e redigitando o mesmo dado no SEI. Não é falta de capricho: é o desenho do trabalho. E, enquanto a fila cresce, quem mais entende do assunto é quem está digitando.</p>
+    </div>
+
+    <!-- ---------- a objecao, escrita e respondida ---------- -->
+    <div class="bloco rise">
+      <div class="sub">
+        <h3>“Isso é coisa de TI, eu não tenho equipe.”</h3>
+        <p>É a objeção mais comum, e a resposta não é um contra-argumento: é o tamanho do começo. A CGPAG/DECIPEX também não tinha equipe de TI — a automação saiu de dentro da própria área, feita por servidores que já faziam aquele trabalho à mão. No período, os técnicos na rotina de exercícios anteriores caíram de <span class="num">8</span> para <span class="num">4</span>, e a outra metade foi para outras frentes. Ninguém foi contratado, e não há o que contratar: o núcleo é código aberto sob licença MIT.</p>
+      </div>
+
+      <div class="grid">
+
+        <div class="card ficha precisa">
+          <h4>O que a sua unidade precisa ter</h4>
+          <dl>
+            <div>
+              <dt>Uma pessoa</dt>
+              <dd>Alguém que leia e ajuste código Python — ou que topa aprender. Não precisa ser da área de TI, nem cuidar só disso.</dd>
+            </div>
+            <div>
+              <dt>Um fluxo, não o setor</dt>
+              <dd>A tarefa repetitiva que mais consome a unidade hoje. Uma só, escolhida por você.</dd>
+            </div>
+            <div>
+              <dt>O acesso que ela já tem</dt>
+              <dd>As transações do SIAPE e as unidades do SEI que o perfil dela já alcança. Nenhuma habilitação nova.</dd>
+            </div>
+            <div>
+              <dt>Uma máquina Windows</dt>
+              <dd>Só se o fluxo passar pelo terminal <span class="num">3270</span> do SIAPE, que roda apenas lá. O resto do pacote não depende disso.</dd>
+            </div>
+            <div>
+              <dt>A sua autorização</dt>
+              <dd>Um piloto dentro da sua própria unidade. Não depende de projeto institucional, de orçamento novo nem de licitação.</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="limite">
+          <h4>O que não dá para prometer</h4>
+          <p><b>Quanto tempo leva.</b> Não foi medido, e depende do fluxo que você escolher. Esta página só publica número com fonte declarada; este não tem, então não está aqui.</p>
+          <p><b>Que compense no seu caso.</b> A automação troca um custo de repetição, que não termina nunca, por um custo de manutenção, que aparece quando um dos sistemas muda de tela. Onde o volume é alto e a regra é estável, vale; onde cada caso é diferente do anterior, não. <a class="link" href="#contexto">A comparação está adiante</a>, com os dois preços à vista.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ---------- o mapa: a pagina inteira, para quem tem dois minutos ---------- -->
+    <div class="bloco rise">
+      <div class="sub">
+        <h3>Se você tem dois minutos, é isto que está abaixo.</h3>
+        <p>A página segue por mais quatro seções. Vá direto à sua.</p>
+      </div>
+
+      <!-- role="list" nao e enfeite: list-style:none faz o VoiceOver do
+           Safari descartar a semantica de lista, e este <ul> e o unico
+           auxilio de navegacao da pagina para quem nao ve a grade. -->
+      <ul class="mapa" role="list">
+        <li>
+          <a class="link" href="#prova">Resultados</a>
+          <p>O passivo de exercícios anteriores caiu de <span class="num">~4.800</span> para <span class="num">~800</span> processos; o tempo de cada processo, <span class="num">−89%</span>; a experiência levou o <span class="num">1º</span> lugar nacional. Cada número com a sua fonte.</p>
+        </li>
+        <li>
+          <a class="link" href="#contexto">Contexto</a>
+          <p>Por que o SEI e o SIAPE não se falam e o que a automação faz por dentro — e o que ela cobra: se a tela mudar, o roteiro quebra e precisa de conserto.</p>
+        </li>
+        <li>
+          <a class="link" href="#oferta">Núcleo aberto</a>
+          <p>Os blocos que o pacote publica para o SEI, para o SIAPE e para a ficha financeira, sob licença MIT, e o que já roda na unidade com eles.</p>
+        </li>
+        <li>
+          <a class="link" href="#conversao">Piloto assistido</a>
+          <p>Uma conversa de diagnóstico e a indicação do caminho, por e-mail. Termina aí: quem implanta, testa e opera depois é a sua equipe.</p>
+        </li>
+      </ul>
+
+      <p class="fonte">Números do artigo na revista <cite>Gestão de Pessoas em Ação</cite> (MGI), vol.&nbsp;<span class="num">3</span>, <span class="num">jun/2025</span>, do Edital nº <span class="num">1/2025</span> (MGI / Secretaria de Gestão de Pessoas) e dos registros agregados da CGPAG/DECIPEX — a seção de resultados traz a fonte de cada um.</p>
+    </div>
+
+    <!-- ---------- entre pares: o caminho para a conversa ---------- -->
+    <div class="bloco rise">
+      <div class="sub">
+        <h3>Nós resolvemos assim. O seu caso é outro.</h3>
+        <p>Do outro lado não há empresa nem cliente: há servidores públicos que enfrentaram esse problema numa unidade e podem contar como foi, inclusive onde tropeçaram. O seu órgão tem equipe, restrições e regras que ninguém aqui conhece, e é você quem sabe onde o seu fluxo trava.</p>
+      </div>
+
+      <p class="promessa">A conversa é uma videoconferência de diagnóstico sobre o seu fluxo e a indicação do caminho — quais blocos servem e onde isso costuma travar. E termina aí: não há acompanhamento depois dela, não há prazo combinado e ninguém do INTEGRA implanta, configura ou opera nada dentro do seu órgão.</p>
+
+      <div class="acoes">
+        <a class="btn btn-s" href="#conversao">Ver como a conversa funciona</a>
+      </div>
+    </div>
+
+  </div>
+</section>

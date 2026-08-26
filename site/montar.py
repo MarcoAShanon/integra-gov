@@ -27,8 +27,12 @@ RAIZ = pathlib.Path(__file__).resolve().parent
 PARTS = RAIZ / "parts"
 SAIDA = RAIZ / "index.html"
 
-FATIAS = ["01-hero", "02-prova", "03-contexto", "04-oferta", "05-conversao"]
-IDS_FATIAS = ["hero", "prova", "contexto", "oferta", "conversao"]
+# A fatia 01b entra ENTRE o hero e a prova: e a porta de entrada do gestor,
+# escrita para quem conhece o SEI e o SIAPE como usuario e nao e tecnico. Nome
+# com sufixo em vez de renumerar as outras — renumerar quebraria os prefixos de
+# CSS, os nomes de previa e o historico das quatro fatias seguintes.
+FATIAS = ["01-hero", "01b-gestor", "02-prova", "03-contexto", "04-oferta", "05-conversao"]
+IDS_FATIAS = ["hero", "gestor", "prova", "contexto", "oferta", "conversao"]
 
 
 def _ler(nome: str) -> str:
