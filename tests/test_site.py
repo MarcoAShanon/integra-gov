@@ -1177,3 +1177,26 @@ def test_a_comparacao_honesta_nao_transforma_python_em_pre_requisito():
     texto = _fatia("03-contexto")
     assert "Python" not in texto
     assert "Alguém da própria área acompanha o roteiro." in texto
+
+
+def test_o_convite_nao_exige_programador_nem_maquina():
+    """A 05 e o destino do botao da 01b. Ela pedia a versao do SEI, se as
+    maquinas eram Windows e se havia alguem que programasse — ou seja, a
+    barreira de que a 01b acabara de dispensar o leitor, tres telas abaixo.
+    Uma pagina que se desmente no clique que ela mesma pediu."""
+    texto = _fatia("05-conversao")
+    assert "Python" not in texto
+    assert "Windows" not in texto
+    assert "3270" not in texto
+
+
+def test_o_convite_nao_nega_o_formulario_nem_termina_ai():
+    """D3 e D4. "Nao ha formulario nesta pagina, e nao vai haver" e "Termina
+    ai" sao as duas portas se fechando; o limite continua dito no positivo
+    (quem implanta e a equipe do orgao), e a frase de registro — "nao uma
+    central de atendimento" — permanece, porque ela diz o registro da conversa
+    sem fechar nada."""
+    texto = _fatia("05-conversao")
+    assert "não vai haver" not in texto
+    assert "termina aí" not in texto.lower()
+    assert "não uma central de atendimento" in texto
