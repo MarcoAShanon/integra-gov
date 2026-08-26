@@ -1445,3 +1445,20 @@ def test_as_cinco_telas_estao_nos_assets():
         largura, _ = gerar_og.dimensoes_png(caminho)
         assert largura <= 1000, f"{nome} tem {largura}px de largura"
 
+
+def test_a_abertura_do_contexto_conta_as_paradas():
+    """O h2 dizia "Dois sistemas que nao se falam". Abaixo dele passou a haver
+    um bloco com CINCO capturas de TRES telas — e o leitor que conta as telas e
+    le "dois" tropeca. "Dois sistemas. Tres telas. Cinco paradas." diz a mesma
+    coisa e prepara o que vem abaixo: e-SIAPE e terminal 3270 sao o MESMO
+    SIAPE, em duas caras.
+
+    O 1989 NAO PODE SUMIR: ele aparecia uma unica vez na fatia, nesse h2, e e o
+    fato que da o soco — um dos dois sistemas e mais velho que a web. Migrou
+    para a lede."""
+    texto = _fatia("03-contexto")
+    assert "Dois sistemas. Três telas. Cinco paradas." in texto
+    assert "Dois sistemas que não se falam" not in texto
+    assert "1989" in texto
+    assert "que existe desde <span class=\"num\">1989</span>" in texto
+
