@@ -138,6 +138,21 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
     decisões no texto publicado, lendo a fatia sem os comentários de projeto —
     inclusive um para a palavra "solução", vetada por implicar transação e que
     nenhum portão cobrava.
+- **A página mostra as telas por onde o trabalho manual passa.** A seção de
+  contexto afirmava que o SEI e o SIAPE não se falam; agora ela mostra, na ordem
+  de uma tarefa real, as cinco paradas que um servidor percorre à mão — SEI,
+  e-SIAPE, SEI, terminal `3270`, SEI. O leitor conta as três voltas ao mesmo
+  lugar sozinho, e a página só diz a frase do fecho.
+  - **O objetivo é reconhecimento, não comparação.** Cada tela aparece grande,
+    uma por vez, e não em grade de miniaturas: o gestor precisa reconhecer o
+    próprio dia, e miniatura não dispara memória. A abertura da seção passou a
+    "Dois sistemas. Três telas. Cinco paradas.", e o ano de `1989` migrou para a
+    lede em vez de sumir com o título antigo.
+  - **As capturas são PNG, não JPEG**, e por medida: são telas de interface, com
+    texto de 11px e cor chapada, onde o chiado do JPEG apagaria justamente o que
+    faz a tela ser reconhecida.
+  - **O vídeo de execução fecha a sequência**, com a duração à vista — quem
+    decide clicar decide pelo tamanho.
 
 ### Alterado
 - `integra_gov.siape.TrocaHabilitacao`: **`upag` vira opcional** — o módulo

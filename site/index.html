@@ -1509,6 +1509,41 @@ header .marca{flex:none}
   #contexto .escopo{padding:var(--e-4)}
   #contexto .fluxo .tela{padding:var(--e-3)}
 }
+
+/* --- as cinco paradas -------------------------------------------------
+   A .figura do sistema ja da o fundo, a borda, o raio e a legenda em bloco
+   separado por fio (contrato 8.3-g). Falta so a lista: tirar o marcador do
+   <ol> e por o ritmo vertical entre as paradas.
+
+   As cinco capturas tem proporcoes muito diferentes (de 1,08 na tela do
+   terminal a 2,13 na do SEI). NAO se impoe proporcao unica aqui: recortar
+   para alinhar mataria justamente o que faz a tela ser reconhecida. Cada uma
+   guarda a sua, e a largura e que e comum. */
+#contexto .paradas{
+  list-style:none;
+  margin:var(--e-6) 0 0;
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  gap:var(--e-5);
+}
+/* o numero da parada, na legenda: mono pelo .num do sistema, e so precisa do
+   respiro ate o texto. */
+#contexto .paradas figcaption .num{margin-right:var(--e-2)}
+
+/* o fecho e a UNICA frase em que a pagina fala aqui — o leitor ja contou as
+   tres voltas sozinho. Fica com a medida de leitura da .sub. */
+#contexto .fecho-paradas{
+  margin:var(--e-5) 0 0;
+  max-width:62ch;
+  font-size:var(--t-4);
+}
+
+/* --- o video que fecha o percurso ------------------------------------
+   Sem cartao: dois fios concentricos (a .figura acima ja tem um) seriam
+   ruido. So o respiro ate o bloco seguinte e a medida de leitura. */
+#contexto .ver-percurso{margin:var(--e-6) 0 0}
+#contexto .ver-percurso p{margin:0 0 var(--e-4);max-width:62ch}
 /* ===== 04-oferta ===== */
 /* =====================================================================
    04-oferta — os blocos do pacote, as camadas, o que ja roda e o que
@@ -2573,8 +2608,97 @@ header .marca{flex:none}
 
     <div class="abertura rise">
       <span class="pill"><span class="ponto"></span>Contexto · como funciona</span>
-      <h2>Dois sistemas que não se falam — e um deles nasceu em <span class="num">1989</span>.</h2>
-      <p class="lede">O SEI tramita documentos na web desde <span class="num">2009</span>. O SIAPE guarda os dados funcionais numa emulação de terminal de mainframe — a tela preta <span class="num">3270</span>. Entre os dois fica o servidor: copiando, digitando e conferindo matrícula por matrícula.</p>
+      <h2>Dois sistemas. Três telas. Cinco paradas.</h2>
+      <p class="lede">O SEI tramita documentos na web desde <span class="num">2009</span>. O SIAPE guarda os dados funcionais numa emulação de terminal de mainframe — a tela preta <span class="num">3270</span>, que existe desde <span class="num">1989</span>. Entre os dois fica o servidor: copiando, digitando e conferindo matrícula por matrícula.</p>
+    </div>
+
+    <!-- ---------- as cinco paradas: o percurso a mao ----------
+         RECONHECIMENTO, nao comparacao. O objetivo nao e o leitor comparar as
+         telas — e ele RECONHECER o proprio dia. Por isso cada tela vem grande,
+         uma por vez, na rolagem, e nao em grade de miniaturas: miniatura a 25%
+         da largura nao dispara memoria nenhuma. Decisao do usuario em
+         26/08/2026, corrigindo o controlador, que havia proposto a grade.
+
+         A SEQUENCIA E REAL, dada pelo usuario: SEI (verificar), e-SIAPE
+         (emitir a ficha), SEI (instruir), terminal 3270 (lancar), SEI (fechar).
+         O SEI aparece TRES VEZES porque o trabalho volta a ele tres vezes — e o
+         vaivem e o argumento inteiro. O leitor conta nos dedos; a pagina so diz
+         a frase do fecho.
+
+         O SIAPEnet ficou de fora: nao esta na sequencia, e entrar so porque a
+         captura existe seria decoracao.
+
+         <ol> e nao <ul>: a ordem e semantica, e quem usa leitor de tela precisa
+         dela. .figura e a primitiva do contrato 8.3-g — legenda FORA da imagem,
+         que e o que o 6.4 exige. -->
+    <ol class="paradas rise" role="list">
+      <li>
+        <figure class="figura parada">
+          <img src="assets/tela-01-a53768db.png"
+               alt="Tela do SEI: barra azul no topo, árvore do processo à esquerda com três documentos, e a barra de ícones de ações."
+               loading="lazy" width="1000" height="470">
+          <figcaption><span class="num">1</span> O processo chega. Você abre a árvore para ver o que ele pede.</figcaption>
+        </figure>
+      </li>
+      <li>
+        <figure class="figura parada">
+          <img src="assets/tela-02-f96d8541.png"
+               alt="Tela do Sigepe: barra azul e laranja, e seis ícones de opções da folha, entre eles Emite Informações Financeiras."
+               loading="lazy" width="1000" height="628">
+          <figcaption><span class="num">2</span> Para responder, você emite a ficha financeira em outro sistema.</figcaption>
+        </figure>
+      </li>
+      <li>
+        <figure class="figura parada">
+          <img src="assets/tela-03-1dab1813.png"
+               alt="Tela do SEI: formulário Registrar Documento Externo, com os campos Tipo do Documento, Número, Nome na Árvore, Remetente, Interessados e Nível de Acesso, todos vazios."
+               loading="lazy" width="1000" height="479">
+          <figcaption><span class="num">3</span> Volta ao processo e redigita, à mão, o que leu na outra tela.</figcaption>
+        </figure>
+      </li>
+      <li>
+        <figure class="figura parada">
+          <img src="assets/tela-04-964b6db9.png"
+               alt="Terminal 3270 do SIAPE: tela preta com texto verde e um menu em caixa alta — ADMINIST, CADSIAPE, CONSULTAS, FOLHA."
+               loading="lazy" width="960" height="893">
+          <figcaption><span class="num">4</span> O lançamento é numa terceira tela, que não conversa com nenhuma das duas.</figcaption>
+        </figure>
+      </li>
+      <li>
+        <figure class="figura parada">
+          <img src="assets/tela-05-86d901e4.png"
+               alt="Tela do SEI: Conclusão de Processo, com o número do processo listado e a opção Somente concluir marcada."
+               loading="lazy" width="1000" height="471">
+          <figcaption><span class="num">5</span> Volta de novo, para fechar.</figcaption>
+        </figure>
+      </li>
+    </ol>
+
+    <p class="fecho-paradas rise">Três voltas ao mesmo lugar. Nenhum dado passou sozinho.</p>
+
+    <!-- ---------- o video, como resposta a cena ----------
+         Fecha as cinco paradas: o leitor acabou de contar as tres voltas ao
+         SEI, e ve a mesma coisa feita pela automacao. "O mesmo percurso" e o
+         que amarra as duas cenas — e o que faz ele querer ver.
+
+         A DURACAO E OBRIGATORIA. O critico cego apontou, sobre a vitrine da
+         fatia 04, que "o gestor decide clicar pelo tamanho; sem ele, nao
+         clica". 5min28s e compromisso real para quem ainda esta decidindo se
+         escreve, e dizer o numero e a regra da pagina.
+
+         LINK COMUM, NAO LIGHTBOX, e isto e decisao registrada: o gancho .proj/
+         .poster/.play do contrato 9.3 so tem estilo sob #oferta. Reusa-lo aqui
+         exigiria copiar ~40 linhas que carregam decisoes documentadas (56x56 do
+         alvo de toque; glifo sobre cor SOLIDA porque o 6.4 proibe texto sobre
+         imagem; --raio-s em vez de 999px, achado A9.3) — duplicacao literal de
+         bloco logico. Com .btn o controle funciona com e sem JavaScript, e o
+         sistema nao muda. O video continua abrindo em lightbox na vitrine da
+         fatia 04, que e onde o gancho mora. -->
+    <div class="ver-percurso rise">
+      <p>Veja o mesmo percurso, feito pela automação — <span class="num">5 min 28 s</span> de execução real, do processo aberto ao lançamento conferido.</p>
+      <div class="acoes">
+        <a class="btn btn-s" href="/media/exante.mp4">Ver o vídeo</a>
+      </div>
     </div>
 
     <!-- ---------- a comparacao honesta ---------- -->
