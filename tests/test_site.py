@@ -1249,18 +1249,25 @@ def test_a_porta_do_gestor_nao_cobra_preco_na_entrada():
     assert "os dois preços à vista" not in texto
 
 
-def test_a_porta_do_gestor_abre_pela_aposentadoria_sem_reposicao():
-    """A abertura dizia "A equipe encolheu", que e vago. O que acontece de
-    fato no servico publico federal — e o que o usuario pediu em 26/08 — e
-    aposentadoria sem reposicao enquanto a demanda cresce.
+def test_a_porta_do_gestor_abre_pela_demanda_que_cresce():
+    """A abertura dizia "A equipe encolheu", que e vago, e depois "Parte da
+    equipe se aposenta", que enquadrava a secao como PERDA DE GENTE. O critico
+    cego mostrou o custo disso: assim enquadrada, o "8 -> 4 tecnicos" da fatia
+    02 lia como precedente de corte de pessoal — e a equipe do gestor leria
+    igual, sendo justamente quem precisa colaborar no piloto.
 
-    A lede diz "a demanda nao diminui junto", e nao "as demandas so aumentam":
-    a segunda e uma afirmacao mais forte, e esta pagina nao afirma o que nao
-    mede."""
+    Com o foco na demanda que cresce, o mesmo numero volta a significar gente
+    liberada para outra frente. A aposentadoria sem reposicao continua dita,
+    na lede.
+
+    Sem exclamacao: a pagina inteira tem ZERO no texto visivel, e os cinco h2
+    sao declarativos. Um "!" aqui seria o unico da pagina."""
     texto = _fatia("01b-gestor")
-    assert "Parte da equipe se aposenta" in texto
-    assert "muitas vezes não é reposto" in texto
+    assert "A demanda aumenta. A força de trabalho, não." in texto
+    assert "aposentadoria sem reposição" in texto
     assert "A equipe encolheu" not in texto
+    assert "Parte da equipe se aposenta" not in texto
+    assert "!" not in texto.split("<h2>")[1].split("</h2>")[0]
 
 
 def test_a_pagina_nao_vende_uma_solucao():
