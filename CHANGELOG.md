@@ -40,7 +40,8 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
     (`header`, `main`, `nav`), skip link que **de fato pula** a navegação (o
     montador emite o `<header>` antes do `<main>`), 14 alvos de toque todos com
     44px, e nenhum conteúdo dependente de JavaScript — sem script, nada some.
-  - **Seção nova de piloto assistido**, com a promessa delimitada por escrito:
+  - **Seção nova para a conversa** (chamada de "piloto assistido" à época),
+    com a promessa delimitada por escrito:
     conversa inicial e orientação pontual, sem acompanhamento de implantação. A
     página anterior terminava num `mailto:` solto.
   - **−90% virou −89%**: a conta dá −89,06%, e arredondar **para cima** numa
@@ -115,8 +116,28 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   - **O limite continua dito, sem fechar a porta.** Some o "Termina aí" e a
     negação em série; fica a divisão de trabalho — quem implanta e opera é a
     equipe do órgão — e a conversa segue se fizer sentido para os dois lados.
-  - **Sete testes novos em `tests/test_site.py`** cobram cada uma dessas
-    decisões no texto publicado, lendo a fatia sem os comentários de projeto.
+  - **A seção da conversa perdeu o nome de plano de serviço.** Chamava-se
+    "Piloto assistido" na navegação, no mapa, na pílula e no `h2` — e a lede
+    existia para definir o que "assistido" queria dizer. Passou a se chamar
+    **Conversa**, palavra que a própria página já usava. Junto com isso, a
+    porta do gestor deixou de repetir a promessa da seção seguinte e passa a
+    convidar a conversar pelo meio que o leitor preferir; o limite continua
+    dito três vezes na seção da conversa, que é para onde o botão leva.
+  - **A entrada do gestor parou de falar de preço e de exigir decisão.** Saiu
+    o cartão "O que não dá para prometer" — falar de custo na seção que existe
+    para abrir uma porta é receber o visitante com uma fatura na mão. A
+    comparação honesta continua no contexto, com os dois preços à vista. A
+    abertura passou a falar da demanda que cresce, e não da equipe que
+    encolhe: assim enquadrada, a queda de `8` para `4` técnicos lia como
+    precedente de corte de pessoal — achado de um crítico que leu a página sem
+    acesso ao raciocínio por trás dela.
+  - **"Licença MIT" vem explicada onde o leitor encontra o termo**, e não três
+    seções adiante: qualquer órgão pode baixar, usar e adaptar, sem pagar nada
+    e sem pedir autorização, mantendo o aviso de autoria e o texto da licença.
+  - **Doze testes novos em `tests/test_site.py`** cobram cada uma dessas
+    decisões no texto publicado, lendo a fatia sem os comentários de projeto —
+    inclusive um para a palavra "solução", vetada por implicar transação e que
+    nenhum portão cobrava.
 
 ### Alterado
 - `integra_gov.siape.TrocaHabilitacao`: **`upag` vira opcional** — o módulo

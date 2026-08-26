@@ -1306,5 +1306,29 @@ def test_o_gestor_descobre_o_que_e_MIT_onde_encontra_o_termo():
     encontra o termo em prosa."""
     texto = _fatia("01b-gestor")
     assert "sem pagar nada e sem pedir autorização" in texto
-    assert "basta manter o aviso de autoria" in texto
+    # A condicao da MIT sao DOIS avisos, nao um: o LICENSE exige "The above
+    # copyright notice AND THIS PERMISSION NOTICE". A glosa citava so o
+    # primeiro, e um orgao que a seguisse ao pe da letra ficava em
+    # descumprimento. Achado da Revisao, que foi ler o LICENSE.
+    assert "basta manter o aviso de autoria e o texto da licença" in texto
+
+
+def test_a_porta_do_gestor_convida_sem_repetir_a_faixa_seguinte():
+    """A .promessa da 01b repetia o .limite da 05 quase palavra por palavra —
+    as duas diferiam por um sinal de pontuacao, e a revisao final da branch
+    apontou a duplicacao. Em 26/08/2026 ela passou a convidar a conversar pelo
+    meio que o leitor preferir, e o limite ficou so na faixa 05, que e para
+    onde o botao daqui leva.
+
+    O h3 mudou junto: "o seu caso PODE SER diferente", e nao "e outro", que
+    afirmava do caso alheio uma coisa que ninguem aqui sabe.
+
+    Nenhuma das duas tinha portao. A Revisao provou isso revertendo so o
+    paragrafo ao texto anterior e avaliando as 19 assercoes dos outros doze
+    testes: passavam todas."""
+    texto = _fatia("01b-gestor")
+    assert "Podemos conversar pelo meio mais conveniente" in texto
+    assert "o seu caso pode ser diferente" in texto
+    assert "Quem implanta, configura e opera é a sua equipe" not in texto
+    assert "o seu caso é outro" not in texto
 
