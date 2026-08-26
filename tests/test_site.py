@@ -1470,9 +1470,19 @@ def test_as_cinco_paradas_contam_a_ida_e_a_volta():
     lugar, com o dado carregado na mao.
 
     <ol> e nao <ul>: a ordem e semantica. Quem usa leitor de tela precisa saber
-    que a parada 3 vem depois da 2."""
+    que a parada 3 vem depois da 2.
+
+    A asserção cobra as tres classes juntas — "paradas rise" role="list" —
+    de proposito, e nao so o prefixo "paradas". O .rise NAO e opcional aqui:
+    e o gancho de entrada por rolagem que TODO o resto da fatia 03 usa (a
+    .abertura, os tres .bloco e o proprio .fecho-paradas, logo abaixo deste
+    <ol>). Sem ele as cinco figuras apareceriam de imediato enquanto a frase
+    que fala delas entra por rolagem — o bloco sairia do ritmo do resto da
+    fatia. E o role="list" tambem nao e enfeite: list-style:none faz o
+    VoiceOver do Safari descartar a semantica de lista, e a ordem das
+    paradas e o argumento do bloco."""
     texto = _fatia("03-contexto")
-    assert '<ol class="paradas"' in texto
+    assert '<ol class="paradas rise" role="list">' in texto
     assert texto.count("<figure class=\"figura parada\">") == 5
     assert "O processo chega. Você abre a árvore para ver o que ele pede." in texto
     assert "Volta ao processo e redigita, à mão, o que leu na outra tela." in texto
@@ -1480,7 +1490,7 @@ def test_as_cinco_paradas_contam_a_ida_e_a_volta():
     assert "Três voltas ao mesmo lugar. Nenhum dado passou sozinho." in texto
     # toda imagem nova entra preguicosa e com dimensao declarada — sem isso a
     # pagina pula quando elas chegam
-    bloco = texto[texto.index('<ol class="paradas"'):texto.index("</ol>")]
+    bloco = texto[texto.index('<ol class="paradas rise" role="list">'):texto.index("</ol>")]
     assert bloco.count('loading="lazy"') == 5
     assert bloco.count("width=") == 5 and bloco.count("height=") == 5
 
