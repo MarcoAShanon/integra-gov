@@ -985,8 +985,10 @@ header .marca{flex:none}
    secoes lerem como a mesma tabela. */
 /* O cartao ficou sozinho quando o bloco vizinho saiu (26/08), e com ele
    saiu a .grid: grade de um filho so e grade sem funcao. A medida de
-   leitura vem no lugar da coluna — 64ch aqui poe o <dd> na mesma faixa
-   de 62ch que a .sub usa logo acima, contando o respiro do cartao. */
+   leitura vem no lugar da coluna. Medido no navegador: o <dd> fica em
+   65ch contra os 62ch do paragrafo do .sub logo acima — dentro da banda
+   de 60ch-70ch que o contrato 7.2 fixa para texto corrido. O 64ch da
+   regra e menor que o medido porque o respiro do .card entra na conta. */
 #gestor .precisa{max-width:64ch}
 #gestor .precisa h4{margin-bottom:var(--e-4)}
 

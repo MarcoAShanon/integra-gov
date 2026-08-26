@@ -1230,3 +1230,34 @@ def test_o_convite_oferece_mais_de_um_caminho():
     assert "(24) 98849-3257" in texto
     assert texto.count("(24) 98849-3257") == 2
     assert '<span class="rot">telefone</span>' in texto
+
+
+def test_a_porta_do_gestor_nao_cobra_preco_na_entrada():
+    """O cartao "O que nao da para prometer" saiu em 26/08/2026, por decisao
+    do usuario: antipatico, "principalmente por que fala de preco". Falar de
+    custo na secao que existe para ABRIR uma porta e receber o visitante com
+    uma fatura na mao.
+
+    A comparacao honesta NAO se perdeu — o cartao dos dois precos continua no
+    #contexto, que e onde chega quem foi procurar por ela. O que a pagina
+    deixou de dizer, e foi apontado ao usuario antes da decisao: que o prazo
+    de um piloto e desconhecido.
+
+    Sem este portao o cartao volta numa edicao futura e ninguem percebe."""
+    texto = _fatia("01b-gestor")
+    assert "O que não dá para prometer" not in texto
+    assert "os dois preços à vista" not in texto
+
+
+def test_a_porta_do_gestor_abre_pela_aposentadoria_sem_reposicao():
+    """A abertura dizia "A equipe encolheu", que e vago. O que acontece de
+    fato no servico publico federal — e o que o usuario pediu em 26/08 — e
+    aposentadoria sem reposicao enquanto a demanda cresce.
+
+    A lede diz "a demanda nao diminui junto", e nao "as demandas so aumentam":
+    a segunda e uma afirmacao mais forte, e esta pagina nao afirma o que nao
+    mede."""
+    texto = _fatia("01b-gestor")
+    assert "Parte da equipe se aposenta" in texto
+    assert "muitas vezes não é reposto" in texto
+    assert "A equipe encolheu" not in texto
