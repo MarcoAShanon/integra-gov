@@ -206,3 +206,9 @@
   max-width:62ch;
   font-size:var(--t-4);
 }
+
+/* --- o video que fecha o percurso ------------------------------------
+   Sem cartao: dois fios concentricos (a .figura acima ja tem um) seriam
+   ruido. So o respiro ate o bloco seguinte e a medida de leitura. */
+#contexto .ver-percurso{margin:var(--e-6) 0 0}
+#contexto .ver-percurso p{margin:0 0 var(--e-4);max-width:62ch}

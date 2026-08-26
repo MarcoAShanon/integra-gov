@@ -1494,3 +1494,26 @@ def test_as_cinco_paradas_contam_a_ida_e_a_volta():
     assert bloco.count('loading="lazy"') == 5
     assert bloco.count("width=") == 5 and bloco.count("height=") == 5
 
+
+def test_o_video_fecha_o_percurso_com_a_duracao_a_vista():
+    """Depois de percorrer as cinco paradas a mao, o leitor ve a mesma coisa
+    feita pela automacao — e "o mesmo percurso" e o que amarra as duas cenas.
+
+    A DURACAO E OBRIGATORIA: o critico cego apontou, sobre a vitrine da fatia
+    04, que "o gestor decide clicar pelo tamanho; sem ele, nao clica". 5min28s e
+    um compromisso real para quem ainda esta decidindo se escreve.
+
+    E um link comum, com o .btn do sistema — nao o lightbox. O gancho .play/
+    .poster do contrato 9.3 so tem estilo sob #oferta, e copiar as regras para
+    ca seria duplicar um bloco que carrega decisoes documentadas (56x56 do alvo
+    de toque, glifo sobre cor solida por causa do 6.4, raio --raio-s). Assim
+    funciona com e sem JavaScript, sem tocar no sistema."""
+    texto = _fatia("03-contexto")
+    assert "Veja o mesmo percurso, feito pela automação" in texto
+    assert '<span class="num">5 min 28 s</span>' in texto
+    assert '<a class="btn btn-s" href="/media/exante.mp4">Ver o vídeo</a>' in texto
+    # o gancho do lightbox NAO pode aparecer aqui: sem o CSS de #oferta o botao
+    # nasceria sem tamanho, sem contraste e sem alvo de toque
+    assert "data-video" not in texto
+    assert "class=\"play" not in texto
+
