@@ -8,18 +8,39 @@ e o fim da página, que hoje não conduz a lugar nenhum.*
 
 ## 1. Objetivo
 
-A landing existe para **convencer servidores e gestores de outros órgãos a
+> **EMENDADO EM 26/08/2026, POR DECISÃO DO USUÁRIO. O objetivo original está
+> preservado abaixo, riscado, porque a página foi construída sob ele e boa
+> parte dela ainda é fruto dele. NÃO O RESTAURE.**
+
+A landing existe para **apresentar o projeto e despertar curiosidade** em
+servidores e gestores de outros órgãos, e para **deixar a conversa aberta** a
+quem quiser saber se dá para fazer algo parecido na casa dele.
+
+Nas palavras do usuário:
+
+> *"Preciso que a página seja uma página de apresentação/divulgação do projeto,
+> mas sem oferta de implantação em outros órgãos. Quero despertar a curiosidade
+> de gestores e servidores, estimular que entrem em contato para saber se é
+> possível implementar em seus órgãos, mas não quero estabelecer regras ou
+> limites para tal. Algo do tipo: fizemos isto, esta é a nossa história, fique à
+> vontade para falar com a gente."*
+
+**A página não oferece implantação, não qualifica quem pode escrever e não
+estabelece condições.** Ela conta o que foi feito e abre uma porta.
+
+~~A landing existe para **convencer servidores e gestores de outros órgãos a
 replicar o INTEGRA no órgão deles**, e a conduzi-los a **falar com a equipe**
-para um piloto assistido.
+para um piloto assistido.~~ — objetivo original, de 20/08/2026, aposentado.
+Ele produziu na fatia 5 sete blocos de condições (o que mandar no e-mail, para
+quem faz sentido escrever, o que acontece depois, os limites, as garantias), e
+foi essa acumulação que o usuário rejeitou em 26/08. A fatia 5 foi desmontada
+no commit `dd007d1`: sobraram uma abertura, o endereço, dois botões e o rodapé.
 
-Hoje ela não faz o segundo trabalho. Termina em dois botões — "Abrir o
-repositório" (GitHub) e "Falar com a equipe" (`mailto:` cru). Para o leitor
-que se convenceu, não existe resposta para "e agora, o que eu faço na
-segunda-feira".
-
-**Fora de escopo:** reescrever a narrativa das seções existentes; criar
-formulário ou backend; qualquer coisa que exija Node, build servido, SPA ou
-framework CSS; o deploy em si (preparado, executado só sob ordem explícita).
+**Fora de escopo:** oferecer implantação, acompanhamento, prazo ou qualquer
+compromisso de serviço; qualificar o leitor ou pedir dados dele como condição
+para a conversa; criar formulário ou backend; qualquer coisa que exija Node,
+build servido, SPA ou framework CSS; o deploy em si (preparado, executado só
+sob ordem explícita).
 
 ## 2. Estado atual (medido, não lembrado)
 
@@ -141,7 +162,7 @@ tokens do contrato e sem redefinir nenhum.
 | 2 | Prova | prêmio, números, resultados | Tailscale: métrica-como-título |
 | 3 | Contexto | problema, comparação honesta, como funciona, governança | Oxide: nomear as concessões |
 | 4 | Oferta | módulos, ecossistema, feito-com | — |
-| 5 | Conversão | **piloto assistido** (nova) + rodapé | cloud.gov + Public Digital |
+| 5 | Contato | convite aberto à conversa + rodapé — *era "piloto assistido" até 26/08* | cloud.gov + Public Digital |
 
 ### 5.1 A ordem muda — e é de propósito
 
@@ -171,23 +192,27 @@ Nenhuma das doze seções pode se perder na montagem:
 
 A seção **replicável** ("Feito na DECIPEX. Aberto para qualquer órgão" — MIT, o
 que já vem incluído, colaboração entre órgãos) é o conteúdo mais diretamente
-ligado ao objetivo de convencer a replicar. Ela vive na fatia 4 como miolo
-argumentativo; as objeções derrubadas pelo nome migram para a fatia 5.
+ligado ao objetivo de despertar a curiosidade de quem lê. Ela vive na fatia 4
+como miolo argumentativo. (Até 26/08/2026 a frase dizia "convencer a replicar",
+e as objeções migravam para a fatia 5 — que não existe mais nessa forma.)
 
 ### Fatia 5 em detalhe (é a que não existe hoje)
 
-**O nome define o próprio limite, na primeira frase.** "Assistido" é
-literalmente a promessa de acompanhamento que o corpo da seção nega — um gestor
-lê o título e infere que a equipe acompanha a implantação. O termo fica, e a
-primeira frase da seção o desarma na hora: *assistido no arranque — uma conversa
-de diagnóstico e a indicação do caminho; a implantação é do seu órgão.*
-(Decisão do usuário, 20/08/2026.)
+> **ESTE BLOCO FOI SUPERADO EM 26/08/2026.** Ele desenhava a fatia 5 como um
+> serviço com escopo declarado — e era exatamente o que o usuário mandou tirar.
+> Fica registrado porque explica por que a seção nasceu assim, e para ninguém
+> reconstruí-la achando que atende a spec.
 
-Promessa autorizada, e nada além dela: **conversa inicial e orientação
-pontual.** Um e-mail respondido, uma reunião de diagnóstico, e a indicação do
-caminho — quais módulos, o que o órgão precisa ter, onde costuma travar. **Sem
-compromisso de acompanhar a implantação.** A seção não pode sugerir fila,
-prazo, plantão nem acompanhamento continuado.
+**O que vale agora:** a fatia 5 é um convite, não uma oferta. Ela diz que a
+conversa é bem-vinda, dá o endereço e para por aí — sem nomear um serviço, sem
+qualificar quem escreve, sem processo e sem lista de limites. O que a página
+não pode prometer continua não podendo ser prometido; a diferença é que isso se
+diz **na conversa**, quando ela acontecer, e não como condição de entrada.
+
+~~"Assistido" é literalmente a promessa de acompanhamento que o corpo da seção
+nega… Promessa autorizada, e nada além dela: conversa inicial e orientação
+pontual… Sem compromisso de acompanhar a implantação.~~ — desenho de
+20/08/2026, aposentado.
 
 Deve conter:
 
