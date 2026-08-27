@@ -146,3 +146,8 @@
   /* a 375px o endereco em --t-5 mede ~412px e estouraria a tela. */
   #conversao .endereco{font-size:var(--t-3)}
 }
+
+/* --- as siglas -------------------------------------------------------
+   Sem CSS proprio alem do respiro: .card.ficha ja da o painel, a regua de
+   1px entre pares e o rotulo em mono/caixa alta. */
+#conversao .siglas{margin-top:var(--e-6)}

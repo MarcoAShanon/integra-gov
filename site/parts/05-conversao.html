@@ -33,6 +33,76 @@
       <p class="fuga">O endereço e o botão abrem o seu programa de e-mail com o assunto preenchido. Se preferir olhar antes de falar, o núcleo está no GitHub sob licença MIT, com documentação e exemplos. E, se for descrever um caso, use valores fictícios — nada de CPF, matrícula ou número de processo real.</p>
     </div>
 
+    <!-- ---------- as siglas ----------
+         A pagina usa 17 termos tecnicos e siglas; os mais frequentes eram os
+         menos explicados (DECIPEX 14 vezes, MGI 13, CGPAG 11, nenhum expandido
+         no corpo). Um leitor que chefia uma area em outro orgao conhece SEI e
+         SIAPE, mas nao tem por que conhecer a estrutura interna do MGI.
+
+         DEZ TERMOS, nao dezessete: entram os que o leitor-alvo nao resolve
+         sozinho e que aparecem com peso. OTP, CIS, TROCAHAB, headless, NUP,
+         DOU e PSS ficaram de fora — aparecem uma ou duas vezes, todos na faixa
+         tecnica, onde quem chega ou ja sabe ou nao precisa.
+
+         REUSA .card.ficha, a primitiva de rotulo/valor do contrato 8.3-k: e
+         exatamente a forma de um glossario, e nao precisa de CSS proprio.
+
+         O TERMINAL entra como "O terminal do SIAPE", e nao como "3270", de
+         proposito: .ficha dt tem letter-spacing .11em e o .num tem -.02em, a
+         mesma colisao de tracking que fez o contrato 5.4 abrir excecao para a
+         .pill. Com o numero no <dd> o problema nao existe, e o rotulo fica
+         mais legivel para quem nunca ouviu falar em 3270. -->
+    <div class="siglas rise" id="siglas">
+      <div class="sub">
+        <h3>As siglas desta página.</h3>
+        <p>Se alguma passou batido, está tudo aqui.</p>
+      </div>
+      <div class="card ficha">
+        <dl>
+          <div>
+            <dt>SEI</dt>
+            <dd>Sistema Eletrônico de Informações. É onde o processo tramita: documento, assinatura, despacho.</dd>
+          </div>
+          <div>
+            <dt>SIAPE</dt>
+            <dd>Sistema Integrado de Administração de Recursos Humanos. Guarda os dados funcionais e a folha de pagamento do servidor federal.</dd>
+          </div>
+          <div>
+            <dt>e-SIAPE</dt>
+            <dd>O mesmo SIAPE, acessado pela web, por dentro do Sigepe — em vez do terminal antigo.</dd>
+          </div>
+          <div>
+            <dt>O terminal do SIAPE</dt>
+            <dd>A tela mais antiga do SIAPE, herdada do mainframe e chamada <span class="num">3270</span>. Abre num emulador, e é onde muita coisa ainda só se resolve digitando.</dd>
+          </div>
+          <div>
+            <dt>MGI</dt>
+            <dd>Ministério da Gestão e da Inovação em Serviços Públicos.</dd>
+          </div>
+          <div>
+            <dt>SGP</dt>
+            <dd>Secretaria de Gestão de Pessoas, do MGI.</dd>
+          </div>
+          <div>
+            <dt>DECIPEX</dt>
+            <dd>Diretoria de Serviços de Aposentados e Pensionistas e de Órgãos Extintos, na SGP. É onde fica a CGPAG.</dd>
+          </div>
+          <div>
+            <dt>CGPAG</dt>
+            <dd>Coordenação-Geral de Pagamentos. É a área onde o INTEGRA nasceu, e onde ele roda todo dia.</dd>
+          </div>
+          <div>
+            <dt>Licença MIT</dt>
+            <dd>A licença de software livre sob a qual o núcleo é publicado: qualquer órgão pode baixar, usar e alterar, sem pagar e sem pedir autorização, mantendo o aviso de autoria e o texto da licença.</dd>
+          </div>
+          <div>
+            <dt>Python</dt>
+            <dd>A linguagem de programação em que o pacote é escrito.</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
     <div class="rodape">
       <div class="inst">
         <p><b>INTEGRA</b> — iniciativa de servidores da <b>Coordenação-Geral de Pagamentos (CGPAG)</b> — MGI / SGP / DECIPEX.</p>
