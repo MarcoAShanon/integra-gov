@@ -12,11 +12,14 @@ from integra_gov.esiape.exceptions import (
     EsiapeError,
     ExtracaoFichaEsiapeInterrompida,
     FichaEsiapeIndisponivel,
+    PdfImpressoIlegivel,
 )
 from integra_gov.esiape.ficha_anual import (
     FichaAnualServidor,
     ResultadoFichaEsiape,
 )
+
+from _pdf_sintetico import pdf_bytes
 from tests.test_esiape_navegacao import DriverFake, ElementoFake, FrameFake
 
 
@@ -57,13 +60,22 @@ class DriverFicha(DriverFake):
 
 
 def pdf_minimo(caminho: Path) -> Path:
-    """PDF real de 1 página em branco (pypdf) para testes de mesclagem."""
-    from pypdf import PdfWriter
+    """PDF de 1 página **com camada de texto** — uma impressão que deu certo.
 
-    w = PdfWriter()
-    w.add_blank_page(width=72, height=72)
-    with open(caminho, "wb") as f:
-        w.write(f)
+    Precisa ter texto: o download passa pelo guard que recusa PDF ilegível por
+    máquina, e um arquivo em branco seria rejeitado como impressão ruim.
+    """
+    caminho.write_bytes(pdf_bytes([["FICHA FINANCEIRA - PAGINA DE TESTE"]]))
+    return caminho
+
+
+def pdf_vetorizado(caminho: Path) -> Path:
+    """PDF sem camada de texto — o que a impressora errada produz.
+
+    Reproduz o modo de falha real: o arquivo abre, tem página, tem desenho, e
+    nenhum caractere legível por máquina.
+    """
+    caminho.write_bytes(pdf_bytes([None], com_fonte=False))
     return caminho
 
 
@@ -389,3 +401,85 @@ def test_exports_do_ciclo_e2():
                  "FichaMultiOrgao", "ResultadoMultiOrgao"):
         assert hasattr(pacote, nome), nome
         assert nome in pacote.__all__
+
+
+# --------------------------------------------------------------------------
+# Guard: PDF impresso sem camada de texto
+# --------------------------------------------------------------------------
+
+def _ficha_pronta_para_imprimir(tmp_path, gerar_pdf):
+    """Monta a tela do FPEMFICHAF com o download simulado por `gerar_pdf`."""
+    raiz, wa1, _mat = _arvore_fpemfichaf()
+    driver = DriverFicha(raiz)
+    driver.resultado_script = False
+    ficha = FichaAnualServidor(driver, pasta_saida=tmp_path)
+
+    imprimir = ElementoFake()
+    wa1.elementos[FichaAnualServidor.SEL_IMPRIMIR] = [imprimir]
+    wa1.elementos[FichaAnualServidor.SEL_GERAR_RELATORIO] = [ElementoFake()]
+    _click = imprimir.click
+
+    def imprimir_click():
+        _click()
+        driver.window_handles = ["principal", "popup_impressao"]
+        gerar_pdf(ficha.pasta_download / "fichas_financeiras.pdf")
+
+    imprimir.click = imprimir_click
+    return ficha
+
+
+def test_pdf_impresso_sem_texto_aborta_o_bloco(tmp_path):
+    # O modo de falha que passava em silêncio: a impressora errada devolve um
+    # arquivo com aparência correta e nenhum caractere legível por máquina.
+    ficha = _ficha_pronta_para_imprimir(tmp_path, pdf_vetorizado)
+
+    with pytest.raises(PdfImpressoIlegivel) as exc:
+        ficha._imprimir_bloco("0000000", 2008, 2022)
+
+    assert exc.value.bloco == (2008, 2022)
+    # A mensagem tem de dizer o que fazer, não só o que houve.
+    assert "Microsoft Print to PDF" in str(exc.value)
+
+
+def test_pdf_ilegivel_nao_vira_artefato_com_nome_de_bloco(tmp_path):
+    # Renomear antes de conferir deixaria no disco um `ficha_...pdf` com cara
+    # de resultado bom. O arquivo ruim fica com o nome bruto, para inspeção.
+    ficha = _ficha_pronta_para_imprimir(tmp_path, pdf_vetorizado)
+
+    with pytest.raises(PdfImpressoIlegivel):
+        ficha._imprimir_bloco("0000000", 2008, 2022)
+
+    assert not (tmp_path / "ficha_0000000_2008_2022.pdf").exists()
+    assert (ficha.pasta_download / "fichas_financeiras.pdf").exists()
+
+
+def test_arquivo_que_nem_abre_tambem_aborta(tmp_path):
+    # Download truncado é outro problema, mas o desfecho para quem chama é o
+    # mesmo: este bloco não produziu ficha aproveitável.
+    def truncado(caminho):
+        caminho.write_bytes(b"%PDF-1.4 truncado")
+        return caminho
+
+    ficha = _ficha_pronta_para_imprimir(tmp_path, truncado)
+
+    with pytest.raises(PdfImpressoIlegivel, match="não pôde ser aberto"):
+        ficha._imprimir_bloco("0000000", 2008, 2022)
+
+
+def test_impressao_boa_passa_pelo_guard(tmp_path):
+    ficha = _ficha_pronta_para_imprimir(tmp_path, pdf_minimo)
+    caminho = ficha._imprimir_bloco("0000000", 2008, 2022)
+
+    assert caminho == tmp_path / "ficha_0000000_2008_2022.pdf"
+    assert caminho.exists()
+
+
+def test_guard_aborta_a_extracao_inteira_com_os_blocos_ja_feitos(tmp_path):
+    # O erro do guard sobe pelo mesmo caminho honesto dos demais: nenhum
+    # resultado parcial é devolvido como completo.
+    ficha = _ficha_pronta_para_imprimir(tmp_path, pdf_vetorizado)
+    with patch.object(FichaAnualServidor, "_consultar_bloco", return_value=True):
+        with pytest.raises(ExtracaoFichaEsiapeInterrompida) as exc:
+            ficha.extrair("0000000", 2008, 2010)
+
+    assert isinstance(exc.value.causa, PdfImpressoIlegivel)

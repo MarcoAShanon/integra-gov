@@ -939,8 +939,25 @@ desalinhamento entre `pasta_download` e a configuração real do navegador.
 ### Configuração do Chrome (obrigatória)
 
 A impressão do bloco só salva o PDF de fato se o `driver` do Chrome estiver
-configurado assim — sem isso, ela trava num diálogo nativo ou é bloqueada
-silenciosamente:
+configurado assim. Sem isso há **três** desfechos, e o terceiro é o
+traiçoeiro:
+
+1. a impressão trava num diálogo nativo;
+2. é bloqueada silenciosamente;
+3. **sai um PDF pela impressora virtual do Windows** (`Microsoft Print to
+   PDF`), com aparência correta e **sem uma única letra legível por máquina**
+   — as fontes viram contorno vetorial.
+
+O terceiro é o pior porque parece sucesso: o arquivo aparece na pasta, tem
+páginas, abre no leitor. Só na hora de **ler** a ficha é que se descobre que
+não há nada extraível.
+
+Desde então o módulo **recusa esse arquivo**: depois do download, `ficha_anual`
+confere a camada de texto com
+[`tem_camada_de_texto()`](#ler-uma-ficha-financeira) e aborta o bloco com
+`PdfImpressoIlegivel` — que aponta para esta seção. O PDF ruim fica no disco
+com o nome bruto, para inspeção, e **não** recebe o nome de bloco, para não se
+passar por resultado bom.
 
 ```python
 import json

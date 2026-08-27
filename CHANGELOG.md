@@ -5,6 +5,26 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não publicado]
 
+### Alterado
+- **`integra_gov.esiape.ficha_anual` passou a recusar PDF impresso sem camada
+  de texto.** Depois do download, o módulo confere o arquivo com
+  `ficha_financeira.tem_camada_de_texto()` e aborta o bloco com a nova exceção
+  **`PdfImpressoIlegivel`** quando não há nada extraível.
+
+  Antes, um PDF gerado pela impressora virtual `Microsoft Print to PDF` do
+  Windows — que converte as fontes em contorno vetorial — atravessava o fluxo
+  inteiro em silêncio: o arquivo aparecia na pasta, era mesclado e devolvido
+  como resultado bom, e só se revelava inútil muito depois, na hora de ler a
+  ficha. É **mudança de comportamento**: uma extração que antes "dava certo"
+  nessas condições agora falha, apontando a configuração de impressão.
+
+  O arquivo ruim fica no disco com o nome bruto, para inspeção, e **não**
+  recebe o nome de bloco — para não se passar por artefato válido. Arquivo que
+  nem abre (download truncado) leva à mesma exceção, com motivo próprio.
+
+  Uma implementação, dois usos: o guard reusa o helper público do subpacote
+  `ficha_financeira` em vez de duplicar a checagem.
+
 ### Adicionado
 - **A landing de divulgação passa a viver no repositório, em `site/`** —
   publicada em <https://projeto.govintegra.com.br>. Antes ela existia apenas no

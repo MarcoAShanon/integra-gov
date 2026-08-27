@@ -19,9 +19,11 @@ from pathlib import Path
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 
+from ..ficha_financeira import PdfIlegivelError, tem_camada_de_texto
 from .exceptions import (
     ExtracaoFichaEsiapeInterrompida,
     FichaEsiapeIndisponivel,
+    PdfImpressoIlegivel,
     TransacaoNaoAbriu,
 )
 from .navegacao import (
@@ -305,6 +307,7 @@ class FichaAnualServidor:
 
         popup = self._aguardar_popup(handles_antes)
         pdf_bruto = self._aguardar_pdf_estavel()
+        self._exigir_camada_de_texto(pdf_bruto, (ano_de, ano_ate))
         if popup is not None:
             self._fechar_popup(popup)
         self._retornar_apos_impressao(handle_principal)
@@ -350,6 +353,28 @@ class FichaAnualServidor:
             f"o PDF do bloco não apareceu em {self.pasta_download} em "
             f"{self.TIMEOUT_DOWNLOAD}s — a pasta de download do driver "
             f"coincide com pasta_download?")
+
+    def _exigir_camada_de_texto(self, pdf: Path, bloco: tuple) -> None:
+        """Recusa o PDF que saiu sem texto legível por máquina.
+
+        A verificação é feita **antes** de renomear: um arquivo ilegível não
+        pode receber o nome do bloco e ficar no disco parecendo artefato bom.
+        Ele é deixado onde está, com o nome original, para inspeção.
+
+        Reusa :func:`~integra_gov.ficha_financeira.tem_camada_de_texto` em vez
+        de duplicar a checagem — uma implementação, dois usos.
+        """
+        try:
+            legivel = tem_camada_de_texto(pdf)
+            motivo = "as fontes viraram contorno vetorial"
+        except PdfIlegivelError as exc:
+            # Arquivo que nem abre é outro problema (download truncado, por
+            # exemplo), mas para quem chama o desfecho é o mesmo: este bloco
+            # não produziu ficha aproveitável.
+            legivel, motivo = False, f"o arquivo não pôde ser aberto: {exc}"
+
+        if not legivel:
+            raise PdfImpressoIlegivel(pdf, bloco, motivo)
 
     def _fechar_popup(self, popup_handle: str) -> None:
         """Fecha o popup por handle Selenium (retry); JS como fallback."""

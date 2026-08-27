@@ -612,7 +612,7 @@ Detalhes em [Ler uma ficha financeira](docs/uso-basico.md#ler-uma-ficha-financei
 | `integra_gov.esiape.navegacao` | Navegação nas telas CIS: frames visíveis, popups modais, cortina de transição, travessia de relogin | ✅ |
 | `integra_gov.esiape.acesso` | Acesso via SERPRO ID — você confirma no app; a lib nunca digita PIN/senha | ✅ |
 | `integra_gov.esiape.habilitacao` | Troca de habilitação de ÓRGÃO (`TROCAHAB`) | ✅ |
-| `integra_gov.esiape.ficha_anual` | Ficha financeira anual (`FPEMFICHAF`), um único órgão: blocos de até 15 anos, PDF mesclado, bloco sem dados ≠ erro | ✅ |
+| `integra_gov.esiape.ficha_anual` | Ficha financeira anual (`FPEMFICHAF`), um único órgão: blocos de até 15 anos, PDF mesclado, bloco sem dados ≠ erro; **recusa PDF impresso sem camada de texto** | ✅ |
 | `integra_gov.esiape.dados_funcionais` | `CDCOINDFUN`: descobre o órgão anterior e o ano de ingresso do servidor | ✅ |
 | `integra_gov.esiape.ficha_multi_orgao` | Encadeia `ficha_anual` por todos os órgãos do servidor (via `dados_funcionais`), com lacunas sempre declaradas | ✅ |
 | `integra_gov.esiape.exceptions` | Exceções tipadas | ✅ |

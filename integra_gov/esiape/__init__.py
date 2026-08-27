@@ -22,6 +22,7 @@ from .exceptions import (
     FichaEsiapeIndisponivel,
     HabilitacaoNaoEncontrada,
     MenuInacessivel,
+    PdfImpressoIlegivel,
     TransacaoNaoAbriu,
 )
 from .ficha_anual import FichaAnualServidor, ResultadoFichaEsiape
@@ -50,6 +51,7 @@ __all__ = [
     "FichaMultiOrgao",
     "HabilitacaoNaoEncontrada",
     "MenuInacessivel",
+    "PdfImpressoIlegivel",
     "ResultadoFichaEsiape",
     "ResultadoMultiOrgao",
     "TransacaoNaoAbriu",

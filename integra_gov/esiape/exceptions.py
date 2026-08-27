@@ -76,3 +76,32 @@ class ExtracaoFichaEsiapeInterrompida(EsiapeError):
             f"extração interrompida após os blocos {self.blocos_processados} "
             f"(causa: {causa!r})"
         )
+
+
+class PdfImpressoIlegivel(EsiapeError):
+    """O PDF baixado da impressão não tem texto legível por máquina.
+
+    A tela imprime, o arquivo aparece na pasta e tem a aparência correta — mas
+    se o driver de impressão converteu as fontes em contorno vetorial, não
+    sobra um único caractere extraível. O caso conhecido é a impressora
+    virtual ``Microsoft Print to PDF`` do Windows.
+
+    Sem esta verificação o arquivo atravessava o restante do fluxo em silêncio
+    e a ficha só se revelava inútil muito depois, na hora de ler. Aqui a
+    extração aborta no bloco em que o problema apareceu.
+
+    Attributes:
+        caminho: o PDF ilegível, deixado no disco para inspeção.
+        bloco: o par ``(ano_de, ano_ate)`` que estava sendo impresso.
+    """
+
+    def __init__(self, caminho, bloco, motivo: str) -> None:
+        self.caminho = caminho
+        self.bloco = bloco
+        super().__init__(
+            f"o PDF do bloco {bloco[0]}-{bloco[1]} saiu ilegível por máquina "
+            f"({motivo}): {caminho}. Confira a configuração de impressão do "
+            f"Chrome — o destino tem de ser o 'Salvar como PDF' nativo; a "
+            f"impressora virtual 'Microsoft Print to PDF' do Windows converte "
+            f"as fontes em contorno e destrói o texto. "
+            f"Ver docs/uso-basico.md, seção 'Configuração do Chrome'")
