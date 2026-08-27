@@ -250,3 +250,13 @@
 @media (prefers-reduced-motion:no-preference){
   #prova .col{transition:height var(--tempo-lento) var(--curva)}
 }
+
+/* --- como isto comecou -----------------------------------------------
+   Prosa corrida, e nao cartao: a historia e a unica parte da pagina que
+   narra, e uma moldura a transformaria em mais um painel. A .sub do sistema
+   ja da o h3 e o primeiro paragrafo com a medida certa; os demais so
+   precisam da mesma medida. A .virada carrega a tese — ganha respiro, nao
+   cor: destaque por cor aqui brigaria com os indicadores logo abaixo. */
+#prova .historia p{max-width:62ch}
+#prova .historia p + p{margin-top:var(--e-4)}
+#prova .historia .virada{margin-top:var(--e-5)}
