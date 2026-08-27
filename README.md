@@ -4,6 +4,8 @@ Biblioteca Python de **automação de sistemas do governo federal brasileiro** �
 
 > **Status:** 🚧 em construção. O projeto é publicado **de forma incremental** — cada módulo é generalizado, testado e documentado antes de ser disponibilizado.
 
+> **Sobre a pasta `site/`:** este repositório também guarda a fonte da página de divulgação do projeto — <https://projeto.govintegra.com.br>. Ela mora aqui, e não num repositório separado, porque cita módulos e versões **deste** código: versionadas juntas, a página não envelhece em silêncio quando a biblioteca muda. **Ela não vai no pacote** — `pip install integra-gov` instala só a biblioteca.
+
 ## Escopo e princípios
 
 - **Acesso autorizado:** a biblioteca automatiza o acesso que o próprio usuário já possui aos sistemas. Não burla autenticação, captcha nem controles de acesso.
