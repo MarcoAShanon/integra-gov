@@ -16,9 +16,15 @@ A diferença estrutural em relação ao formato A é dupla:
   contador de blocos, e não o número da página: herdar o grupo ``R/D`` de um
   semestre para o outro trocaria o sinal de um valor.
 
-O layout foi levantado da tela do e-SIAPE com o texto real (a página é HTML);
-falta confirmá-lo contra um PDF com camada de texto, que é o que o
-:mod:`~integra_gov.ficha_financeira.leitura` receberá na prática.
+O layout foi levantado da tela do e-SIAPE (a página é HTML) e **validado
+contra o PDF impresso**, que é o que a leitura recebe na prática: a estrutura
+por ``|`` sobrevive à extração, e o ruído da impressão (cabeçalho com
+data/hora, rodapé com a URL) é descartado sem virar lançamento.
+
+O round-trip também revelou um campo que a tela **não** mostra —
+``Banco/Agência/C. Corrente:``, emendado à direita do ``Nome:``. Duas
+renderizações do mesmo relatório não trazem os mesmos campos, e é por isso que
+validar contra a fonte não substitui validar contra o artefato.
 """
 
 from __future__ import annotations
