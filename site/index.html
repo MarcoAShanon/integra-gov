@@ -1753,82 +1753,6 @@ header .marca{flex:none}
    .wrap isso viraria 104px. O fio e o padding-top dele ficam. */
 #conversao .rodape{margin-top:0}
 
-/* --- a grade: o pedido (7) e a lateral (5) --------------------------
-   abaixo de 768px o sistema colapsa .grid para uma coluna sozinho. */
-#conversao .grid{row-gap:var(--e-5)}
-#conversao .pedido{grid-column:span 7}
-#conversao .lateral{
-  grid-column:span 5;
-  display:flex;
-  flex-direction:column;
-  gap:var(--e-4);
-}
-
-/* --- os tres cartoes ------------------------------------------------
-   .card ja traz --surface, o fio de 1px e o raio.
-
-   NAO HA MAIS gap AQUI, e a ausencia e o conserto do A8: o cartao era
-   um flex de gap:--e-4, e esses 20px eram o meu numero para
-   h3 -> paragrafo. Agora quem fixa o segundo nivel e a primitiva .sub
-   (12px do h3 ao seu paragrafo, 32px ate o conteudo, 62ch de medida).
-   Manter o gap somaria os 20px do cartao aos 32px da primitiva. O que
-   sobrou de espacamento local sao as margens dos paragrafos de fecho,
-   que nao sao subsecao nenhuma — sao remate de cartao.
-
-   h3 em --t-5: e um degrau da escala (5.5), escolhido porque --t-6
-   dentro de um cartao de 5 colunas competiria com o h2 da faixa. */
-#conversao .card h3{font-size:var(--t-5)}
-#conversao .card ul{font-size:var(--t-3)}
-
-/* o paragrafo que apresenta a lista do e-mail. Secundario de proposito:
-   a informacao acionavel esta nos pares abaixo, nao aqui. */
-#conversao .pedido .intro{
-  font-size:var(--t-3);
-  color:var(--text-soft);
-}
-
-/* a ressalva de dado pessoal, apartada por fio — nao e passo da lista. */
-#conversao .aviso{
-  margin-top:var(--e-4);
-  padding-top:var(--e-4);
-  border-top:1px solid var(--border);
-  font-size:var(--t-2);
-  color:var(--text-soft);
-}
-
-/* o fecho de cada cartao lateral. O .limite fica em --text (nao em
-   --text-soft) DE PROPOSITO: e a frase que desarma a expectativa de
-   acompanhamento, e apagar justamente ela seria o defeito. */
-#conversao .fecha{
-  margin-top:var(--e-4);
-  font-size:var(--t-3);
-  color:var(--text-soft);
-}
-#conversao .limite{
-  margin-top:var(--e-4);
-  padding-top:var(--e-4);
-  border-top:1px solid var(--border);
-  font-size:var(--t-3);
-  color:var(--text);
-}
-
-/* --- as objecoes derrubadas pelo nome -------------------------------
-   .lista-ok e a primitiva das garantias (8.3-h); o texto dos itens fica
-   em --text, que e o padrao — o glifo em --ok so e sinal contra
-   --text. Duas colunas no desktop: nao usa .grid, por isso o colapso
-   abaixo de 768px e escrito aqui.
-
-   O bloco .garantias nao tem regra nenhuma: era um flex de gap:--e-5, e
-   aqueles 32px eram o extremo que a revisao mediu. Quem da o respiro
-   agora e o margin-bottom da .sub — mesmo valor, so que uma vez, no
-   sistema, e valendo para as quatro fatias. */
-#conversao .lista-ok{
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  column-gap:var(--e-5);
-  row-gap:var(--e-4);
-}
-#conversao .lista-ok li{font-size:var(--t-3)}
-
 /* --- o fecho: endereco, botoes e a rota de fuga ---------------------- */
 #conversao .fecho{
   display:flex;
@@ -2658,84 +2582,9 @@ header .marca{flex:none}
   <div class="wrap">
 
     <div class="abertura rise">
-      <span class="pill"><span class="ponto"></span>Piloto assistido no arranque</span>
-      <h2>Assistido no arranque — não na implantação.</h2>
-      <p class="lede">“Assistido” aqui quer dizer uma conversa de diagnóstico e a indicação do caminho: quais módulos servem para o seu caso, o que o seu órgão precisa ter antes de começar e onde isso costuma travar. Quem implanta, testa e opera depois é a sua equipe.</p>
-    </div>
-
-    <div class="grid">
-
-      <div class="card ficha pedido rise" data-atraso="1">
-        <div class="sub">
-          <h3>O que mandar no e-mail.</h3>
-          <p class="intro">Não há formulário nesta página, e não vai haver. O que faz a conversa render é o e-mail já chegar com estas seis coisas — em texto corrido mesmo, na ordem que você quiser.</p>
-        </div>
-        <dl>
-          <div>
-            <dt>O gargalo</dt>
-            <dd>Qual tarefa repetitiva consome a sua unidade hoje, em uma frase: o que entra, o que sai e quantas telas existem no meio.</dd>
-          </div>
-          <div>
-            <dt>O volume</dt>
-            <dd>Quantos processos, ofícios ou lançamentos por mês, quantas pessoas fazem isso e quanto leva um caso típico. Estimativa serve — não precisa levantar dado novo para escrever.</dd>
-          </div>
-          <div>
-            <dt>Os sistemas</dt>
-            <dd>Quais estão no fluxo e em que versão: SEI (o nosso é o <span class="num">4.1.5</span>), SIAPE pelo terminal <span class="num">3270</span>, Sigepe, planilha, e-mail. Diga também se as máquinas da equipe são Windows — o <span class="num">3270</span> só roda lá.</dd>
-          </div>
-          <div>
-            <dt>O acesso que você já tem</dt>
-            <dd>Quais transações do SIAPE o seu perfil alcança e em quais unidades do SEI você atua. É isso que define o que dá para automatizar sem pedir habilitação nova a ninguém.</dd>
-          </div>
-          <div>
-            <dt>O que já tentaram</dt>
-            <dd>Macro, planilha, força-tarefa, robô contratado. Saber o que não funcionou aí dentro poupa metade da conversa.</dd>
-          </div>
-          <div>
-            <dt>Quem vai tocar</dt>
-            <dd>Se há aí alguém que programe em Python — ou que topa aprender — e quem assina a decisão na sua unidade. Como a implantação é do seu órgão, essa é a resposta que mais pesa.</dd>
-          </div>
-        </dl>
-        <p class="aviso">Não mande dado pessoal: nem CPF, nem matrícula, nem número de processo real. Descreva o caso com valores fictícios — é a mesma regra que vale dentro do repositório.</p>
-      </div>
-
-      <div class="lateral">
-
-        <div class="card rise" data-atraso="2">
-          <div class="sub"><h3>Faz sentido escrever se você…</h3></div>
-          <ul>
-            <li>…vê a mesma tarefa manual entre o SEI e o SIAPE se repetir na sua unidade, mês após mês;</li>
-            <li>…programa, ou tem aí alguém que programe, e quer saber o que reaproveitar antes de escrever código do zero;</li>
-            <li>…chefia uma área e pode autorizar um piloto dentro da própria unidade, sem depender de projeto institucional.</li>
-          </ul>
-          <p class="fecha">Não precisa ser da área de TI. Precisa ter o problema e ter o acesso.</p>
-        </div>
-
-        <div class="card rise" data-atraso="3">
-          <div class="sub"><h3>O que acontece depois do e-mail.</h3></div>
-          <ul>
-            <li>Começa pelo seu e-mail, escrito com os seis itens da lista.</li>
-            <li>Uma videoconferência de diagnóstico, para olhar o seu fluxo e dizer o que dá e o que não dá.</li>
-            <li>A indicação do caminho: quais módulos servem, o que o órgão precisa ter antes de começar e onde os outros costumam travar.</li>
-          </ul>
-          <p class="limite">Termina aí. Não há acompanhamento depois dessa conversa, não há prazo combinado e ninguém do INTEGRA implanta, configura ou opera nada dentro do seu órgão. Do outro lado do e-mail há um servidor público com o próprio trabalho para tocar, não uma central de atendimento.</p>
-        </div>
-
-      </div>
-
-    </div>
-
-    <hr class="hairline">
-
-    <div class="garantias rise">
-      <div class="sub"><h3>O que você não precisa ter para começar.</h3></div>
-      <ul class="lista-ok">
-        <li><span><b>Sem contrato.</b> Não há nada para assinar entre órgãos, nem termo de cooperação, nem adesão.</span></li>
-        <li><span><b>Sem fornecedor.</b> Não há empresa por trás, nada para contratar e nada para renovar depois.</span></li>
-        <li><span><b>Sem licitação.</b> O núcleo é código aberto sob licença MIT: baixar e usar não é aquisição.</span></li>
-        <li><span><b>Sem senha embutida no código.</b> A credencial é parâmetro de quem executa — nunca versionada, nunca em log.</span></li>
-        <li><span><b>Sem habilitação especial.</b> Roda com o acesso que o próprio servidor já tem, pela interface dos sistemas: não burla autenticação nem captcha.</span></li>
-      </ul>
+      <span class="pill"><span class="ponto"></span>Falar com quem fez</span>
+      <h2>Essa é a nossa história. Fale com a gente.</h2>
+      <p class="lede">Não há formulário, requisito nem processo. Se alguma coisa aqui parecer com o que acontece na sua unidade, escreva — para perguntar, para discordar, ou só para saber se dá para fazer parecido aí. Quem responde é quem fez.</p>
     </div>
 
     <div class="fecho rise">
@@ -2744,7 +2593,7 @@ header .marca{flex:none}
         <a class="btn btn-p" href="mailto:marco.aurelio-silva@gestao.gov.br?subject=INTEGRA%20%E2%80%94%20conversa%20de%20diagn%C3%B3stico">Escrever o e-mail</a>
         <a class="btn btn-s" href="https://github.com/MarcoAShanon/integra-gov">Abrir o repositório</a>
       </div>
-      <p class="fuga">O endereço acima e o botão abrem o seu programa de e-mail com o assunto preenchido; acrescente nele a sigla do seu órgão. E se você prefere não escrever para ninguém, o caminho não depende disso: o núcleo está no GitHub sob licença MIT, com documentação e exemplos — clonar, ler e testar não passa por conversa nenhuma.</p>
+      <p class="fuga">O endereço e o botão abrem o seu programa de e-mail com o assunto preenchido. Se preferir olhar antes de falar, o núcleo está no GitHub sob licença MIT, com documentação e exemplos. E, se for descrever um caso, use valores fictícios — nada de CPF, matrícula ou número de processo real.</p>
     </div>
 
     <div class="rodape">
