@@ -6,41 +6,6 @@ e o fim da página, que hoje não conduz a lugar nenhum.*
 
 *A **ordem**, essa muda: ver §5.1.*
 
-## 0. Enquadramento — parceria entre gestores, não relação comercial
-
-**Decisão do usuário, 20/08/2026. Vale para a página inteira e para qualquer
-texto futuro.**
-
-> *"Não devemos passar uma ideia de algo comercial e sim de parceria entre
-> gestores governamentais."*
-
-A relação não é fornecedor–cliente. É um servidor público que resolveu um
-problema oferecendo conversar com outro servidor público que tem o mesmo
-problema. Ninguém vende, ninguém compra, ninguém tem cliente.
-
-A pesquisa de referência achou a frase que nomeia isso, na cloud.gov — equipe
-federal servindo outros órgãos: **"Government-to-government, not just
-govtech."**
-
-Consequências práticas:
-
-- **Não há assimetria.** Numa relação comercial um lado oferece e o outro
-  avalia. Aqui os dois são pares: o outro gestor tem órgão, equipe e restrições
-  que este projeto não conhece, e sabe do problema dele o que ninguém aqui sabe.
-- **O convite não é "veja se serve para você"** — que ainda põe um lado
-  julgando o produto do outro. É mais perto de *"nós resolvemos assim; conte
-  como é aí, e a gente vê o que se aproveita"*.
-- **O que se oferece não é produto: é o que já foi aprendido, inclusive os
-  erros.** Um par que só mostra o que deu certo está vendendo; um par que conta
-  onde tropeçou está colaborando. É por isso que a comparação honesta da fatia
-  3 é a melhor coisa da página.
-- **Vocabulário vetado por implicar transação:** solução, cliente, atendimento,
-  oferta, adotar o produto, proposta de valor, e chamada para ação em imperativo
-  publicitário.
-- **E o inverso também não serve:** parceria não é favor nem militância. Nada
-  de "vamos juntos transformar o serviço público". Sobriedade — dois gestores
-  tratando de um problema concreto.
-
 ## 1. Objetivo
 
 A landing existe para **convencer servidores e gestores de outros órgãos a

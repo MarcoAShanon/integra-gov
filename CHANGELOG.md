@@ -40,8 +40,7 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
     (`header`, `main`, `nav`), skip link que **de fato pula** a navegação (o
     montador emite o `<header>` antes do `<main>`), 14 alvos de toque todos com
     44px, e nenhum conteúdo dependente de JavaScript — sem script, nada some.
-  - **Seção nova para a conversa** (chamada de "piloto assistido" à época),
-    com a promessa delimitada por escrito:
+  - **Seção nova de piloto assistido**, com a promessa delimitada por escrito:
     conversa inicial e orientação pontual, sem acompanhamento de implantação. A
     página anterior terminava num `mailto:` solto.
   - **−90% virou −89%**: a conta dá −89,06%, e arredondar **para cima** numa
@@ -100,59 +99,6 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   extração `layout` — de que a leitura da ficha depende, porque no relatório
   do SIAPE a informação está na **posição** do caractere — só existe a partir
   do 4.0. Com o piso antigo o pacote instalava e quebrava em runtime.
-- **A landing para de barrar o gestor não-técnico na porta.** A fatia do gestor
-  existia para derrubar "isso é coisa de TI, eu não tenho equipe" e, no mesmo
-  bloco, reintroduzia a objeção como requisito: exigia alguém que lesse Python e
-  uma máquina Windows, e mandava o leitor para uma seção que pedia a versão do
-  SEI e se havia quem programasse. A página se desmentia no clique que ela mesma
-  pedia.
-  - **Sai a exigência técnica das três fatias que o leitor percorre** (`01b`,
-    `03` e `05`). O custo continua dito — a automação exige alguém por perto, e
-    o roteiro quebra se a tela mudar —, mas como preço à vista, não como
-    condição de entrada. A `04-oferta` não muda: lá é catálogo técnico.
-  - **O contato deixa de ser só o e-mail.** Entra `(24) 98849-3257`, no WhatsApp
-    e por ligação, ao lado do endereço institucional. O número foi conferido
-    contra o portão de privacidade antes de entrar.
-  - **O limite continua dito, sem fechar a porta.** Some o "Termina aí" e a
-    negação em série; fica a divisão de trabalho — quem implanta e opera é a
-    equipe do órgão — e a conversa segue se fizer sentido para os dois lados.
-  - **A seção da conversa perdeu o nome de plano de serviço.** Chamava-se
-    "Piloto assistido" na navegação, no mapa, na pílula e no `h2` — e a lede
-    existia para definir o que "assistido" queria dizer. Passou a se chamar
-    **Conversa**, palavra que a própria página já usava. Junto com isso, a
-    porta do gestor deixou de repetir a promessa da seção seguinte e passa a
-    convidar a conversar pelo meio que o leitor preferir; o limite continua
-    dito três vezes na seção da conversa, que é para onde o botão leva.
-  - **A entrada do gestor parou de falar de preço e de exigir decisão.** Saiu
-    o cartão "O que não dá para prometer" — falar de custo na seção que existe
-    para abrir uma porta é receber o visitante com uma fatura na mão. A
-    comparação honesta continua no contexto, com os dois preços à vista. A
-    abertura passou a falar da demanda que cresce, e não da equipe que
-    encolhe: assim enquadrada, a queda de `8` para `4` técnicos lia como
-    precedente de corte de pessoal — achado de um crítico que leu a página sem
-    acesso ao raciocínio por trás dela.
-  - **"Licença MIT" vem explicada onde o leitor encontra o termo**, e não três
-    seções adiante: qualquer órgão pode baixar, usar e adaptar, sem pagar nada
-    e sem pedir autorização, mantendo o aviso de autoria e o texto da licença.
-  - **Doze testes novos em `tests/test_site.py`** cobram cada uma dessas
-    decisões no texto publicado, lendo a fatia sem os comentários de projeto —
-    inclusive um para a palavra "solução", vetada por implicar transação e que
-    nenhum portão cobrava.
-- **A página mostra as telas por onde o trabalho manual passa.** A seção de
-  contexto afirmava que o SEI e o SIAPE não se falam; agora ela mostra, na ordem
-  de uma tarefa real, as cinco paradas que um servidor percorre à mão — SEI,
-  e-SIAPE, SEI, terminal `3270`, SEI. O leitor conta as três voltas ao mesmo
-  lugar sozinho, e a página só diz a frase do fecho.
-  - **O objetivo é reconhecimento, não comparação.** Cada tela aparece grande,
-    uma por vez, e não em grade de miniaturas: o gestor precisa reconhecer o
-    próprio dia, e miniatura não dispara memória. A abertura da seção passou a
-    "Dois sistemas. Três telas. Cinco paradas.", e o ano de `1989` migrou para a
-    lede em vez de sumir com o título antigo.
-  - **As capturas são PNG, não JPEG**, e por medida: são telas de interface, com
-    texto de 11px e cor chapada, onde o chiado do JPEG apagaria justamente o que
-    faz a tela ser reconhecida.
-  - **O vídeo de execução fecha a sequência**, com a duração à vista — quem
-    decide clicar decide pelo tamanho.
 
 ### Alterado
 - `integra_gov.siape.TrocaHabilitacao`: **`upag` vira opcional** — o módulo

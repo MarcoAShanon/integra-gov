@@ -932,150 +932,6 @@ header .marca{flex:none}
   #hero .intro{gap:var(--e-4)}
   #hero .ficha{padding:var(--e-4)}
 }
-/* ===== 01b-gestor ===== */
-/* =====================================================================
-   01b-gestor — o degrau de entrada do gestor publico.
-
-   Regras que este arquivo respeita e que nao aparecem sozinhas na
-   leitura: todo seletor comeca por "#gestor"; nenhum token novo, nenhum
-   bloco :root; nenhuma box-shadow; nenhum outline (o do sistema usa
-   :where() e qualquer regra prefixada o venceria); nenhum z-index cru;
-   nenhum atributo style no HTML; @media so em 1080px e 768px, em
-   max-width, nesta ordem.
-
-   O UNICO controle da faixa e o .btn-s do fim. Ele nao recebe conserto
-   de alvo de toque aqui: os 44px vem do min-height da primitiva
-   (contrato 8.4-b), e a .acoes em volta garante a largura cheia abaixo
-   de 768px mesmo com um botao so.
-   ===================================================================== */
-
-/* --- ritmo interno --------------------------------------------------
-   O .wrap empilha a abertura e os tres blocos com --e-6, o mesmo passo
-   que o #contexto usa. O padding vertical e o fundo da <section>
-   continuam sendo da .faixa (contrato 4). */
-#gestor .wrap{
-  display:flex;
-  flex-direction:column;
-  gap:var(--e-6);
-}
-
-/* cada bloco abre com um fio de cabelo. --border e decorativo (1,27:1 a
-   1,43:1 contra o fundo) e aqui ele so separa — nao identifica controle
-   nenhum, que e o unico uso que o contrato 6.3 lhe proibe.
-   Nenhuma medida de leitura, gap ou margem de subsecao mora aqui: o h3 e
-   o paragrafo dele sao uma .sub do sistema (12px entre os dois, 32px ate
-   o que vem depois, 62ch de medida). Uma copia prefixada venceria em
-   silencio qualquer correcao futura da primitiva. */
-#gestor .bloco{
-  padding-top:var(--e-5);
-  border-top:1px solid var(--border);
-}
-
-/* --- o que a unidade precisa ter ------------------------------------
-   A .ficha e a primitiva certa aqui: sao cinco pares rotulo/valor curtos,
-   e o rotulo em mono/caixa alta e o registro de uma lista de requisitos,
-   nao de prosa. Nenhum numero entra num <dt>: ali o letter-spacing de
-   .11em do micro-rotulo brigaria com o -.02em do .num, e o contrato so
-   isenta a .pill dessa colisao (5.4). Por isso o 3270 vive no <dd>.
-
-   O <h4> ganha respiro proprio porque a primitiva zera o padding-top do
-   primeiro par (.ficha dl > div:first-child) — sem isto o primeiro
-   rotulo encosta no titulo. Sem fio embaixo do h4: o #contexto ja usa
-   esse recurso nas duas colunas da comparacao, e repeti-lo faria as duas
-   secoes lerem como a mesma tabela. */
-/* O cartao ficou sozinho quando o bloco vizinho saiu (26/08), e com ele
-   saiu a .grid: grade de um filho so e grade sem funcao. A medida de
-   leitura vem no lugar da coluna. Medido no navegador: o <dd> fica em
-   65ch contra os 62ch do paragrafo do .sub logo acima — dentro da banda
-   de 60ch-70ch que o contrato 7.2 fixa para texto corrido. O 64ch da
-   regra e menor que o medido porque o respiro do .card entra na conta. */
-#gestor .precisa{max-width:64ch}
-#gestor .precisa h4{margin-bottom:var(--e-4)}
-
-/* --- o mapa da pagina ------------------------------------------------
-   Quatro linhas: o nome da secao a esquerda, a frase que diz o que ha
-   nela a direita. E a unica coisa parecida com um resumo na pagina, que
-   tem 2.640 palavras e nenhum.
-
-   A largura da coluna esquerda em --col-3 e legitima: subindo do <li>
-   ate o .wrap so ha .mapa (padding 0, margem 0) e .bloco (so
-   padding-top), os dois de largura cheia — o teste mecanico do contrato
-   7.1. .bloco e item de um flex column, que estica no eixo cruzado, e
-   por isso resolve contra a largura util do .wrap. */
-#gestor .mapa{list-style:none;margin:0;padding:0}
-
-#gestor .mapa li{
-  margin:0;
-  display:grid;
-  grid-template-columns:var(--col-3) minmax(0,1fr);
-  gap:0 var(--e-5);
-  padding-block:var(--e-3);
-  border-top:1px solid var(--border);
-}
-#gestor .mapa li:first-child{padding-top:0;border-top:0}
-#gestor .mapa li:last-child{padding-bottom:0}
-
-/* A caixa de 44px e a MESMA tecnica que o sistema usa no .nav a
-   (inline-flex + min-height), e nao um conserto de primitiva no prefixo:
-   .link e definido como link de texto corrido e nao tem — nem deve ter —
-   altura de alvo, mas aqui ele nao esta em prosa, e sim sozinho numa
-   linha, servindo de destino tocavel. align-items:flex-start mantem a
-   primeira linha do rotulo alinhada com a do paragrafo ao lado; os 44px
-   crescem para baixo, para dentro do respiro que a linha ja tem.
-
-   align-self e justify-self NAO sao enfeite, e foram postos depois de
-   MEDIR o display computado em vez de confiar na regra — que e a
-   armadilha que o proprio contrato manda checar. O <a> e item de uma
-   grade, e item de grade e BLOQUIFICADO: o inline-flex declarado aqui
-   computa "flex", o alvo estica para os 246px da coluna e para a altura
-   da linha inteira (medido: 246 x 82,6px). Ficava um retangulo invisivel
-   de meia coluna reagindo a hover e a clique longe de qualquer texto.
-   Com align-self:start + justify-self:start o alvo volta a ser do
-   tamanho do rotulo, com os 44px de dedo e mais nada. */
-#gestor .mapa a{
-  display:inline-flex;
-  align-items:flex-start;
-  align-self:start;
-  justify-self:start;
-  min-height:44px;
-  font-weight:600;
-}
-#gestor .mapa p{max-width:62ch}
-
-/* a fonte dos numeros do mapa, no registro de legenda. Nenhum link e
-   nenhum glifo colorido aqui dentro: o bloco e --text-soft, e contra ele
-   --acento-ink mede 1,07:1 (contrato 6.2-b). */
-#gestor .fonte{
-  margin-top:var(--e-5);
-  max-width:70ch;
-  font-size:var(--t-2);
-  color:var(--text-soft);
-}
-
-/* --- entre pares: o fecho -------------------------------------------
-   O paragrafo que repete, em uma frase, o limite que a faixa 05 gasta
-   700 palavras estabelecendo. Ele existe para quem ler SO esta secao
-   chegar ao e-mail com a mesma expectativa de quem leu a pagina inteira.
-   Fio a esquerda em --acento-ink: e o unico realce de cor da faixa, e o
-   texto ao lado dele e --text, contra o qual o ambar mede 3,05:1 no tema
-   claro. O fio nao carrega informacao — quem a carrega e a frase. */
-#gestor .promessa{
-  max-width:62ch;
-  padding-left:var(--e-4);
-  border-left:2px solid var(--acento-ink);
-}
-#gestor .acoes{margin-top:var(--e-5)}
-
-/* =====================================================================
-   BREAKPOINTS — so 1080px e 768px, em max-width, nesta ordem.
-   ===================================================================== */
-@media (max-width:768px){
-  /* o .mapa nao e uma .grid do sistema — o colapso e por conta desta
-     fatia. Uma coluna: o rotulo em cima, a frase embaixo. */
-  #gestor .mapa li{grid-template-columns:minmax(0,1fr)}
-  /* respiro interno do cartao a 375px, como as outras fatias fazem. */
-  #gestor .precisa{padding:var(--e-4)}
-}
 /* ===== 02-prova ===== */
 /* =====================================================================
    02-prova — reconhecimento, indicadores e as series do historico.
@@ -1509,40 +1365,6 @@ header .marca{flex:none}
   #contexto .escopo{padding:var(--e-4)}
   #contexto .fluxo .tela{padding:var(--e-3)}
 }
-
-/* --- as cinco paradas -------------------------------------------------
-   A .figura do sistema ja da o fundo, a borda, o raio e a legenda em bloco
-   separado por fio (contrato 8.3-g). Falta so a lista: tirar o marcador do
-   <ol> e por o ritmo vertical entre as paradas.
-
-   As cinco capturas tem proporcoes muito diferentes (de 1,08 na tela do
-   terminal a 2,13 na do SEI). NAO se impoe proporcao unica aqui: recortar
-   para alinhar mataria justamente o que faz a tela ser reconhecida. Cada uma
-   guarda a sua, e a largura e que e comum. */
-#contexto .paradas{
-  list-style:none;
-  margin:var(--e-6) 0 0;
-  padding:0;
-  display:flex;
-  flex-direction:column;
-  gap:var(--e-5);
-}
-/* o numero da parada, na legenda: mono pelo .num do sistema, e so precisa do
-   respiro ate o texto. */
-#contexto .paradas figcaption .num{margin-right:var(--e-2)}
-
-/* o fecho e a UNICA frase em que a pagina fala aqui — o leitor ja contou as
-   tres voltas sozinho. Fica com a medida de leitura da .sub. */
-#contexto .fecho-paradas{
-  margin:var(--e-5) 0 0;
-  max-width:62ch;
-}
-
-/* --- o video que fecha o percurso ------------------------------------
-   Sem cartao: dois fios concentricos (a .figura acima ja tem um) seriam
-   ruido. So o respiro ate o bloco seguinte e a medida de leitura. */
-#contexto .ver-percurso{margin:var(--e-6) 0 0}
-#contexto .ver-percurso p{margin:0 0 var(--e-4);max-width:62ch}
 /* ===== 04-oferta ===== */
 /* =====================================================================
    04-oferta — os blocos do pacote, as camadas, o que ja roda e o que
@@ -1887,7 +1709,7 @@ header .marca{flex:none}
 }
 /* ===== 05-conversao ===== */
 /* =====================================================================
-   05-conversao — a conversa e o rodape institucional.
+   05-conversao — o piloto assistido e o rodape institucional.
 
    NENHUM HEXADECIMAL NESTE ARQUIVO, de proposito. A .faixa.tinta
    reescopa os quinze tokens de cor (contrato 4.2), entao aqui se escreve
@@ -2082,7 +1904,7 @@ header .marca{flex:none}
    letra — a licao que a fatia 0 tirou ao consertar a navegacao. O texto
    continua em --t-2 (linha de ~23px); quem sobe para os 44px da bateria
    e o bloco. O .val — hoje so o nome do contato, o unico campo do
-   bloco que nao e link — recebe a mesma caixa para as cinco linhas
+   bloco que nao e link — recebe a mesma caixa para as quatro linhas
    terem o mesmo ritmo.
    A COR do link vem do .link-neutro do sistema — primitiva que nasceu
    deste caso: aqui dentro --acento-ink mede 1,19:1 contra o texto
@@ -2124,8 +1946,7 @@ header .marca{flex:none}
 
      ROTULOS: cada um repete a PILULA da faixa de destino, para o leitor
      reconhecer onde caiu. "Nucleo aberto" -> "O nucleo aberto ·
-     integra-gov"; "Conversa" -> a faixa 05 (era "Piloto assistido" ate
-     26/08/2026; o termo saiu por decisao do usuario).
+     integra-gov"; "Piloto assistido" -> "Piloto assistido no arranque".
      Os rotulos antigos ("Adocao", "Contato") descreviam o que o leitor
      esperava encontrar, nao o que ele encontra: o e-mail fica 2.107px
      abaixo da ancora #conversao a 800px de largura (achado A4). Um menu
@@ -2145,7 +1966,7 @@ header .marca{flex:none}
       <a href="#prova">Resultados</a>
       <a href="#contexto">Contexto</a>
       <a href="#oferta">Núcleo aberto</a>
-      <a href="#conversao">Conversa</a>
+      <a href="#conversao">Piloto assistido</a>
       <a href="https://github.com/MarcoAShanon/integra-gov">Repositório</a>
     </nav>
   </div>
@@ -2213,211 +2034,6 @@ header .marca{flex:none}
       </div>
 
     </div>
-  </div>
-</section>
-<!-- Fatia 01b — o degrau de entrada do gestor. Entra entre o hero e a prova.
-
-     PARA QUEM: quem chefia uma area, conhece o SEI e o SIAPE COMO USUARIO e
-     nao e tecnico. O hero fala com quem ja sabe por que isso e dificil; esta
-     fatia fala com quem sente a dor e acha que a saida exige equipe de TI.
-     A objecao unica que ela existe para derrubar esta escrita no proprio h3.
-
-     A RELACAO E ENTRE PARES, e isto governa cada palavra daqui: nao ha
-     empresa, produto, cliente nem atendimento — ha um servidor publico que
-     passou pelo problema e outro que esta passando. Por isso a secao fecha
-     com "nos resolvemos assim, o seu caso pode ser diferente" e nao com um
-     convite a
-     avaliar coisa nenhuma: numa relacao comercial um lado julga o produto do
-     outro; aqui os dois lados sabem coisas que o outro nao sabe. As palavras
-     de transacao (solucao, cliente, oferta, proposta, adotar o produto) nao
-     aparecem, e o imperativo publicitario tambem nao.
-
-     FUNDO — .faixa (--bg), a mesma cor do hero, e isto e uma DECISAO, nao
-     descuido. O contrato 4.1 fixa a alternancia das CINCO fatias que ele
-     conhece e nao tem linha para uma sexta: inserida aqui, ou esta faixa
-     encosta no hero (--bg) ou encosta na prova (--fundo-alt) — nao existe
-     terceira saida sem renumerar as outras quatro. Escolhida a primeira
-     porque hero e gestor sao um par (a proposicao e a objecao a ela), o
-     sistema ja emite o fio de 1px entre faixas vizinhas para separa-las, e
-     assim a primeira troca de papel da pagina cai exatamente onde comeca a
-     EVIDENCIA. Registrado no relatorio da fatia.
-
-     O CONTROLE: um .btn-s para #conversao, e o unico da faixa. Ele existe
-     porque os dois unicos controles da pagina montada estao no hero e no
-     rodape, com 12.000px entre eles. E e SECUNDARIO de proposito: um segundo
-     ambar preenchido uma tela abaixo do hero leria como pressao — que e
-     exatamente o registro que uma conversa entre pares nao tem. Ele aponta
-     para a faixa 05, e nao direto para o mailto, porque e la que estao os
-     seis itens que fazem a conversa render e o paragrafo que diz onde a ajuda
-     daqui termina; quem pula direto para o e-mail chega com a expectativa
-     errada.
-
-     A PROMESSA nao repete mais a da faixa 05. Ela convida a conversar pelo
-     meio que o leitor preferir — video, e-mail, WhatsApp — e para por ai.
-     Motivo (usuario, 26/08/2026): "acho que aqui pode ser menos comercial
-     tambem". O texto anterior era copia quase literal do .limite da 05,
-     diferindo por um sinal de pontuacao, e a revisao final da branch apontou
-     a duplicacao — esta troca a resolve de lado. O limite NAO se perdeu: a
-     faixa 05 o diz tres vezes (h2, lede e .limite), e e para la que o botao
-     daqui leva. Ele saiu da PORTA, nao da pagina.
-
-     ATENCAO ao vocabulario: a frase diz "colaborar para resolver", e nao
-     "colaborar com a solucao". "Solucao" esta na lista de palavras vetadas
-     por implicar transacao (§ 0 da spec de 20/08, junto com cliente,
-     atendimento, oferta, proposta de valor). Portao: test_a_pagina_nao_vende
-     _uma_solucao. As outras da lista nao dao para cobrar sem allowlist —
-     "cliente" e "atendimento" aparecem NEGADOS no texto visivel.
-
-     O H3 diz "o seu caso pode ser diferente", e nao "o seu caso e outro":
-     o segundo afirma do caso alheio uma coisa que ninguem aqui sabe.
-
-     MIT EXPLICADO NA HORA: "licenca MIT" nao diz nada a quem nao e tecnico, e
-     aparece justamente no paragrafo que existe para TIRAR o peso da decisao.
-     A glosa entra ali, na primeira vez que o gestor encontra o termo em prosa
-     — o hero ja o cita antes, mas como etiqueta de ficha. A explicacao
-     completa continua na fatia 04. Decisao do usuario, 26/08/2026.
-
-     O QUE O CARTAO NAO PEDE, e e decisao de 26/08/2026: nao pede quem leia
-     Python (D1) nem maquina Windows (D2). O degrau de entrada e querer
-     conhecer o projeto — numa parceria entre pares quem convida nao
-     estabelece requisito de admissao, e uma lista tecnica na porta e
-     formulario de qualificacao. O Windows saiu junto porque "Windows so se
-     for o SIAPE" abre a pergunta seguinte, cuja resposta hoje e servidor
-     online pago do proprio bolso. O item da PESSOA ficou, reescrito sem a
-     exigencia: sem ele os tres restantes nao respondem "quem faz?", e o
-     leitor completa a lacuna com "entao e TI mesmo" — a objecao que esta
-     secao existe para derrubar. Ha portao:
-     tests/test_site.py::test_a_porta_do_gestor_nao_exige_programador_nem_maquina.
-
-     NUMEROS: nenhum numero novo. Os quatro daqui (8 -> 4 tecnicos, o passivo
-     de ~4.800 para ~800, os -89% de tempo e o 1o lugar) ja estao publicados
-     na fatia 02, e a fonte fecha o bloco do mapa. Nenhum numero de prazo
-     aparece porque nenhum foi medido.
-
-     A ABERTURA fala da DEMANDA que cresce, e nao da equipe que encolhe, e
-     isso e deliberado. O critico cego (26/08, leitura sem acesso ao racional)
-     mostrou que enquadrar a secao como perda de gente fazia o "8 -> 4
-     tecnicos" da fatia 02 ler como PRECEDENTE DE CORTE — "isto pode ser usado
-     para justificar corte na minha area" —, e que a equipe do gestor leria
-     igual, sendo justamente quem precisa colaborar no piloto. Com o foco na
-     demanda, o 8 -> 4 volta a ser o que e: gente liberada para outra frente.
-     A aposentadoria sem reposicao continua dita, na lede, onde a ressalva
-     "muitas vezes" nao tira forca da manchete. Sem exclamacao: a pagina
-     inteira tem zero, e os cinco h2 sao declarativos.
-
-     O QUE SAIU EM 26/08, por decisao do usuario: o cartao "O que nao da para
-     prometer", que ficava ao lado deste. Motivo dado: antipatico, "principalmente
-     por que fala de preco" — e falar de custo na secao que existe para ABRIR uma
-     porta e receber o visitante com uma fatura na mao. A comparacao honesta nao
-     se perdeu: o cartao dos dois precos continua no #contexto, que e onde quem
-     foi procurar por ela chega. O que a pagina deixou de dizer, e fica
-     registrado: que o prazo de um piloto e desconhecido. Com o cartao saiu
-     tambem a .grid — grade de um filho so e grade sem funcao.
-
-     SEM DEPENDENCIA DE JAVASCRIPT: o unico gancho e .rise, cuja regra de
-     esconder mora em ".js .rise" (contrato 9.1). Com JS bloqueado a secao
-     nasce inteira. A .abertura nem .rise leva: ela e o primeiro bloco depois
-     do hero e pode nascer parcialmente acima da dobra (contrato 8.9).
-
-     O QUE ESTA FATIA NAO FAZ, de proposito: nao repete a comparacao honesta
-     do #contexto (aponta para ela), nao repete a lista "o que voce nao
-     precisa ter" do #conversao e nao promete acompanhamento, prazo, plantao
-     nem suporte.
-
-     O TITULO DO CARTAO NAO AFIRMA SUFICIENCIA, e isso foi conquistado a duras
-     penas. Ele dizia "O que ja basta para comecar" ate 26/08/2026, fazendo
-     par de espelho com a lista do #conversao. A Revisao mostrou o furo: o
-     fluxo PREMIADO (SEI + SIAPE pelo terminal 3270) exige maquina Windows,
-     que nenhum dos quatro itens menciona — entao para esse leitor os quatro
-     NAO bastavam, e a pagina afirmava suficiencia justamente no caso que ela
-     usa como prova. "Por onde isso comeca" orienta em vez de garantir, e
-     resolve sem reabrir a decisao de nao citar Windows (D2). O par com o
-     #conversao deixou de ser espelho; os dois ainda se complementam. -->
-<section id="gestor" class="faixa">
-  <div class="wrap">
-
-    <div class="abertura">
-      <span class="pill"><span class="ponto"></span>Para quem chefia a área</span>
-      <h2>A demanda aumenta. A força de trabalho, não.</h2>
-      <p class="lede">Muitas vezes é aposentadoria sem reposição, e o serviço não diminui junto. Se a sua unidade recebe sempre o mesmo tipo de processo, alguém aí passa o dia lendo uma tela do SIAPE e redigitando o mesmo dado no SEI. Não é falta de capricho: é o desenho do trabalho. E, enquanto a fila cresce, quem mais entende do assunto é quem está digitando.</p>
-    </div>
-
-    <!-- ---------- a objecao, escrita e respondida ---------- -->
-    <div class="bloco rise">
-      <div class="sub">
-        <h3>“Isso é coisa de TI, eu não tenho equipe.”</h3>
-        <p>É a objeção mais comum, e a resposta não é um contra-argumento: é o tamanho do começo. A CGPAG/DECIPEX também não tinha equipe de TI — a automação saiu de dentro da própria área, feita por servidores que já faziam aquele trabalho à mão. No período, os técnicos na rotina de exercícios anteriores caíram de <span class="num">8</span> para <span class="num">4</span>, e a outra metade foi para outras frentes. Ninguém foi contratado, e não há o que contratar: o núcleo é código aberto sob licença MIT — quer dizer que qualquer órgão pode baixar, usar e adaptar, sem pagar nada e sem pedir autorização a ninguém; basta manter o aviso de autoria e o texto da licença. E você não precisa decidir nada agora: o primeiro passo é conhecer o que já existe e ver se alguma parte serve para o seu caso.</p>
-      </div>
-
-      <div class="card ficha precisa">
-        <h4>Por onde isso começa</h4>
-        <dl>
-          <div>
-            <dt>Uma pessoa da própria área</dt>
-            <dd>Quem já faz esse trabalho hoje e conhece a regra por dentro. Não precisa ser da área de TI, nem cuidar só disso.</dd>
-          </div>
-          <div>
-            <dt>Um fluxo, não o setor</dt>
-            <dd>A tarefa repetitiva que mais consome a unidade hoje. Uma só, escolhida por você.</dd>
-          </div>
-          <div>
-            <dt>O acesso que já existe</dt>
-            <dd>As transações do SIAPE e as unidades do SEI que o perfil dela já alcança. Nenhuma habilitação nova.</dd>
-          </div>
-          <div>
-            <dt>A sua autorização</dt>
-            <dd>Um piloto dentro da sua própria unidade. Não depende de projeto institucional, de orçamento novo nem de licitação.</dd>
-          </div>
-        </dl>
-      </div>
-    </div>
-
-    <!-- ---------- o mapa: a pagina inteira, para quem tem dois minutos ---------- -->
-    <div class="bloco rise">
-      <div class="sub">
-        <h3>Se você tem dois minutos, é isto que está abaixo.</h3>
-        <p>A página segue por mais quatro seções. Vá direto à sua.</p>
-      </div>
-
-      <!-- role="list" nao e enfeite: list-style:none faz o VoiceOver do
-           Safari descartar a semantica de lista, e este <ul> e o unico
-           auxilio de navegacao da pagina para quem nao ve a grade. -->
-      <ul class="mapa" role="list">
-        <li>
-          <a class="link" href="#prova">Resultados</a>
-          <p>O passivo de exercícios anteriores caiu de <span class="num">~4.800</span> para <span class="num">~800</span> processos; o tempo de cada processo, <span class="num">−89%</span>; a experiência levou o <span class="num">1º</span> lugar nacional. Cada número com a sua fonte.</p>
-        </li>
-        <li>
-          <a class="link" href="#contexto">Contexto</a>
-          <p>Por que o SEI e o SIAPE não se falam e o que a automação faz por dentro — e o que ela cobra: se a tela mudar, o roteiro quebra e precisa de conserto.</p>
-        </li>
-        <li>
-          <a class="link" href="#oferta">Núcleo aberto</a>
-          <p>Os blocos que o pacote publica para o SEI, para o SIAPE e para a ficha financeira, sob licença MIT, e o que já roda na unidade com eles.</p>
-        </li>
-        <li>
-          <a class="link" href="#conversao">Conversa</a>
-          <p>Uma conversa de diagnóstico sobre o seu fluxo e a indicação do caminho. Quem opera é a sua equipe, que conhece o órgão.</p>
-        </li>
-      </ul>
-
-      <p class="fonte">Números do artigo na revista <cite>Gestão de Pessoas em Ação</cite> (MGI), vol.&nbsp;<span class="num">3</span>, <span class="num">jun/2025</span>, do Edital nº <span class="num">1/2025</span> (MGI / Secretaria de Gestão de Pessoas) e dos registros agregados da CGPAG/DECIPEX — a seção de resultados traz a fonte de cada um.</p>
-    </div>
-
-    <!-- ---------- entre pares: o caminho para a conversa ---------- -->
-    <div class="bloco rise">
-      <div class="sub">
-        <h3>Nós resolvemos assim, o seu caso pode ser diferente.</h3>
-        <p>Do outro lado não há empresa nem cliente: há servidores públicos que enfrentaram esse problema numa unidade e podem contar como foi, inclusive onde tropeçaram. O seu órgão tem equipe, restrições e regras que ninguém aqui conhece, e é você quem sabe onde o seu fluxo trava.</p>
-      </div>
-
-      <p class="promessa">Podemos conversar pelo meio mais conveniente — vídeo, e-mail, WhatsApp — para ajudar a diagnosticar a necessidade e, se possível, colaborar para resolver.</p>
-
-      <div class="acoes">
-        <a class="btn btn-s" href="#conversao">Ver como a conversa funciona</a>
-      </div>
-    </div>
-
   </div>
 </section>
 <!-- Fatia 02 — a prova: reconhecimento, indicadores e as series do historico.
@@ -2607,97 +2223,8 @@ header .marca{flex:none}
 
     <div class="abertura rise">
       <span class="pill"><span class="ponto"></span>Contexto · como funciona</span>
-      <h2>Dois sistemas. Três telas. Cinco paradas.</h2>
-      <p class="lede">O SEI tramita documentos na web desde <span class="num">2009</span>. O SIAPE guarda os dados funcionais numa emulação de terminal de mainframe — a tela preta <span class="num">3270</span>, que existe desde <span class="num">1989</span>. Entre os dois fica o servidor: copiando, digitando e conferindo matrícula por matrícula.</p>
-    </div>
-
-    <!-- ---------- as cinco paradas: o percurso a mao ----------
-         RECONHECIMENTO, nao comparacao. O objetivo nao e o leitor comparar as
-         telas — e ele RECONHECER o proprio dia. Por isso cada tela vem grande,
-         uma por vez, na rolagem, e nao em grade de miniaturas: miniatura a 25%
-         da largura nao dispara memoria nenhuma. Decisao do usuario em
-         26/08/2026, corrigindo o controlador, que havia proposto a grade.
-
-         A SEQUENCIA E REAL, dada pelo usuario: SEI (verificar), e-SIAPE
-         (emitir a ficha), SEI (instruir), terminal 3270 (lancar), SEI (fechar).
-         O SEI aparece TRES VEZES porque o trabalho volta a ele tres vezes — e o
-         vaivem e o argumento inteiro. O leitor conta nos dedos; a pagina so diz
-         a frase do fecho.
-
-         O SIAPEnet ficou de fora: nao esta na sequencia, e entrar so porque a
-         captura existe seria decoracao.
-
-         <ol> e nao <ul>: a ordem e semantica, e quem usa leitor de tela precisa
-         dela. .figura e a primitiva do contrato 8.3-g — legenda FORA da imagem,
-         que e o que o 6.4 exige. -->
-    <ol class="paradas rise" role="list">
-      <li>
-        <figure class="figura parada">
-          <img src="assets/tela-01-a53768db.png"
-               alt="Tela do SEI: barra azul no topo, árvore do processo à esquerda com três documentos, e a barra de ícones de ações."
-               loading="lazy" width="1000" height="470">
-          <figcaption><span class="num">1</span> O processo chega. Você abre a árvore para ver o que ele pede.</figcaption>
-        </figure>
-      </li>
-      <li>
-        <figure class="figura parada">
-          <img src="assets/tela-02-f96d8541.png"
-               alt="Tela do Sigepe: barra azul e laranja, e seis ícones de opções da folha, entre eles Emite Informações Financeiras."
-               loading="lazy" width="1000" height="628">
-          <figcaption><span class="num">2</span> Para responder, você emite a ficha financeira em outro sistema.</figcaption>
-        </figure>
-      </li>
-      <li>
-        <figure class="figura parada">
-          <img src="assets/tela-03-1dab1813.png"
-               alt="Tela do SEI: formulário Registrar Documento Externo, com os campos Tipo do Documento, Número, Nome na Árvore, Remetente, Interessados e Nível de Acesso, todos vazios."
-               loading="lazy" width="1000" height="479">
-          <figcaption><span class="num">3</span> Volta ao processo e redigita, à mão, o que leu na outra tela.</figcaption>
-        </figure>
-      </li>
-      <li>
-        <figure class="figura parada">
-          <img src="assets/tela-04-964b6db9.png"
-               alt="Terminal 3270 do SIAPE: fundo preto com texto em azul-claro e branco, e um menu em caixa alta — ADMINIST, CADSIAPE, COMUNICA, CONSULTAS, DIARIAS, FOLHA, GERENCIAL, PENSAO e PROCDOCPUB."
-               loading="lazy" width="960" height="893">
-          <figcaption><span class="num">4</span> O lançamento é numa terceira tela, que não conversa com nenhuma das duas.</figcaption>
-        </figure>
-      </li>
-      <li>
-        <figure class="figura parada">
-          <img src="assets/tela-05-86d901e4.png"
-               alt="Tela do SEI: Conclusão de Processo, com o número do processo listado e a opção Somente concluir marcada."
-               loading="lazy" width="1000" height="471">
-          <figcaption><span class="num">5</span> Volta de novo, para fechar.</figcaption>
-        </figure>
-      </li>
-    </ol>
-
-    <p class="fecho-paradas rise">Três voltas ao mesmo lugar. Nenhum dado passou sozinho.</p>
-
-    <!-- ---------- o video, como resposta a cena ----------
-         Fecha as cinco paradas: o leitor acabou de contar as tres voltas ao
-         SEI, e ve a mesma coisa feita pela automacao. "O mesmo percurso" e o
-         que amarra as duas cenas — e o que faz ele querer ver.
-
-         A DURACAO E OBRIGATORIA. O critico cego apontou, sobre a vitrine da
-         fatia 04, que "o gestor decide clicar pelo tamanho; sem ele, nao
-         clica". 5min28s e compromisso real para quem ainda esta decidindo se
-         escreve, e dizer o numero e a regra da pagina.
-
-         LINK COMUM, NAO LIGHTBOX, e isto e decisao registrada: o gancho .proj/
-         .poster/.play do contrato 9.3 so tem estilo sob #oferta. Reusa-lo aqui
-         exigiria copiar ~40 linhas que carregam decisoes documentadas (56x56 do
-         alvo de toque; glifo sobre cor SOLIDA porque o 6.4 proibe texto sobre
-         imagem; --raio-s em vez de 999px, achado A9.3) — duplicacao literal de
-         bloco logico. Com .btn o controle funciona com e sem JavaScript, e o
-         sistema nao muda. O video continua abrindo em lightbox na vitrine da
-         fatia 04, que e onde o gancho mora. -->
-    <div class="ver-percurso rise">
-      <p>Veja o mesmo percurso, feito pela automação — <span class="num">5 min 28 s</span> de execução real, do processo aberto ao lançamento conferido.</p>
-      <div class="acoes">
-        <a class="btn btn-s" href="/media/exante.mp4">Ver o vídeo</a>
-      </div>
+      <h2>Dois sistemas que não se falam — e um deles nasceu em <span class="num">1989</span>.</h2>
+      <p class="lede">O SEI tramita documentos na web desde <span class="num">2009</span>. O SIAPE guarda os dados funcionais numa emulação de terminal de mainframe — a tela preta <span class="num">3270</span>. Entre os dois fica o servidor: copiando, digitando e conferindo matrícula por matrícula.</p>
     </div>
 
     <!-- ---------- a comparacao honesta ---------- -->
@@ -2723,7 +2250,7 @@ header .marca{flex:none}
         <div class="card ficha via">
           <h4>Automatizar com o INTEGRA</h4>
           <dl>
-            <div><dt>Para começar</dt><dd>Alguém da própria área acompanha o roteiro.</dd></div>
+            <div><dt>Para começar</dt><dd>Alguém da equipe lê e ajusta Python.</dd></div>
             <div><dt>A repetição</dt><dd>Sai da mão: o roteiro executa os passos.</dd></div>
             <div><dt>Erro de digitação</dt><dd>Conferido contra o registro do SIAPE.</dd></div>
             <div><dt>Caso fora da regra</dt><dd>Volta para a mesa do servidor.</dd></div>
@@ -2970,7 +2497,7 @@ header .marca{flex:none}
     <div class="bloco">
       <div class="cabeca rise">
         <span class="pill ok"><span class="ponto"></span>Em produção · CGPAG/DECIPEX</span>
-        <h3>Dos blocos às rotinas que já rodam.</h3>
+        <h3>Dos blocos às soluções que já rodam.</h3>
         <p class="sub">Projetos construídos com o apoio dos blocos do pacote — cada um observando as regras do seu contexto. São ferramentas de apoio às unidades, não aplicações institucionais.</p>
       </div>
 
@@ -3110,11 +2637,7 @@ header .marca{flex:none}
 
   </div>
 </section>
-<!-- Fatia 05 — a conversa + rodape institucional.
-     Chamava-se "piloto assistido" ate 26/08/2026; o usuario mandou remover o
-     termo, que e nome de plano de servico e soa a fornecedor descrevendo um
-     pacote — o registro que o § 0 da spec veta. A secao passou a se chamar
-     "Conversa" na navegacao e no mapa da 01b.
+<!-- Fatia 05 — conversao (piloto assistido) + rodape institucional.
      E o destino do CTA do hero (href="#conversao").
 
      Faixa de TINTA: os quinze tokens estao reescopados pela .faixa.tinta
@@ -3127,42 +2650,25 @@ header .marca{flex:none}
      inteira. Nenhum numero, nenhum link e nenhum botao daqui e gerado por
      script.
 
-     A PROMESSA: conversa inicial e orientacao pontual. O h2 ("A gente
-     conversa. Quem implanta e o seu orgao.") limita o escopo na primeira
-     frase, e o cartao "O que acontece depois que voce chama" diz onde a ajuda
-     daqui termina — como divisao de trabalho, nao como porta batendo. Ate
-     26/08/2026 o h2 definia o termo "assistido"; o termo saiu com o nome
-     "Piloto assistido".
-
-     DOIS CANAIS, desde 26/08/2026 (D3: "nao quero limitar no texto que
-     estamos limitados a contato por e-mail e nada mais"). O e-mail
-     institucional continua e continua primario; ao lado dele entra o
-     (24) 98849-3257, no WhatsApp e por ligacao. O custo de publicar numero em
-     pagina aberta — raspagem, spam permanente, cache e indice que nao se
-     desfazem — foi posto ao usuario antes, e a decisao e dele. O numero foi
-     conferido contra o portao de privacidade: 24988493257 nao passa no digito
-     verificador do modulo 11, entao nao e falso positivo de CPF.
-
-     CONTINUA NAO HAVENDO formulario, newsletter, prazo nem fila — o que mudou
-     nao foi o fato, foi a pagina parar de NEGA-LOS por escrito, que e gesto de
-     quem fecha porta (D4). Ha portao para os dois lados disso:
-     tests/test_site.py::test_o_convite_nao_nega_o_formulario_nem_termina_ai e
-     ::test_o_convite_oferece_mais_de_um_caminho. -->
+     A PROMESSA: conversa inicial e orientacao pontual. O h2 define
+     "assistido" e limita o escopo na primeira frase, e o cartao "O que
+     acontece depois do e-mail" fecha a porta por escrito. Nao ha
+     formulario, newsletter, WhatsApp, prazo, fila nem acompanhamento. -->
 <section id="conversao" class="faixa tinta">
   <div class="wrap">
 
     <div class="abertura rise">
-      <span class="pill"><span class="ponto"></span>Para conversar</span>
-      <h2>A gente conversa. Quem implanta é o seu órgão.</h2>
-      <p class="lede">Uma conversa de diagnóstico e a indicação do caminho: quais módulos servem para o seu caso, o que o seu órgão precisa ter antes de começar e onde isso costuma travar. Quem implanta, testa e opera depois é a sua equipe.</p>
+      <span class="pill"><span class="ponto"></span>Piloto assistido no arranque</span>
+      <h2>Assistido no arranque — não na implantação.</h2>
+      <p class="lede">“Assistido” aqui quer dizer uma conversa de diagnóstico e a indicação do caminho: quais módulos servem para o seu caso, o que o seu órgão precisa ter antes de começar e onde isso costuma travar. Quem implanta, testa e opera depois é a sua equipe.</p>
     </div>
 
     <div class="grid">
 
       <div class="card ficha pedido rise" data-atraso="1">
         <div class="sub">
-          <h3>O que ajuda a conversa a render.</h3>
-          <p class="intro">Escreva, ligue ou chame no WhatsApp — como for mais fácil para você. O que faz a conversa render é chegar com estas seis coisas em mãos, em texto corrido mesmo, na ordem que você quiser.</p>
+          <h3>O que mandar no e-mail.</h3>
+          <p class="intro">Não há formulário nesta página, e não vai haver. O que faz a conversa render é o e-mail já chegar com estas seis coisas — em texto corrido mesmo, na ordem que você quiser.</p>
         </div>
         <dl>
           <div>
@@ -3175,7 +2681,7 @@ header .marca{flex:none}
           </div>
           <div>
             <dt>Os sistemas</dt>
-            <dd>Quais estão no fluxo: SEI (o nosso é o <span class="num">4.1.5</span>), SIAPE — pelo terminal antigo ou pelo e-SIAPE na web —, Sigepe, planilha, e-mail.</dd>
+            <dd>Quais estão no fluxo e em que versão: SEI (o nosso é o <span class="num">4.1.5</span>), SIAPE pelo terminal <span class="num">3270</span>, Sigepe, planilha, e-mail. Diga também se as máquinas da equipe são Windows — o <span class="num">3270</span> só roda lá.</dd>
           </div>
           <div>
             <dt>O acesso que você já tem</dt>
@@ -3187,7 +2693,7 @@ header .marca{flex:none}
           </div>
           <div>
             <dt>Quem vai tocar</dt>
-            <dd>Quem faz esse trabalho hoje na sua unidade e quem assina a decisão. Como a implantação é do seu órgão, essa é a resposta que mais pesa.</dd>
+            <dd>Se há aí alguém que programe em Python — ou que topa aprender — e quem assina a decisão na sua unidade. Como a implantação é do seu órgão, essa é a resposta que mais pesa.</dd>
           </div>
         </dl>
         <p class="aviso">Não mande dado pessoal: nem CPF, nem matrícula, nem número de processo real. Descreva o caso com valores fictícios — é a mesma regra que vale dentro do repositório.</p>
@@ -3199,20 +2705,20 @@ header .marca{flex:none}
           <div class="sub"><h3>Faz sentido escrever se você…</h3></div>
           <ul>
             <li>…vê a mesma tarefa manual entre o SEI e o SIAPE se repetir na sua unidade, mês após mês;</li>
-            <li>…tem aí alguém que já mexe com planilha, macro ou automação e quer saber o que dá para reaproveitar antes de começar do zero;</li>
+            <li>…programa, ou tem aí alguém que programe, e quer saber o que reaproveitar antes de escrever código do zero;</li>
             <li>…chefia uma área e pode autorizar um piloto dentro da própria unidade, sem depender de projeto institucional.</li>
           </ul>
           <p class="fecha">Não precisa ser da área de TI. Precisa ter o problema e ter o acesso.</p>
         </div>
 
         <div class="card rise" data-atraso="3">
-          <div class="sub"><h3>O que acontece depois que você chama.</h3></div>
+          <div class="sub"><h3>O que acontece depois do e-mail.</h3></div>
           <ul>
-            <li>Começa pelo seu contato — e-mail, telefone ou WhatsApp, como preferir.</li>
+            <li>Começa pelo seu e-mail, escrito com os seis itens da lista.</li>
             <li>Uma videoconferência de diagnóstico, para olhar o seu fluxo e dizer o que dá e o que não dá.</li>
             <li>A indicação do caminho: quais módulos servem, o que o órgão precisa ter antes de começar e onde os outros costumam travar.</li>
           </ul>
-          <p class="limite">Quem implanta, configura e opera é a sua equipe, que conhece o órgão por dentro — daí em diante a conversa segue se fizer sentido para os dois lados. Do outro lado há um servidor público com o próprio trabalho para tocar, não uma central de atendimento.</p>
+          <p class="limite">Termina aí. Não há acompanhamento depois dessa conversa, não há prazo combinado e ninguém do INTEGRA implanta, configura ou opera nada dentro do seu órgão. Do outro lado do e-mail há um servidor público com o próprio trabalho para tocar, não uma central de atendimento.</p>
         </div>
 
       </div>
@@ -3234,13 +2740,11 @@ header .marca{flex:none}
 
     <div class="fecho rise">
       <p class="endereco"><a class="link-neutro" href="mailto:marco.aurelio-silva@gestao.gov.br?subject=INTEGRA%20%E2%80%94%20conversa%20de%20diagn%C3%B3stico">marco.aurelio-silva@gestao.gov.br</a></p>
-      <p class="endereco"><a class="link-neutro" href="tel:+5524988493257">(24) 98849-3257</a></p>
       <div class="acoes">
         <a class="btn btn-p" href="mailto:marco.aurelio-silva@gestao.gov.br?subject=INTEGRA%20%E2%80%94%20conversa%20de%20diagn%C3%B3stico">Escrever o e-mail</a>
-        <a class="btn btn-s" href="https://wa.me/5524988493257">Chamar no WhatsApp</a>
         <a class="btn btn-s" href="https://github.com/MarcoAShanon/integra-gov">Abrir o repositório</a>
       </div>
-      <p class="fuga">O endereço abre o seu programa de e-mail com o assunto preenchido; acrescente nele a sigla do seu órgão. O número recebe mensagem no WhatsApp e ligação, em horário de trabalho. E se você prefere não falar com ninguém agora, o caminho não depende disso: o núcleo está no GitHub sob licença MIT, com documentação e exemplos — clonar, ler e testar não passa por conversa nenhuma.</p>
+      <p class="fuga">O endereço acima e o botão abrem o seu programa de e-mail com o assunto preenchido; acrescente nele a sigla do seu órgão. E se você prefere não escrever para ninguém, o caminho não depende disso: o núcleo está no GitHub sob licença MIT, com documentação e exemplos — clonar, ler e testar não passa por conversa nenhuma.</p>
     </div>
 
     <div class="rodape">
@@ -3255,7 +2759,6 @@ header .marca{flex:none}
         <p><span class="rot">repositório</span><a class="link-neutro" href="https://github.com/MarcoAShanon/integra-gov">github.com/MarcoAShanon/integra-gov</a></p>
         <p><span class="rot">contato</span><span class="val">Marco Aurélio Silva</span></p>
         <p><span class="rot">e-mail</span><a class="link-neutro" href="mailto:marco.aurelio-silva@gestao.gov.br">marco.aurelio-silva@gestao.gov.br</a></p>
-        <p><span class="rot">telefone</span><a class="link-neutro" href="tel:+5524988493257"><span class="num">(24) 98849-3257</span></a></p>
       </div>
     </div>
 
