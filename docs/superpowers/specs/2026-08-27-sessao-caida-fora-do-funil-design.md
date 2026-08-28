@@ -220,3 +220,46 @@ onde descreve as exceções, e `docs/uso-basico.md` se citar o invólucro.
 
 O commit da lib e o do flow são **separados** (repos distintos), mas da mesma
 fatia; o do flow referencia o `sha` da lib.
+
+## 11. Registro do gate ao vivo (28/08/2026)
+
+Roteiro executado pelo operador: login → `MGI-SGP-DECIPEX-CGPAG-NUTEC` →
+processo `19975.120202/2023-82` aberto → **Sair** em outra aba (a memória
+`sei-sessoes-concorrentes` está certa: login concorrente não derruba; o Sair é
+o jeito barato) → operações disparadas contra a sessão morta. Script:
+`dados_reais/gate_sessao_caida.py` (gitignored). **Três rodadas.**
+
+**1ª rodada — o gate reprovou, e o achado era real.** A checagem do
+`iniciar` (pré-Salvar) passou; a da barra de ícones saiu `SeiNavegacaoError`.
+Causa, diagnosticada pelo comportamento assimétrico: o Sair em outra aba deixa
+o TOPO do navegador com a página antiga; a operação seguinte recarrega **só o
+iframe**, e é dentro dele que o login renderiza. A sonda `sessao_expirada()`
+— de julho — partia do `default_content` e não o via. **Não era defeito da
+fatia: era defeito latente da sonda**, invisível até esta fatia pôr a
+reclassificação em pontos que rodam dentro de iframes. Corrigido em `bb6123e`
+(sonda olha o contexto atual antes do topo; contratos de julho preservados) e
+endurecido em `1e91eb1` (reuso de `pwdSenha` documentado, teste do fallback).
+
+**2ª rodada — inconclusiva pela corrida do ícone residual.** Com o DOM antigo
+ainda renderizado, o clique acertou o ícone "residual" e `clicar_icone_barra`
+reportou sucesso (o contrato dele termina no clique). A checagem do `iniciar`
+passou de novo. O gate ganhou repetição até-falhar: o clique residual navega o
+iframe para o login, e a tentativa seguinte encontra a barra vazia.
+
+**3ª rodada — ✅ nas duas.** Tentativa 1 clicou o residual; tentativa 2 achou a
+barra vazia com o login dentro do iframe e saiu `SessaoExpiradaError` — o sítio
+novo do `barra_icones` e a sonda corrigida, contra o mecanismo real. O
+`iniciar` pré-Salvar: terceira confirmação ao vivo.
+
+**NÃO observado ao vivo, deliberadamente dito:** o caso pós-Salvar do §3.2 — o
+logout teria de acontecer na janela de milissegundos entre o clique e a
+leitura do título. Fica sustentado pelo teste
+`test_falha_apos_salvar_na_pagina_de_login_continua_ambigua`, cujo comentário
+proíbe a "simplificação" que reabriria o defeito.
+
+**Pendência anotada, fora do escopo:** o modal de assinatura reusa o id
+`pwdSenha`; a sonda depende da conjunção com `txtUsuario` para não dar falso
+positivo ali. Conferir o DOM real do modal quando o trabalho de assinatura
+voltar (os documentos do processo de teste são da EXANTE — não assináveis pela
+NUTEC, então a checagem não coube neste gate). Risco teórico hoje: nada no
+fluxo de assinatura chama a sonda.
