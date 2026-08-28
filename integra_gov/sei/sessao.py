@@ -1,10 +1,9 @@
 """Detecção de sessão do SEI caída (página de login no meio do fluxo).
 
-Quando a sessão deixa de estar autenticada (expirou por inatividade, foi
-derrubada por acesso concorrente, ou nunca houve login), o SIP redireciona
-qualquer requisição para a página de login — e a próxima operação da automação
-falha. Este módulo detecta essa condição e a tipifica como
-:class:`~integra_gov.sei.exceptions.SessaoExpiradaError`.
+Quando a sessão deixa de estar autenticada (expirou por inatividade, alguém saiu
+do sistema, ou nunca houve login), o SIP redireciona qualquer requisição para a
+página de login — e a próxima operação da automação falha. Este módulo detecta
+essa condição e a tipifica como :class:`~integra_gov.sei.exceptions.SessaoExpiradaError`.
 
 Mecanismo, não política: a lib detecta e levanta; relogar/pausar/abortar é
 decisão de quem chama."""
@@ -24,7 +23,7 @@ _log = logging.getLogger(__name__)
 #: Mensagem padrão do pacote para sessão caída (única fonte).
 _MSG_SESSAO_EXPIRADA = (
     "a página atual é a de login do SEI — a sessão não está mais autenticada "
-    "(expirou, foi encerrada em outro acesso, ou não houve login)"
+    "(expirou, foi encerrada, ou não houve login)"
 )
 
 

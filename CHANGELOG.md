@@ -6,6 +6,19 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não publicado]
 
 ### Alterado
+- **A lib passou a tipificar sessão caída em dois pontos que faltavam.**
+  `clicar_icone_barra` (nó da árvore e ícone da barra) e `IniciarProcesso`
+  agora levantam **`SessaoExpiradaError`** quando a falha coincide com a página
+  de login, em vez de `SeiNavegacaoError`/`IniciarProcessoError` genéricos. O
+  primeiro cobre de uma vez os 13 módulos que consomem a barra de ícones.
+
+  É **mudança de comportamento**: quem captura os tipos estreitos passa a ver a
+  nova exceção escapar (ela é irmã de `SeiNavegacaoError`, não filha). Quem
+  captura `SeiError` não sente diferença.
+
+  Com isso, orquestradores não precisam mais reclassificar por fora — o
+  `integra-flow` removeu os três invólucros que repetiam essa lógica.
+
 - **`integra_gov.esiape.ficha_anual` passou a recusar PDF impresso sem camada
   de texto.** Depois do download, o módulo confere o arquivo com
   `ficha_financeira.tem_camada_de_texto()` e aborta o bloco com a nova exceção
@@ -24,6 +37,18 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
   Uma implementação, dois usos: o guard reusa o helper público do subpacote
   `ficha_financeira` em vez de duplicar a checagem.
+
+### Corrigido
+- **Risco de processo criado duas vezes quando a sessão caía durante a criação.**
+  A reclassificação de sessão no `IniciarProcesso` agora vale **somente até a
+  fronteira do efeito** — o clique em "Salvar". Uma falha posterior (o NUP não
+  aparece no título) permanece `IniciarProcessoError` **deliberadamente
+  ambígua**, porque o processo pode ter sido criado.
+
+  Antes, o orquestrador reclassificava o método inteiro; ao ler "sessão caiu =
+  requisição não executada", ele reabria a etapa e, depois do relogin, criava o
+  processo de novo. Agora essa falha vai para quarentena, para conferência
+  humana.
 
 ### Adicionado
 - **A landing de divulgação passa a viver no repositório, em `site/`** —

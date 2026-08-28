@@ -613,11 +613,9 @@ passe `orgao=` com o texto exato da opção do dropdown de órgão.
 
 ## 6. Sessão expirada no meio do fluxo
 
-O SEI derruba a sessão por inatividade (e também quando o mesmo usuário loga em
-outro lugar). Quando isso acontece no meio de uma automação, a página atual
-vira a de login — e a próxima operação falharia com um erro genérico. A lib
-detecta essa condição nos pontos centrais de navegação e levanta
-`SessaoExpiradaError`:
+O SEI derruba a sessão por inatividade, ou quando alguém sai do sistema
+explicitamente — **não** por login simultâneo em outro lugar. Quando isso
+acontece no meio de uma automação, a página atual vira a de login.
 
 ```python
 from integra_gov.sei import SessaoExpiradaError
@@ -632,18 +630,14 @@ except SessaoExpiradaError:
 ```
 
 Pontos que detectam: a navegação de iframes (`IframesSei` /
-`switch_to_iframe_visualizacao`) e o acesso a processo (`ProcessoSei.acessar`).
-Qualquer outra falha pode ser reclassificada com os helpers públicos:
+`switch_to_iframe_visualizacao`), o acesso a processo (`ProcessoSei.acessar` e a
+confirmação do acesso), a barra de ícones (`clicar_icone_barra`) e a criação de
+processo (`IniciarProcesso`).
 
-```python
-from integra_gov.sei import SeiError, levantar_se_sessao_expirada
-
-try:
-    operacao(driver)
-except SeiError as exc:
-    levantar_se_sessao_expirada(driver, exc)  # vira SessaoExpiradaError se caiu
-    raise
-```
+**Uma exceção deliberada:** no `IniciarProcesso` a detecção vale só **até o
+clique em "Salvar"**. Depois dele o processo pode existir, e dizer "a requisição
+não foi executada" faria um orquestrador repetir a etapa e criar o processo duas
+vezes — então a falha continua `IniciarProcessoError`, para conferência humana.
 
 ---
 

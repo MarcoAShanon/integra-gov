@@ -388,10 +388,10 @@ dropdown de órgão.
 
 ### Sessão expirada no meio do fluxo
 
-Quando a sessão do SEI cai (expirou por inatividade ou foi derrubada por outro
-acesso), a página vira a de login e a operação seguinte falha com
-`SessaoExpiradaError` — em vez de um erro genérico de navegação. A lib só
-detecta e tipifica; relogar/pausar é decisão sua:
+Quando a sessão do SEI cai (por inatividade, ou porque alguém saiu do sistema),
+a página vira a de login e a operação seguinte falha com `SessaoExpiradaError` —
+em vez de um erro genérico de navegação. A lib só detecta e tipifica;
+relogar/pausar é decisão sua:
 
 ```python
 from integra_gov.sei import SessaoExpiradaError
@@ -404,8 +404,14 @@ except SessaoExpiradaError:
     processo.acessar()
 ```
 
-Para reclassificar uma falha qualquer (útil em orquestradores), o helper
-`sessao_expirada(driver)` responde se a página atual é a de login; e
+A detecção acontece nos pontos centrais: navegação de iframes, acesso a processo,
+a barra de ícones do documento e a criação de processo. No `IniciarProcesso` ela
+vale **até o clique em "Salvar"**; uma falha posterior continua
+`IniciarProcessoError` de propósito, porque o processo pode já existir e repetir
+a etapa o criaria duas vezes.
+
+Para reclassificar uma falha em código próprio, os helpers públicos continuam
+disponíveis: `sessao_expirada(driver)` responde se a página atual é a de login, e
 `levantar_se_sessao_expirada(driver, causa)` levanta o erro tipado se for.
 
 ### SIAPE (terminal 3270)
