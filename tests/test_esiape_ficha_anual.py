@@ -19,7 +19,7 @@ from integra_gov.esiape.ficha_anual import (
     ResultadoFichaEsiape,
 )
 
-from _pdf_sintetico import pdf_bytes
+from tests._pdf_sintetico import pdf_bytes
 from tests.test_esiape_navegacao import DriverFake, ElementoFake, FrameFake
 
 

@@ -19,7 +19,7 @@ from integra_gov.ficha_financeira import (
 )
 from integra_gov.ficha_financeira._layout_siape import COLUNAS_VALOR
 
-from _pdf_sintetico import pdf_bytes
+from tests._pdf_sintetico import pdf_bytes
 
 FIXTURE = Path(__file__).parent / "fixtures" / "ficha_siape_pensionista.txt"
 

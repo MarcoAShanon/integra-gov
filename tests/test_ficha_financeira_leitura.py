@@ -13,7 +13,7 @@ from integra_gov.ficha_financeira.leitura import (
     tem_camada_de_texto,
 )
 
-from _pdf_sintetico import pdf_bytes
+from tests._pdf_sintetico import pdf_bytes
 
 LINHAS = ["00597 PENSAO COMPLEMENTAR - CIVI R  0", "**** T O T A L ****"]
 
