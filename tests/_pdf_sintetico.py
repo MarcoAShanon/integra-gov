@@ -77,7 +77,11 @@ def pdf_bytes(paginas: Sequence[Optional[Sequence[str]]], *,
             conteudo = "\n".join(ops).encode("latin-1", errors="replace")
 
         recursos = (b"<< /Font << /F1 << /Type /Font /Subtype /Type1 "
-                    b"/BaseFont /Courier >> >> >>") if com_fonte else b"<< >>"
+                    # /Encoding explicito: sem ele, o padrao da spec e o
+                    # StandardEncoding (0xCD = hungarumlaut, nao I-agudo) — o
+                    # pypdf novo segue a spec e leria "LIQUIDO" com mojibake.
+                    b"/BaseFont /Courier /Encoding /WinAnsiEncoding >> >> >>"
+                    ) if com_fonte else b"<< >>"
         objetos.append(
             b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
             b"/Resources " + recursos + f" /Contents {numero + 1} 0 R >>".encode()
