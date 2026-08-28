@@ -7,6 +7,7 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ### Alterado
 - **A lib passou a tipificar sessão caída em dois pontos que faltavam.**
+  *(Verificado ao vivo em 28/08/2026 — registro na spec `2026-08-27-sessao-caida-fora-do-funil`.)*
   `clicar_icone_barra` (nó da árvore e ícone da barra) e `IniciarProcesso`
   agora levantam **`SessaoExpiradaError`** quando a falha coincide com a página
   de login, em vez de `SeiNavegacaoError`/`IniciarProcessoError` genéricos. O
@@ -42,7 +43,8 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 - **A sonda de sessão caída passou a olhar o contexto atual antes do topo.**
-  Achado do gate ao vivo (28/08/2026): quando a sessão é encerrada em outra
+  Achado da 1ª rodada do gate ao vivo (28/08/2026), corrigido e confirmado na
+  3ª: quando a sessão é encerrada em outra
   aba, o topo do navegador continua com a página antiga do SEI; a operação
   seguinte recarrega só o **iframe**, e é dentro dele que a página de login
   aparece. `sessao_expirada()` partia direto do `default_content` e não a via
