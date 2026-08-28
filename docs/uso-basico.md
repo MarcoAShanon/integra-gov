@@ -639,6 +639,23 @@ clique em "Salvar"**. Depois dele o processo pode existir, e dizer "a requisiç�
 não foi executada" faria um orquestrador repetir a etapa e criar o processo duas
 vezes — então a falha continua `IniciarProcessoError`, para conferência humana.
 
+Para reclassificar uma falha em **código próprio** — um ponto que você
+instrumentou fora dos módulos acima —, os helpers públicos continuam
+disponíveis:
+
+```python
+from integra_gov.sei import SeiError, levantar_se_sessao_expirada
+
+try:
+    operacao(driver)
+except SeiError as exc:
+    levantar_se_sessao_expirada(driver, exc)  # vira SessaoExpiradaError se caiu
+    raise
+```
+
+Use-o apenas em falhas **sem efeito já produzido** — reclassificar depois do
+efeito repete a operação no relogin.
+
 ---
 
 ## Exemplo completo (do zero ao processo aberto)

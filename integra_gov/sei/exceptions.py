@@ -117,16 +117,21 @@ class BlocoAssinaturaError(SeiError):
 
 class SessaoExpiradaError(SeiError):
     """A página atual é a de login do SEI — a sessão não está mais autenticada
-    (expirou por inatividade, foi encerrada em outro acesso, ou não houve
-    login). A requisição que falhou foi redirecionada ao login, ou seja, **não
-    foi executada** pelo SEI.
+    (expirou por inatividade, alguém saiu do sistema, ou não houve login). A
+    requisição que falhou foi redirecionada ao login, ou seja, **não foi
+    executada** pelo SEI.
 
     Subclasse direta de :class:`SeiError` — deliberadamente NÃO de
     :class:`SeiNavegacaoError`: expiração é estado de sessão, não defeito de
     navegação, e quem captura ``SeiNavegacaoError`` para retry não deve engolir
     uma sessão caída (retry ali é inútil).
 
-    A política de reação (relogar, pausar o lote, abortar) é do chamador.
-    Caso-limite teórico para orquestradores: uma sessão derrubada por login
-    concorrente IMEDIATAMENTE após um POST bem-sucedido pode classificar como
-    expirada uma ação que ocorreu — ao automatizar retry, avalie por operação."""
+    A política de reação (relogar, pausar o lote, abortar) é do chamador, mas
+    ela só é segura enquanto a garantia acima se sustentar: a exceção precisa
+    nascer ANTES do efeito da operação. Nos módulos instrumentados isso é
+    invariante por construção — em ``IniciarProcesso``, explicitamente até o
+    clique em "Salvar" (depois dele a falha vira ``IniciarProcessoError``
+    ambígua, de propósito). O risco real não é de sessão, é de instrumentação:
+    quem tipificar um ponto novo e levantar esta exceção depois de um efeito já
+    produzido quebra a garantia — um orquestrador que a trate como "não
+    executada" repetiria a operação no relogin."""

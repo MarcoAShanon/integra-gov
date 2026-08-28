@@ -292,6 +292,10 @@ class EnviarProcesso:
             # 4.1.5): a visualização passa a "Processo aberto nas unidades:
             # <destino> …". Confirmar esse sinal programaticamente é endurecimento
             # futuro — exige fixar o frame da mensagem (como no concluir_processo).
+            # Essa confirmação NÃO pode passar pelo funil de iframes
+            # (switch_to_iframe_visualizacao / IframesSei): o funil reclassifica
+            # sessão caída, e uma SessaoExpiradaError nascida DEPOIS do envio já
+            # aceito faria o orquestrador repetir a operação no relogin.
             self.driver.switch_to.default_content()
             return
         texto = alerta.text

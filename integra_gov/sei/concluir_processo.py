@@ -177,6 +177,10 @@ class ConcluirProcesso:
         # abertos". Uma confirmação programática desse sinal é um endurecimento
         # futuro — exige fixar ao vivo o frame exato onde a mensagem aparece
         # (ifrConteudoVisualizacao vs. o ifrVisualizacao aninhado).
+        # Essa confirmação NÃO pode passar pelo funil de iframes
+        # (switch_to_iframe_visualizacao / IframesSei): o funil reclassifica
+        # sessão caída, e uma SessaoExpiradaError nascida DEPOIS do clique em
+        # Salvar faria o orquestrador repetir a conclusão no relogin.
 
     def _formulario_bloqueado(self) -> bool:
         """``True`` se o formulário traz a crítica de bloqueio (``div.alert-danger``
