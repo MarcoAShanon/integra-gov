@@ -25,6 +25,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from .exceptions import SeiNavegacaoError
 from .iframes import IframesSei
+from .sessao import levantar_se_sessao_expirada
 
 _log = logging.getLogger(__name__)
 
@@ -61,7 +62,11 @@ def clicar_icone_barra(
             não sofrem a corrida. Só tem efeito quando ``selecionar_no`` é True.
 
     Raises:
-        SeiNavegacaoError: se a árvore, o nó ou o ícone não forem encontrados.
+        SessaoExpiradaError: se a árvore/o ícone faltar E a página atual for a
+            de login — a sessão caiu (a requisição foi redirecionada, ou seja,
+            NÃO foi executada pelo SEI).
+        SeiNavegacaoError: se a árvore, o nó ou o ícone não forem encontrados
+            com a sessão viva.
     """
     if selecionar_no:
         _selecionar_no_arvore(driver, timeout)
@@ -84,6 +89,7 @@ def _selecionar_no_arvore(driver, timeout: float) -> None:
             EC.element_to_be_clickable((By.CSS_SELECTOR, CSS_NO_SELECIONADO))
         )
     except TimeoutException as exc:
+        levantar_se_sessao_expirada(driver, exc)
         raise SeiNavegacaoError(
             "nenhum nó selecionado na árvore — abra/selecione um processo antes"
         ) from exc
@@ -119,6 +125,7 @@ def _clicar_icone(driver, titulo: str, timeout: float) -> None:
             EC.element_to_be_clickable((By.XPATH, xpath))
         ).click()
     except TimeoutException as exc:
+        levantar_se_sessao_expirada(driver, exc)
         raise SeiNavegacaoError(
             f"ícone {titulo!r} não encontrado ou não clicável na barra"
         ) from exc
