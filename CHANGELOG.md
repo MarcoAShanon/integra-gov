@@ -10,7 +10,7 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   `clicar_icone_barra` (nó da árvore e ícone da barra) e `IniciarProcesso`
   agora levantam **`SessaoExpiradaError`** quando a falha coincide com a página
   de login, em vez de `SeiNavegacaoError`/`IniciarProcessoError` genéricos. O
-  primeiro cobre de uma vez os 13 módulos que consomem a barra de ícones.
+  primeiro cobre de uma vez os oito módulos que consomem a barra de ícones.
 
   É **mudança de comportamento**: quem captura os tipos estreitos passa a ver a
   nova exceção escapar (ela é irmã de `SeiNavegacaoError`, não filha). Quem
