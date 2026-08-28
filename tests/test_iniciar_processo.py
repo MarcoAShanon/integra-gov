@@ -18,8 +18,15 @@ from selenium.common.exceptions import (
 from selenium.webdriver.common.keys import Keys
 
 from integra_gov.sei import iniciar_processo as mod
-from integra_gov.sei.exceptions import IniciarProcessoError, NivelAcessoError
+from integra_gov.sei.exceptions import (
+    IniciarProcessoError,
+    NivelAcessoError,
+    SessaoExpiradaError,
+)
 from integra_gov.sei.iniciar_processo import IniciarProcesso
+
+
+IDS_LOGIN = ("txtUsuario", "pwdSenha")
 
 
 class _FakeWait:
@@ -36,9 +43,14 @@ class _FakeWait:
         raise TimeoutException("condição não satisfeita")
 
 
-def _make_driver(missing=()):
+def _make_driver(missing=(), *, na_pagina_de_login=False):
     """Driver fake: ``find_element(by, value)`` devolve um mock por ``value``
-    (memorizado em ``driver.els``); ``value`` em ``missing`` levanta NoSuchElement."""
+    (memorizado em ``driver.els``); ``value`` em ``missing`` levanta NoSuchElement.
+
+    ``find_elements`` é explícito e devolve ``[]`` por padrão — sessão VIVA. Sem
+    essa linha o MagicMock devolveria um objeto verdadeiro e ``sessao_expirada()``
+    leria todo driver como página de login, virando os testes de falha do avesso.
+    """
     driver = MagicMock()
     driver.title = "SEI - 19975.014466/2026-41"  # NUP do processo criado
     els: dict[str, MagicMock] = {}
@@ -51,6 +63,9 @@ def _make_driver(missing=()):
         return els[value]
 
     driver.find_element.side_effect = _find
+    driver.find_elements.side_effect = lambda by, value: (
+        ["el"] if na_pagina_de_login and value in IDS_LOGIN else []
+    )
     driver.els = els
     return driver
 
@@ -312,3 +327,38 @@ def test_menu_presente_nao_toca_o_icone_de_inicio(selenium):
     driver = _make_driver(missing=(IniciarProcesso.XPATH_EXIBIR_TODOS,))
     IniciarProcesso(driver, "Tipo X").iniciar()
     assert IniciarProcesso.XPATH_IR_INICIO not in driver.els
+
+
+# ----- fronteira do efeito (spec 2026-08-27, §3.2) -----
+
+
+def test_salvar_ausente_na_pagina_de_login_e_sessao_expirada(selenium):
+    """Falha ANTES do clique: nada tocou o SEI, reclassificar é seguro."""
+    driver = _make_driver(
+        missing={IniciarProcesso.ID_SALVAR}, na_pagina_de_login=True
+    )
+    with pytest.raises(SessaoExpiradaError):
+        IniciarProcesso(driver, "Tipo X").iniciar()
+
+
+def test_nivel_acesso_falhando_na_pagina_de_login_e_sessao_expirada(selenium):
+    """O `except SeiError` cobre o NivelAcessoError, que também é pré-efeito."""
+    driver = _make_driver(na_pagina_de_login=True)
+    mod.configurar_nivel_acesso.side_effect = NivelAcessoError("falhou")
+    with pytest.raises(SessaoExpiradaError):
+        IniciarProcesso(driver, "Tipo X").iniciar()
+
+
+def test_falha_apos_salvar_na_pagina_de_login_continua_ambigua(selenium):
+    """NÃO SIMPLIFIQUE ISTO envolvendo o iniciar() inteiro.
+
+    Depois do clique em Salvar o processo PODE existir. Se esta falha virasse
+    SessaoExpiradaError, o Executor do integra-flow reabriria a etapa
+    (excecoes_sessao → PENDENTE) e, após o relogin, o processo seria criado uma
+    SEGUNDA vez. Ambígua é o comportamento correto: vai para quarentena, onde
+    uma pessoa confere. Spec 2026-08-27 §3.2.
+    """
+    driver = _make_driver(na_pagina_de_login=True)
+    driver.title = "SEI"  # sem NUP → _capturar_numero falha
+    with pytest.raises(IniciarProcessoError, match="criação não confirmada"):
+        IniciarProcesso(driver, "Tipo X").iniciar()

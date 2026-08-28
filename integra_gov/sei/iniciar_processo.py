@@ -30,8 +30,9 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from .exceptions import IniciarProcessoError
+from .exceptions import IniciarProcessoError, SeiError, SessaoExpiradaError
 from .nivel_acesso import configurar_nivel_acesso, validar_nivel_acesso
+from .sessao import levantar_se_sessao_expirada
 
 _log = logging.getLogger(__name__)
 
@@ -127,27 +128,19 @@ class IniciarProcesso:
             O número (NUP) do processo criado, ex.: ``"19975.014466/2026-41"``.
 
         Raises:
+            SessaoExpiradaError: se a sessão cair em qualquer passo ANTERIOR ao
+                clique em "Salvar" — aí a requisição foi redirecionada ao login
+                e o processo NÃO foi criado. Depois do clique a falha continua
+                ``IniciarProcessoError``, deliberadamente ambígua: o processo
+                pode existir, e reabrir a etapa o criaria duas vezes.
             IniciarProcessoError: se algum passo falhar (menu/campo/botão não
                 encontrado, formulário não carregou) ou se o número do processo
                 criado não puder ser confirmado.
         """
-        self._clicar_menu_iniciar()
-        self._selecionar_tipo()
-        if self.especificacao:
-            self._preencher_especificacao()
-        if self.assunto:
-            self._configurar_assunto()
-        if self.interessado:
-            self._adicionar_interessado()
-        if self.observacao:
-            self._adicionar_observacao()
-        configurar_nivel_acesso(
-            self.driver,
-            self.nivel_acesso,
-            hipotese_legal=self.hipotese_legal,
-            timeout=self.timeout,
-        )
-        self._salvar()
+        botao_salvar = self._preparar_formulario()
+        botao_salvar.click()
+        self._confirmar_sem_alerta_de_validacao()
+        _log.info("Processo salvo")
         numero = self._capturar_numero()
         _log.info("Processo iniciado: %s (tipo %r)", numero, self.tipo)
         return numero
@@ -307,16 +300,51 @@ class IniciarProcesso:
         campo.send_keys(self.observacao)
         _log.info("Observação adicionada")
 
-    def _salvar(self) -> None:
+    def _preparar_formulario(self):
+        """Executa tudo o que ANTECEDE o efeito e devolve o botão "Salvar".
+
+        A fronteira do efeito é o clique em Salvar, feito pelo chamador. Até
+        aqui nada foi persistido no SEI, então uma sessão caída significa
+        "requisição redirecionada ao login = não executada" e pode ser
+        reclassificada com segurança. Depois do clique, não pode (spec
+        2026-08-27, §3.2).
+
+        Captura ``SeiError`` (e não só ``IniciarProcessoError``) para que o
+        ``NivelAcessoError`` de ``configurar_nivel_acesso`` — também pré-efeito
+        — entre na mesma proteção sem repetir a regra.
+        """
         try:
-            botao = WebDriverWait(self.driver, self.timeout).until(
+            self._clicar_menu_iniciar()
+            self._selecionar_tipo()
+            if self.especificacao:
+                self._preencher_especificacao()
+            if self.assunto:
+                self._configurar_assunto()
+            if self.interessado:
+                self._adicionar_interessado()
+            if self.observacao:
+                self._adicionar_observacao()
+            configurar_nivel_acesso(
+                self.driver,
+                self.nivel_acesso,
+                hipotese_legal=self.hipotese_legal,
+                timeout=self.timeout,
+            )
+            return self._localizar_botao_salvar()
+        except SessaoExpiradaError:
+            raise  # já tipada — não re-embrulhar
+        except SeiError as exc:
+            levantar_se_sessao_expirada(self.driver, exc)
+            raise
+
+    def _localizar_botao_salvar(self):
+        """Localiza o botão "Salvar" — ainda PRÉ-efeito (não clica)."""
+        try:
+            return WebDriverWait(self.driver, self.timeout).until(
                 EC.element_to_be_clickable((By.ID, self.ID_SALVAR))
             )
         except TimeoutException as exc:
             raise IniciarProcessoError("botão Salvar não encontrado") from exc
-        botao.click()
-        self._confirmar_sem_alerta_de_validacao()
-        _log.info("Processo salvo")
 
     def _confirmar_sem_alerta_de_validacao(self) -> None:
         """Após "Salvar", o SEI sinaliza campos faltando com um alerta JS.
