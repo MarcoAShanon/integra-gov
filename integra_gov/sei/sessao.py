@@ -37,23 +37,42 @@ def sessao_expirada(driver) -> bool:
     falha e não pode custar timeout. Não distingue *por que* a sessão não está
     autenticada (expirou / derrubada / nunca logou).
 
-    Em qualquer ``WebDriverException`` devolve ``False``: na dúvida, o erro
-    original prevalece — este helper nunca vira a causa da falha.
+    A sonda olha o contexto ATUAL antes de subir ao topo. Mecanismo verificado
+    ao vivo (gate de 28/08/2026): quando a sessão é encerrada em outra aba, o
+    topo continua com a página antiga do SEI renderizada; a operação seguinte
+    recarrega só o **iframe**, e é dentro dele que o formulário de login
+    aparece. Uma checagem que partisse direto do topo não o veria. Se o
+    contexto atual estiver inutilizável (frame destacado), a decisão cai para
+    o topo.
 
-    Efeito colateral: deixa o driver posicionado no ``default_content`` (a
-    página de login não tem os iframes do SEI; a checagem parte do topo). Quem
-    a chamar avulso deve re-navegar depois.
+    Em qualquer ``WebDriverException`` da fase do topo devolve ``False``: na
+    dúvida, o erro original prevalece — este helper nunca vira a causa da
+    falha.
+
+    Efeito colateral: deixa o driver posicionado no ``default_content``,
+    mesmo quando detecta no contexto atual. Quem a chamar avulso deve
+    re-navegar depois.
     """
     try:
+        try:
+            caiu = _formulario_login_presente(driver)  # contexto atual (iframe?)
+        except WebDriverException:
+            caiu = False  # frame destacado/inutilizável — decide no topo
         driver.switch_to.default_content()
-        usuario = driver.find_elements(By.ID, LoginSei.TXT_USUARIO)
-        senha = driver.find_elements(By.ID, LoginSei.PWD_SENHA)
+        if not caiu:
+            caiu = _formulario_login_presente(driver)
     except WebDriverException:
         return False
-    caiu = bool(usuario) and bool(senha)
     if caiu:
         _log.debug("Página de login do SEI detectada — sessão não autenticada")
     return caiu
+
+
+def _formulario_login_presente(driver) -> bool:
+    """``True`` se o contexto atual do driver tem os DOIS campos do SIP."""
+    usuario = driver.find_elements(By.ID, LoginSei.TXT_USUARIO)
+    senha = driver.find_elements(By.ID, LoginSei.PWD_SENHA)
+    return bool(usuario) and bool(senha)
 
 
 def levantar_se_sessao_expirada(

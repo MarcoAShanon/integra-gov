@@ -41,6 +41,17 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   `ficha_financeira` em vez de duplicar a checagem.
 
 ### Corrigido
+- **A sonda de sessão caída passou a olhar o contexto atual antes do topo.**
+  Achado do gate ao vivo (28/08/2026): quando a sessão é encerrada em outra
+  aba, o topo do navegador continua com a página antiga do SEI; a operação
+  seguinte recarrega só o **iframe**, e é dentro dele que a página de login
+  aparece. `sessao_expirada()` partia direto do `default_content` e não a via
+  — a falha saía com o tipo genérico (`SeiNavegacaoError`) em vez de
+  `SessaoExpiradaError`. Agora a sonda verifica o contexto em que o driver
+  está e só então sobe ao topo; o efeito colateral documentado (driver termina
+  no `default_content`) e a regra "na dúvida, o erro original prevalece" não
+  mudaram.
+
 - **Risco de processo criado duas vezes quando a sessão caía durante a criação.**
   A reclassificação de sessão no `IniciarProcesso` agora vale **somente até a
   fronteira do efeito** — o clique em "Salvar". Uma falha posterior (o NUP não

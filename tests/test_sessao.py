@@ -80,3 +80,53 @@ def test_exports_publicos():
     assert "SessaoExpiradaError" in sei.__all__
     assert "sessao_expirada" in sei.__all__
     assert "levantar_se_sessao_expirada" in sei.__all__
+
+
+# ----- login dentro do IFRAME (achado do gate ao vivo de 28/08/2026) -----
+
+
+def _driver_com_login_no_iframe(*, erro_no_contexto_atual=None):
+    """Driver fake posicionado DENTRO de um iframe onde a página de login
+    renderizou. Mecanismo verificado ao vivo: o Sair em outra aba deixa o TOPO
+    com a página antiga do processo; a operação seguinte recarrega só o iframe,
+    e é nele que o formulário do SIP aparece. ``default_content()`` muda o
+    contexto para o topo — onde o formulário NÃO está."""
+    driver = MagicMock()
+    contexto = {"topo": False}
+    driver.switch_to.default_content.side_effect = (
+        lambda: contexto.__setitem__("topo", True)
+    )
+
+    def _find(by, valor):
+        if not contexto["topo"] and erro_no_contexto_atual is not None:
+            raise erro_no_contexto_atual
+        if not contexto["topo"] and valor in {"txtUsuario", "pwdSenha"}:
+            return ["el"]
+        return []
+
+    driver.find_elements.side_effect = _find
+    return driver
+
+
+def test_login_dentro_do_iframe_e_detectado():
+    # A sonda tem de olhar o contexto ATUAL antes de subir ao topo — senão o
+    # caso real (login renderizado no iframe) devolve False e a falha sai com
+    # o tipo errado (foi o ❌ da checagem 1 do gate de 28/08).
+    assert sessao_expirada(_driver_com_login_no_iframe()) is True
+
+
+def test_login_no_iframe_ainda_termina_no_topo():
+    # O efeito colateral documentado (driver no default_content) se mantém.
+    driver = _driver_com_login_no_iframe()
+    sessao_expirada(driver)
+    driver.switch_to.default_content.assert_called()
+
+
+def test_contexto_atual_stale_nao_impede_a_checagem_no_topo():
+    # Iframe destacado (stale) durante a sonda local: cai para o topo em vez
+    # de desistir — no fake, o topo não tem o formulário, então False.
+    driver = _driver_com_login_no_iframe(
+        erro_no_contexto_atual=WebDriverException("frame destacado")
+    )
+    assert sessao_expirada(driver) is False
+    driver.switch_to.default_content.assert_called()
