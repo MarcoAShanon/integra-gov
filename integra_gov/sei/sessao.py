@@ -45,13 +45,22 @@ def sessao_expirada(driver) -> bool:
     contexto atual estiver inutilizável (frame destacado), a decisão cai para
     o topo.
 
-    Em qualquer ``WebDriverException`` da fase do topo devolve ``False``: na
-    dúvida, o erro original prevalece — este helper nunca vira a causa da
-    falha.
+    Atenção ao critério: ``pwdSenha`` NÃO é exclusivo da página de login — o
+    modal de assinatura do SEI reusa esse id. A detecção depende da CONJUNÇÃO
+    com ``txtUsuario``; um frame legítimo que um dia tenha os dois campos
+    produziria falso positivo.
 
-    Efeito colateral: deixa o driver posicionado no ``default_content``,
-    mesmo quando detecta no contexto atual. Quem a chamar avulso deve
-    re-navegar depois.
+    Em qualquer ``WebDriverException`` da fase do topo devolve ``False``: na
+    dúvida, o erro original prevalece — e também porque um falso "sessão
+    caiu = não executada", vindo de um driver em estado duvidoso, faria um
+    orquestrador repetir a operação. Uma detecção positiva no contexto atual
+    é descartada se o ``default_content()`` seguinte falhar, pela mesma
+    regra.
+
+    Efeito colateral: no caminho sem erro, deixa o driver posicionado no
+    ``default_content``, mesmo quando detecta no contexto atual (se o próprio
+    switch falhar, o driver fica onde estava e a função devolve ``False``).
+    Quem a chamar avulso deve re-navegar depois.
     """
     try:
         try:

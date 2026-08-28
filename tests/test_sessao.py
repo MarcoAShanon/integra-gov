@@ -28,7 +28,7 @@ def _driver(ids_presentes=(), erro=None):
 def test_pagina_de_login_detectada():
     driver = _driver({"txtUsuario", "pwdSenha"})
     assert sessao_expirada(driver) is True
-    driver.switch_to.default_content.assert_called()  # parte do topo
+    driver.switch_to.default_content.assert_called()  # termina no topo
 
 
 def test_so_um_campo_nao_e_login():
@@ -85,7 +85,7 @@ def test_exports_publicos():
 # ----- login dentro do IFRAME (achado do gate ao vivo de 28/08/2026) -----
 
 
-def _driver_com_login_no_iframe(*, erro_no_contexto_atual=None):
+def _driver_com_login_no_iframe(*, erro_no_contexto_atual=None, login_no_topo=False):
     """Driver fake posicionado DENTRO de um iframe onde a página de login
     renderizou. Mecanismo verificado ao vivo: o Sair em outra aba deixa o TOPO
     com a página antiga do processo; a operação seguinte recarrega só o iframe,
@@ -100,7 +100,9 @@ def _driver_com_login_no_iframe(*, erro_no_contexto_atual=None):
     def _find(by, valor):
         if not contexto["topo"] and erro_no_contexto_atual is not None:
             raise erro_no_contexto_atual
-        if not contexto["topo"] and valor in {"txtUsuario", "pwdSenha"}:
+        if valor in {"txtUsuario", "pwdSenha"} and (
+            contexto["topo"] if login_no_topo else not contexto["topo"]
+        ):
             return ["el"]
         return []
 
@@ -130,3 +132,13 @@ def test_contexto_atual_stale_nao_impede_a_checagem_no_topo():
     )
     assert sessao_expirada(driver) is False
     driver.switch_to.default_content.assert_called()
+
+
+def test_contexto_atual_stale_com_login_no_topo_detecta():
+    # O fallback de verdade: o frame morreu na sonda local, mas o topo JÁ é a
+    # página de login (redirect completo) — a detecção pelo topo sobrevive.
+    driver = _driver_com_login_no_iframe(
+        erro_no_contexto_atual=WebDriverException("frame destacado"),
+        login_no_topo=True,
+    )
+    assert sessao_expirada(driver) is True
