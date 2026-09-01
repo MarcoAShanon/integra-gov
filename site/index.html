@@ -1195,6 +1195,13 @@ header .marca{flex:none}
 #prova .historia p{max-width:62ch}
 #prova .historia p + p{margin-top:var(--e-4)}
 #prova .historia .virada{margin-top:var(--e-5)}
+/* O SEGUNDO .sub abre subsecao depois de uma sequencia narrativa inteira, e a
+   primitiva nao traz margem no topo — media zero, o titulo encostava no
+   paragrafo anterior e lia como continuacao dele. --e-6 e a distancia que o
+   contrato 7.2 reserva entre blocos, e e mais que os --e-5 entre paragrafos:
+   o titulo tem de COMECAR algo, nao seguir. O seletor exige um <p> antes, entao
+   o primeiro .sub (que abre o bloco) fica intocado. */
+#prova .historia p + .sub{margin-top:var(--e-6)}
 /* ===== 03-contexto ===== */
 /* =====================================================================
    03-contexto — o problema, a comparacao honesta, a mecanica e a
