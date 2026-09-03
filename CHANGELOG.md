@@ -5,6 +5,24 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não publicado]
 
+### Corrigido
+- **A limpeza de órfãos do `criar_driver_chrome` podia encerrar uma aba do
+  Chrome PESSOAL do usuário.** Quando uma tentativa de abrir o Chrome falhava,
+  o módulo encerrava todo `chrome.exe` cujo PID não existia antes da tentativa.
+  Só que o Chrome cria um processo por aba: numa máquina com EDR, onde a
+  tentativa pode levar dezenas de segundos, bastava o usuário abrir uma aba
+  nessa janela para o PID novo entrar na conta e levar `taskkill /F`.
+
+  Agora o encerramento exige **duas** condições: o PID surgiu na tentativa
+  **e** a linha de comando traz marcadores de WebDriver
+  (`--test-type=webdriver`, `--enable-automation`, `--remote-debugging-port`).
+  Medido nesta máquina: dos 9 processos que uma abertura por WebDriver cria, 4
+  trazem os marcadores — entre eles o processo-navegador, cuja morte derruba os
+  filhos; dos 15 processos de Chrome pessoal abertos ao mesmo tempo, **nenhum**
+  os traz. Se a varredura de processos falhar, nada é encerrado.
+
+  Não muda como o Chrome sobe: nenhum argumento novo, nenhum perfil dedicado.
+
 ### Alterado
 - **A lib passou a tipificar sessão caída em dois pontos que faltavam.**
   *(Verificado ao vivo em 28/08/2026 — registro na spec `2026-08-27-sessao-caida-fora-do-funil`.)*

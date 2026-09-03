@@ -17,11 +17,12 @@ Segurança da limpeza:
 
 from __future__ import annotations
 
+import json
 import logging
 import subprocess
 import sys
 import time
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Sequence, Set as AbstractSet
 
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
@@ -103,6 +104,100 @@ def _listar_pids_chrome() -> set[str]:
         elif linha.isdigit():
             pids.add(linha)
     return pids
+
+
+# Marcadores que só o Chrome aberto por WebDriver carrega na linha de comando.
+# Medido nesta máquina (Chrome 152, chromedriver via Selenium Manager): dos 9
+# processos que uma abertura cria, 4 trazem estes marcadores — entre eles o
+# processo-NAVEGADOR, que é o que importa: os filhos (renderer, rede,
+# armazenamento, crashpad) caem sozinhos quando ele morre. Nenhum dos 15
+# processos de Chrome PESSOAL abertos na mesma máquina trazia qualquer um deles.
+_MARCADORES_AUTOMACAO = (
+    "--test-type=webdriver",     # posto pelo próprio chromedriver
+    "--enable-automation",       # posto pelo Selenium (removível via excludeSwitches)
+    "--remote-debugging-port",   # a porta de controle do WebDriver
+)
+
+
+def _e_da_automacao(linha_comando: str) -> bool:
+    """Diz se a linha de comando é de um Chrome aberto por WebDriver."""
+    return any(m in linha_comando for m in _MARCADORES_AUTOMACAO)
+
+
+def _listar_processos_chrome() -> dict[str, str]:
+    """Mapeia PID -> linha de comando dos processos de Chrome.
+
+    Tolerante: devolve ``{}`` se o comando não existir, falhar ou demorar. O
+    vazio é seguro por construção — quem chama só ENCERRA o que reconhece, então
+    não saber nada leva a não matar nada.
+    """
+    windows = sys.platform.startswith("win")
+    cmd = (
+        [
+            "powershell", "-NoProfile", "-Command",
+            "Get-CimInstance Win32_Process | "
+            "Where-Object { $_.Name -eq 'chrome.exe' } | "
+            "Select-Object ProcessId,CommandLine | ConvertTo-Json -Compress",
+        ]
+        if windows
+        else ["ps", "-eo", "pid=,args="]
+    )
+    try:
+        res = subprocess.run(
+            cmd, capture_output=True, text=True, errors="replace",
+            check=False, timeout=15,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        _log.debug("Não foi possível listar processos do Chrome com '%s'", cmd[0])
+        return {}
+
+    saida = (res.stdout or "").strip()
+    if not saida:
+        return {}
+
+    if not windows:
+        processos: dict[str, str] = {}
+        for linha in saida.splitlines():
+            pid, _, args = linha.strip().partition(" ")
+            if pid.isdigit() and "chrome" in args:
+                processos[pid] = args
+        return processos
+
+    try:
+        dados = json.loads(saida)
+    except json.JSONDecodeError:
+        # ConvertTo-Json pode vir truncado/sujo sob console exótico; não é fatal.
+        _log.debug("Saída do PowerShell não era JSON válido")
+        return {}
+    # Com UM processo só, ConvertTo-Json devolve um objeto, não uma lista.
+    if isinstance(dados, dict):
+        dados = [dados]
+    return {
+        str(proc["ProcessId"]): (proc.get("CommandLine") or "")
+        for proc in dados
+        if isinstance(proc, dict) and proc.get("ProcessId") is not None
+    }
+
+
+def _orfaos_da_automacao(pids_antes: AbstractSet[str]) -> set[str]:
+    """PIDs de Chrome que a tentativa RECÉM-FALHADA deixou para trás.
+
+    Duas condições, ambas necessárias:
+
+    1. o PID não existia antes da tentativa (``pids_antes``), e
+    2. a linha de comando traz os marcadores de WebDriver.
+
+    A condição 2 é a que protege o usuário. Só a 1 não basta: o Chrome pessoal
+    cria processos o tempo todo (um renderer por aba, por exemplo), e uma
+    tentativa que falha pode levar dezenas de segundos numa máquina com EDR.
+    Nessa janela, abrir uma aba bastava para o PID novo entrar na conta e levar
+    ``taskkill /F`` — a aba morria, e a do painel do orquestrador junto.
+    """
+    return {
+        pid
+        for pid, linha_comando in _listar_processos_chrome().items()
+        if pid not in pids_antes and _e_da_automacao(linha_comando)
+    }
 
 
 def _matar_pids(pids: Iterable[str]) -> None:
@@ -234,9 +329,9 @@ def criar_driver_chrome(
                 str(exc).splitlines()[0],
             )
             # A falha de cold start pode deixar um chrome.exe órfão (janela
-            # vazia). Encerra SÓ os PIDs que ESTA tentativa abriu — nunca o
-            # Chrome pessoal que já estava aberto (está em ``pids_antes``).
-            orfaos = _listar_pids_chrome() - pids_antes
+            # vazia). Encerra SÓ o que é reconhecidamente da automação E surgiu
+            # nesta tentativa — nunca o Chrome pessoal do usuário.
+            orfaos = _orfaos_da_automacao(pids_antes)
             if orfaos:
                 _log.info(
                     "Encerrando %d processo(s) Chrome órfão(s) da tentativa falha",

@@ -71,6 +71,12 @@ finally:
 A limpeza padrão é **segura**: encerra só o `chromedriver` (exclusivo da
 automação), **nunca** as suas janelas de navegação pessoal.
 
+Quando uma tentativa falha e deixa um Chrome órfão para trás, só é encerrado o
+processo que satisfaz **as duas** condições: surgiu naquela tentativa **e**
+traz os marcadores de WebDriver na linha de comando (`--test-type=webdriver`,
+`--enable-automation`). Uma aba que você abriu no meio do caminho não é
+tocada. Se a varredura de processos não estiver disponível, nada é encerrado.
+
 Se mesmo assim o Chrome não subir (ex.: trava no diretório de perfil), há a
 opção **destrutiva** — que fecha **todo** o Chrome, inclusive as janelas
 pessoais (pode perder trabalho não salvo):
@@ -87,6 +93,13 @@ from integra_gov.sei import encerrar_chromedriver_orfaos, encerrar_chrome
 encerrar_chromedriver_orfaos()   # seguro
 encerrar_chrome()                # ⚠️ destrutivo: fecha todas as janelas
 ```
+
+> ⚠️ **Se você usa um orquestrador com painel no navegador** — o
+> [`integra-flow`](https://github.com/MarcoAShanon/integra-flow) serve a
+> interface em `127.0.0.1` —, a opção destrutiva fecha **o painel também**,
+> inclusive no meio de um lote. O lote em si não para: quem executa é o
+> processo Python, e a aba é só a tela. Mas você perde a visualização e
+> precisa reabrir a URL com o token para acompanhar de novo.
 
 Outros parâmetros úteis: `headless=True` (sem janela visível) e
 `args_extra=("--user-data-dir=...",)` (perfil dedicado, evita travas no perfil

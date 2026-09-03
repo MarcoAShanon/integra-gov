@@ -52,6 +52,7 @@ def driver_falso(monkeypatch):
     monkeypatch.setattr(mod.webdriver, "Chrome", _ChromeFake)
     # Sem Chrome real: a varredura de PIDs não tem o que listar.
     monkeypatch.setattr(mod, "_listar_pids_chrome", lambda: set())
+    monkeypatch.setattr(mod, "_listar_processos_chrome", dict)
     return capturado
 
 
@@ -166,6 +167,7 @@ def _chrome_que_falha(monkeypatch, falhas: int):
 def test_retry_abre_apos_falhas_transitorias(monkeypatch, comandos, _sem_espera):
     _forcar_windows(monkeypatch)
     monkeypatch.setattr(mod, "_listar_pids_chrome", lambda: set())
+    monkeypatch.setattr(mod, "_listar_processos_chrome", dict)
     estado = _chrome_que_falha(monkeypatch, falhas=2)
     driver = criar_driver_chrome(tentativas=3)
     assert driver is not None
@@ -180,6 +182,7 @@ def test_esgota_tentativas_levanta_navegador_error(
 ):
     _forcar_posix(monkeypatch)
     monkeypatch.setattr(mod, "_listar_pids_chrome", lambda: set())
+    monkeypatch.setattr(mod, "_listar_processos_chrome", dict)
     _chrome_que_falha(monkeypatch, falhas=99)
     with pytest.raises(NavegadorError) as exc:
         criar_driver_chrome(tentativas=2)
@@ -188,20 +191,102 @@ def test_esgota_tentativas_levanta_navegador_error(
     assert len(_sem_espera) == 1  # espera entre as 2 tentativas, não após a última
 
 
+# Linhas de comando REAIS, medidas nesta maquina (Chrome 152 + chromedriver).
+# Encurtadas, mas os marcadores sao os que o processo traz de verdade.
+CMD_AUTOMACAO = (
+    '"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --no-sandbox '
+    "--enable-automation --headless=new --remote-debugging-port=0 "
+    '--test-type=webdriver --user-data-dir="C:\\Temp\\scoped_dir13412_145"'
+)
+CMD_PESSOAL = '"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" '
+CMD_RENDERER_PESSOAL = (
+    '"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --type=renderer '
+    "--lang=pt-BR --num-raster-threads=2 --renderer-client-id=7"
+)
+
+
+def test_e_da_automacao_separa_pessoal_de_webdriver():
+    assert mod._e_da_automacao(CMD_AUTOMACAO)
+    assert not mod._e_da_automacao(CMD_PESSOAL)
+    # O renderer pessoal e o caso perigoso: nasce DURANTE a tentativa que falha.
+    assert not mod._e_da_automacao(CMD_RENDERER_PESSOAL)
+
+
 def test_orfao_da_tentativa_falha_e_encerrado(monkeypatch, _sem_espera):
     _forcar_windows(monkeypatch)
-    # Snapshots de PIDs: antes da 1ª (chrome pessoal "100"); depois da falha
-    # surgiu o órfão "200"; antes da 2ª (já sem o órfão).
-    snapshots = iter([{"100"}, {"100", "200"}, {"100"}])
-    monkeypatch.setattr(mod, "_listar_pids_chrome", lambda: next(snapshots))
+    # Antes da tentativa havia so o Chrome pessoal "100".
+    monkeypatch.setattr(mod, "_listar_pids_chrome", lambda: {"100"})
+    # Depois da falha, sobrou o orfao "200" (com marcadores de WebDriver).
+    monkeypatch.setattr(
+        mod, "_listar_processos_chrome",
+        lambda: {"100": CMD_PESSOAL, "200": CMD_AUTOMACAO},
+    )
     mortos: list[set[str]] = []
     monkeypatch.setattr(mod, "_matar_pids", lambda pids: mortos.append(set(pids)))
     monkeypatch.setattr(mod, "encerrar_chromedriver_orfaos", lambda: None)
     _chrome_que_falha(monkeypatch, falhas=1)
 
     assert criar_driver_chrome(tentativas=2) is not None
-    # Matou SÓ o órfão "200" — nunca o Chrome pessoal "100".
+    # Matou SO o orfao "200" - nunca o Chrome pessoal "100".
     assert mortos == [{"200"}]
+
+
+def test_aba_pessoal_aberta_durante_a_falha_sobrevive(monkeypatch, _sem_espera):
+    """O defeito que este filtro corrige.
+
+    Numa maquina com EDR a tentativa pode levar dezenas de segundos. Se o
+    usuario abrir uma aba nessa janela, nasce um ``chrome.exe`` novo - que a
+    regra antiga (so "PID novo") encerrava junto com o orfao.
+    """
+    _forcar_windows(monkeypatch)
+    monkeypatch.setattr(mod, "_listar_pids_chrome", lambda: {"100"})
+    monkeypatch.setattr(
+        mod, "_listar_processos_chrome",
+        lambda: {
+            "100": CMD_PESSOAL,
+            "200": CMD_AUTOMACAO,           # orfao da automacao: deve morrer
+            "300": CMD_RENDERER_PESSOAL,    # aba que o usuario abriu: deve viver
+        },
+    )
+    mortos: list[set[str]] = []
+    monkeypatch.setattr(mod, "_matar_pids", lambda pids: mortos.append(set(pids)))
+    monkeypatch.setattr(mod, "encerrar_chromedriver_orfaos", lambda: None)
+    _chrome_que_falha(monkeypatch, falhas=1)
+
+    assert criar_driver_chrome(tentativas=2) is not None
+    assert mortos == [{"200"}]
+
+
+def test_automacao_ja_em_curso_nao_e_encerrada(monkeypatch, _sem_espera):
+    """Outro Selenium ja rodando (ex.: um lote do orquestrador) esta protegido
+    pela primeira condicao: o PID ja existia antes da tentativa."""
+    _forcar_windows(monkeypatch)
+    monkeypatch.setattr(mod, "_listar_pids_chrome", lambda: {"100", "150"})
+    monkeypatch.setattr(
+        mod, "_listar_processos_chrome",
+        lambda: {"100": CMD_PESSOAL, "150": CMD_AUTOMACAO, "200": CMD_AUTOMACAO},
+    )
+    mortos: list[set[str]] = []
+    monkeypatch.setattr(mod, "_matar_pids", lambda pids: mortos.append(set(pids)))
+    monkeypatch.setattr(mod, "encerrar_chromedriver_orfaos", lambda: None)
+    _chrome_que_falha(monkeypatch, falhas=1)
+
+    assert criar_driver_chrome(tentativas=2) is not None
+    assert mortos == [{"200"}]
+
+
+def test_sem_listagem_de_processos_nao_mata_ninguem(monkeypatch, _sem_espera):
+    """Se a varredura falhar, nao se sabe o que e de quem - entao nao mata."""
+    _forcar_windows(monkeypatch)
+    monkeypatch.setattr(mod, "_listar_pids_chrome", lambda: {"100"})
+    monkeypatch.setattr(mod, "_listar_processos_chrome", dict)
+    mortos: list[set[str]] = []
+    monkeypatch.setattr(mod, "_matar_pids", lambda pids: mortos.append(set(pids)))
+    monkeypatch.setattr(mod, "encerrar_chromedriver_orfaos", lambda: None)
+    _chrome_que_falha(monkeypatch, falhas=1)
+
+    assert criar_driver_chrome(tentativas=2) is not None
+    assert mortos == []
 
 
 def test_sucesso_na_primeira_nao_mata_chrome(monkeypatch, driver_falso):
@@ -237,3 +322,90 @@ def test_listar_pids_chrome_posix(monkeypatch):
         mod.subprocess, "run", lambda *_a, **_k: type("R", (), {"stdout": "100\n200\n"})()
     )
     assert mod._listar_pids_chrome() == {"100", "200"}
+
+
+def test_listar_processos_chrome_windows_parseia_json(monkeypatch):
+    _forcar_windows(monkeypatch)
+    saida = (
+        '[{"ProcessId":100,"CommandLine":"chrome.exe"},'
+        '{"ProcessId":200,"CommandLine":"chrome.exe --test-type=webdriver"}]'
+    )
+    monkeypatch.setattr(
+        mod.subprocess, "run", lambda *_a, **_k: type("R", (), {"stdout": saida})()
+    )
+    assert mod._listar_processos_chrome() == {
+        "100": "chrome.exe",
+        "200": "chrome.exe --test-type=webdriver",
+    }
+
+
+def test_listar_processos_chrome_um_so_vem_como_objeto(monkeypatch):
+    """Com UM processo, ConvertTo-Json devolve objeto, nao lista."""
+    _forcar_windows(monkeypatch)
+    saida = '{"ProcessId":100,"CommandLine":"chrome.exe --enable-automation"}'
+    monkeypatch.setattr(
+        mod.subprocess, "run", lambda *_a, **_k: type("R", (), {"stdout": saida})()
+    )
+    assert mod._listar_processos_chrome() == {
+        "100": "chrome.exe --enable-automation"
+    }
+
+
+def test_listar_processos_chrome_commandline_nula(monkeypatch):
+    """Processo protegido devolve CommandLine null: vira string vazia, e string
+    vazia nunca casa com marcador - fica de fora do encerramento."""
+    _forcar_windows(monkeypatch)
+    saida = '[{"ProcessId":100,"CommandLine":null}]'
+    monkeypatch.setattr(
+        mod.subprocess, "run", lambda *_a, **_k: type("R", (), {"stdout": saida})()
+    )
+    processos = mod._listar_processos_chrome()
+    assert processos == {"100": ""}
+    assert not mod._e_da_automacao(processos["100"])
+
+
+def test_listar_processos_chrome_json_invalido(monkeypatch):
+    _forcar_windows(monkeypatch)
+    monkeypatch.setattr(
+        mod.subprocess, "run",
+        lambda *_a, **_k: type("R", (), {"stdout": "isto nao e json"})(),
+    )
+    assert mod._listar_processos_chrome() == {}
+
+
+def test_listar_processos_chrome_posix(monkeypatch):
+    _forcar_posix(monkeypatch)
+    saida = (
+        "  100 /usr/bin/chrome --enable-automation\n"
+        "  200 /usr/bin/python3 -m algo\n"
+    )
+    monkeypatch.setattr(
+        mod.subprocess, "run", lambda *_a, **_k: type("R", (), {"stdout": saida})()
+    )
+    # So o processo de chrome entra; o python fica de fora.
+    assert mod._listar_processos_chrome() == {
+        "100": "/usr/bin/chrome --enable-automation"
+    }
+
+
+def test_listar_processos_chrome_timeout(monkeypatch):
+    _forcar_windows(monkeypatch)
+
+    def _demora(*_a, **_k):
+        raise mod.subprocess.TimeoutExpired(cmd="powershell", timeout=15)
+
+    monkeypatch.setattr(mod.subprocess, "run", _demora)
+    assert mod._listar_processos_chrome() == {}
+
+
+def test_orfaos_da_automacao_exige_as_duas_condicoes(monkeypatch):
+    monkeypatch.setattr(
+        mod, "_listar_processos_chrome",
+        lambda: {
+            "100": CMD_PESSOAL,           # velho e pessoal
+            "150": CMD_AUTOMACAO,         # velho e da automacao
+            "300": CMD_RENDERER_PESSOAL,  # novo e pessoal
+            "200": CMD_AUTOMACAO,         # novo E da automacao -> o unico
+        },
+    )
+    assert mod._orfaos_da_automacao({"100", "150"}) == {"200"}
