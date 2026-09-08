@@ -119,8 +119,10 @@ def limpar_downloads_orfaos(pasta_download: Path) -> None:
         try:
             pdf.unlink()
             _log.debug("Órfão removido: %s", pdf.name)
-        except OSError:
-            pass
+        except OSError as exc:
+            _log.warning(
+                "Órfão %s não pôde ser removido (%s) — a impressão seguinte "
+                "pode devolvê-lo no lugar do PDF novo", pdf.name, exc)
 
 
 def imprimir_via_popup(driver, clicar_imprimir: Callable[[], None],
@@ -132,7 +134,11 @@ def imprimir_via_popup(driver, clicar_imprimir: Callable[[], None],
 
     Começa chamando :func:`limpar_downloads_orfaos`, que apaga TODOS os
     ``*.pdf`` de ``pasta_download`` — use uma pasta dedicada à automação,
-    nunca uma pasta compartilhada como ``Downloads``."""
+    nunca uma pasta compartilhada como ``Downloads``.
+
+    NÃO varre janelas de impressão órfãs entre chamadas — entre impressões,
+    chame ``fechar_janelas_extras(driver, handle_principal)`` de
+    :mod:`integra_gov.esiape.navegacao`, como ``ficha_anual`` faz."""
     limpar_downloads_orfaos(pasta_download)
     handle_principal = driver.current_window_handle
     handles_antes = list(driver.window_handles)

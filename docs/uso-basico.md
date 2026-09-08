@@ -1027,9 +1027,6 @@ acima.
 
 ```python
 from integra_gov.esiape import imprimir_via_popup
-from integra_gov.esiape.impressao import (
-    aguardar_popup, aguardar_pdf_estavel, fechar_popup, retornar_apos_impressao,
-)
 
 def clicar():
     driver.find_element(By.CSS_SELECTOR, '[data-testtoolid="w_report.onGeneratePrintVersion"]').click()
@@ -1039,8 +1036,14 @@ pdf_bruto.rename(PASTA_SAIDA / "meu_nome.pdf")
 ```
 
 A pasta é a MESMA `PASTA_DOWNLOAD` das prefs do Chrome. O PDF volta com o nome
-bruto que o CIS dá; renomear é seu. Para conferir o conteúdo antes de fechar o
-popup (como a ficha anual faz), use as funções soltas do mesmo módulo.
+bruto que o CIS dá; renomear é seu. As funções soltas — `aguardar_popup`,
+`aguardar_pdf_estavel`, `fechar_popup` e `retornar_apos_impressao` — vivem em
+`integra_gov.esiape.impressao`, para quem precisa intercalar uma conferência
+(como o conteúdo do PDF antes de fechar o popup), tal como a ficha anual faz.
+
+`imprimir_via_popup` NÃO varre janelas de impressão órfãs entre chamadas;
+entre impressões, chame `fechar_janelas_extras(driver, handle_principal)` de
+`integra_gov.esiape.navegacao`, como a ficha anual faz.
 
 > **Atenção:** `PASTA_DOWNLOAD` precisa ser uma pasta **dedicada** a esta
 > automação (por exemplo, `_download_esiape` ao lado da pasta de saída) —

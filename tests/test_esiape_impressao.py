@@ -3,6 +3,8 @@ de ``ficha_anual`` sem mudar comportamento."""
 
 from __future__ import annotations
 
+import os
+import time as _time
 from pathlib import Path
 
 import pytest
@@ -84,8 +86,11 @@ def test_aguardar_popup_sem_popup_devolve_none_no_timeout():
 
 # -------------------------------------------------------------- pdf
 def test_aguardar_pdf_estavel_devolve_o_mais_recente_estavel(tmp_path):
-    _pdf(tmp_path / "a.pdf")
-    assert aguardar_pdf_estavel(tmp_path, timeout=1, intervalo=0) == tmp_path / "a.pdf"
+    a = _pdf(tmp_path / "a.pdf")
+    b = _pdf(tmp_path / "b.pdf")
+    agora = _time.time()
+    os.utime(b, (agora - 100, agora - 100))
+    assert aguardar_pdf_estavel(tmp_path, timeout=1, intervalo=0) == a
 
 
 def test_aguardar_pdf_estavel_ignora_arquivo_vazio_ate_ter_conteudo(tmp_path, monkeypatch):
@@ -177,6 +182,23 @@ def test_limpar_downloads_orfaos_remove_pdfs(tmp_path):
     (tmp_path / "nao_pdf.txt").write_text("x")
     limpar_downloads_orfaos(tmp_path)
     assert not a.exists() and (tmp_path / "nao_pdf.txt").exists()
+
+
+def test_limpar_downloads_orfaos_avisa_quando_nao_consegue_remover(tmp_path, monkeypatch, caplog):
+    preso = _pdf(tmp_path / "preso.pdf")
+    original_unlink = Path.unlink
+
+    def _unlink(self, *a, **k):
+        if self == preso:
+            raise OSError("arquivo em uso")
+        return original_unlink(self, *a, **k)
+
+    monkeypatch.setattr(Path, "unlink", _unlink)
+    with caplog.at_level("WARNING", logger=mod._log.name):
+        limpar_downloads_orfaos(tmp_path)  # não deve propagar a exceção
+    assert preso.exists()
+    assert any("preso.pdf" in r.message and r.levelname == "WARNING"
+               for r in caplog.records)
 
 
 # -------------------------------------------------------- composição

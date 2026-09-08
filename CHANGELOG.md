@@ -92,6 +92,8 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   ordem e o teste de impressão do bloco passa sem alteração. Motivo: a
   extração de dados cadastrais (CDCOINDPES) precisa da mesma sequência, e
   esse trecho já rendeu quatro defeitos só no gate ao vivo — não se duplica.
+  `imprimir_via_popup` começa apagando TODOS os `*.pdf` de `pasta_download`,
+  que por isso precisa ser uma pasta dedicada a esta automação.
 
 - **A landing de divulgação passa a viver no repositório, em `site/`** —
   publicada em <https://projeto.govintegra.com.br>. Antes ela existia apenas no
