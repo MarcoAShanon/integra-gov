@@ -952,13 +952,19 @@ o seu `driver` usa outro destino de download, passe-o explicitamente:
 ```python
 ficha = FichaAnualServidor(
     driver, pasta_saida=Path("fichas/"),
-    pasta_download=Path("C:/Users/voce/Downloads"),  # deve bater com o Chrome
+    pasta_download=Path("C:/Users/voce/_download_esiape"),  # deve bater com o Chrome
 )
 ```
 
 Se o PDF não aparecer nessa pasta a tempo, o módulo levanta `TimeoutError`
 com essa pergunta explícita na mensagem — é o sintoma mais comum de
 desalinhamento entre `pasta_download` e a configuração real do navegador.
+
+`pasta_download` precisa ser sempre uma pasta **dedicada** à automação —
+nunca a pasta `Downloads` do usuário. Antes de cada impressão o módulo apaga
+TODOS os `*.pdf` que já estiverem lá (veja `limpar_downloads_orfaos`); numa
+pasta compartilhada isso significa perder arquivos que nada têm a ver com a
+extração.
 
 ### Configuração do Chrome (obrigatória)
 
@@ -1021,6 +1027,9 @@ acima.
 
 ```python
 from integra_gov.esiape import imprimir_via_popup
+from integra_gov.esiape.impressao import (
+    aguardar_popup, aguardar_pdf_estavel, fechar_popup, retornar_apos_impressao,
+)
 
 def clicar():
     driver.find_element(By.CSS_SELECTOR, '[data-testtoolid="w_report.onGeneratePrintVersion"]').click()
@@ -1032,6 +1041,12 @@ pdf_bruto.rename(PASTA_SAIDA / "meu_nome.pdf")
 A pasta é a MESMA `PASTA_DOWNLOAD` das prefs do Chrome. O PDF volta com o nome
 bruto que o CIS dá; renomear é seu. Para conferir o conteúdo antes de fechar o
 popup (como a ficha anual faz), use as funções soltas do mesmo módulo.
+
+> **Atenção:** `PASTA_DOWNLOAD` precisa ser uma pasta **dedicada** a esta
+> automação (por exemplo, `_download_esiape` ao lado da pasta de saída) —
+> `imprimir_via_popup` começa apagando TODOS os `*.pdf` que já estiverem
+> nela. Apontar `PASTA_DOWNLOAD` para a pasta `Downloads` do usuário apaga
+> os arquivos dele.
 
 ### Bloco sem dados não é erro
 

@@ -107,7 +107,14 @@ def retornar_apos_impressao(driver, handle_principal: str, *, delay: float = 1.0
 
 
 def limpar_downloads_orfaos(pasta_download: Path) -> None:
-    """Remove PDFs de tentativas anteriores da pasta de download."""
+    """Remove PDFs de tentativas anteriores da pasta de download.
+
+    Remove TODOS os ``*.pdf`` que já estiverem em ``pasta_download`` — sem
+    filtro de idade ou origem. Por isso ``pasta_download`` precisa ser uma
+    pasta de download DEDICADA a esta automação (ex.: ``_download_esiape``),
+    nunca uma pasta compartilhada como ``Downloads`` do usuário — apontar
+    para lá apaga, silenciosamente (log em nível debug), todo PDF que
+    estiver ali."""
     for pdf in Path(pasta_download).glob("*.pdf"):
         try:
             pdf.unlink()
@@ -121,7 +128,11 @@ def imprimir_via_popup(driver, clicar_imprimir: Callable[[], None],
                        timeout_download: float = 60, delay: float = 1.0) -> Path:
     """A sequência inteira. Devolve o PDF BRUTO na pasta de download; quem
     chama renomeia (e, se quiser conferir o conteúdo antes de fechar o popup,
-    use as funções soltas, como ``ficha_anual`` faz)."""
+    use as funções soltas, como ``ficha_anual`` faz).
+
+    Começa chamando :func:`limpar_downloads_orfaos`, que apaga TODOS os
+    ``*.pdf`` de ``pasta_download`` — use uma pasta dedicada à automação,
+    nunca uma pasta compartilhada como ``Downloads``."""
     limpar_downloads_orfaos(pasta_download)
     handle_principal = driver.current_window_handle
     handles_antes = list(driver.window_handles)
