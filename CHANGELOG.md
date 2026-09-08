@@ -84,6 +84,15 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   humana.
 
 ### Adicionado
+- **`integra_gov.esiape.impressao`**: a mecânica de imprimir via popup
+  (esperar o popup, esperar o PDF ficar estável, fechar por Selenium com JS
+  de reserva, voltar à janela principal com refresh) saiu de dentro de
+  `ficha_anual` e virou funções públicas, com `imprimir_via_popup` como
+  composição. Refatoração de mover: `ficha_anual` chama as funções na mesma
+  ordem e o teste de impressão do bloco passa sem alteração. Motivo: a
+  extração de dados cadastrais (CDCOINDPES) precisa da mesma sequência, e
+  esse trecho já rendeu quatro defeitos só no gate ao vivo — não se duplica.
+
 - **A landing de divulgação passa a viver no repositório, em `site/`** —
   publicada em <https://projeto.govintegra.com.br>. Antes ela existia apenas no
   ar e num diretório temporário que já não existia: o ponto de partida deste

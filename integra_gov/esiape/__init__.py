@@ -28,6 +28,7 @@ from .exceptions import (
 from .ficha_anual import FichaAnualServidor, ResultadoFichaEsiape
 from .ficha_multi_orgao import FichaMultiOrgao, ResultadoMultiOrgao
 from .habilitacao import TrocaHabilitacaoEsiape
+from .impressao import imprimir_via_popup
 from .navegacao import (
     esperar_seletor,
     fechar_janelas_extras,
@@ -59,6 +60,7 @@ __all__ = [
     "esperar_seletor",
     "fechar_janelas_extras",
     "garantir_menu",
+    "imprimir_via_popup",
     "limpar_flag_relogin",
     "limpar_overlay",
     "navegar_para_transacao",

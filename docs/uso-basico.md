@@ -1017,6 +1017,22 @@ exatamente a mesma pasta passada em `pasta_download` (seção anterior) — a
 divergência entre as duas é a causa mais comum do `TimeoutError` citado
 acima.
 
+### Imprimir qualquer tela do e-SIAPE
+
+```python
+from integra_gov.esiape import imprimir_via_popup
+
+def clicar():
+    driver.find_element(By.CSS_SELECTOR, '[data-testtoolid="w_report.onGeneratePrintVersion"]').click()
+
+pdf_bruto = imprimir_via_popup(driver, clicar, PASTA_DOWNLOAD)
+pdf_bruto.rename(PASTA_SAIDA / "meu_nome.pdf")
+```
+
+A pasta é a MESMA `PASTA_DOWNLOAD` das prefs do Chrome. O PDF volta com o nome
+bruto que o CIS dá; renomear é seu. Para conferir o conteúdo antes de fechar o
+popup (como a ficha anual faz), use as funções soltas do mesmo módulo.
+
 ### Bloco sem dados não é erro
 
 Cada bloco é resolvido por **evidência**, nunca por timeout silencioso: ou o

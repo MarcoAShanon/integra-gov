@@ -275,9 +275,11 @@ def test_imprimir_bloco_popup_download_e_renomeio(tmp_path):
 
 
 def test_limpar_downloads_orfaos_remove_pdfs_antigos(tmp_path):
+    from integra_gov.esiape.impressao import limpar_downloads_orfaos
+
     ficha = FichaAnualServidor(DriverFicha(FrameFake()), pasta_saida=tmp_path)
     orfao = pdf_minimo(ficha.pasta_download / "resto_antigo.pdf")
-    ficha._limpar_downloads_orfaos()
+    limpar_downloads_orfaos(ficha.pasta_download)
     assert not orfao.exists()
 
 

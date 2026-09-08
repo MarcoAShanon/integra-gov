@@ -26,6 +26,13 @@ from .exceptions import (
     PdfImpressoIlegivel,
     TransacaoNaoAbriu,
 )
+from .impressao import (
+    aguardar_pdf_estavel,
+    aguardar_popup,
+    fechar_popup,
+    limpar_downloads_orfaos,
+    retornar_apos_impressao,
+)
 from .navegacao import (
     esperar_seletor,
     fechar_janelas_extras,
@@ -287,7 +294,7 @@ class FichaAnualServidor:
         fechamos por handle Selenium (confiável) e SÓ então retornamos à
         janela principal com refresh.
         """
-        self._limpar_downloads_orfaos()
+        limpar_downloads_orfaos(self.pasta_download)
         fechar_janelas_extras(self.driver)
         limpar_overlay(self.driver)
         handle_principal = self.driver.current_window_handle
@@ -305,12 +312,16 @@ class FichaAnualServidor:
             raise TransacaoNaoAbriu(self.TRANSACAO, self.SEL_IMPRIMIR)
         self.driver.find_element(By.CSS_SELECTOR, self.SEL_IMPRIMIR).click()
 
-        popup = self._aguardar_popup(handles_antes)
-        pdf_bruto = self._aguardar_pdf_estavel()
+        popup = aguardar_popup(self.driver, handles_antes,
+                               timeout=self.TIMEOUT_POPUP, intervalo=self.DELAY_CURTO)
+        pdf_bruto = aguardar_pdf_estavel(self.pasta_download,
+                                         timeout=self.TIMEOUT_DOWNLOAD,
+                                         intervalo=self.DELAY_CURTO)
         self._exigir_camada_de_texto(pdf_bruto, (ano_de, ano_ate))
         if popup is not None:
-            self._fechar_popup(popup)
-        self._retornar_apos_impressao(handle_principal)
+            fechar_popup(self.driver, popup, intervalo=self.DELAY_CURTO)
+        retornar_apos_impressao(self.driver, handle_principal,
+                                delay=self.DELAY_PADRAO)
 
         destino = (self.pasta_saida
                    / f"ficha_{matricula}_{ano_de}_{ano_ate}.pdf")
@@ -319,40 +330,6 @@ class FichaAnualServidor:
         pdf_bruto.rename(destino)
         _log.info("Bloco %d-%d salvo em %s", ano_de, ano_ate, destino)
         return destino
-
-    def _aguardar_popup(self, handles_antes: list) -> str | None:
-        """Handle do popup de impressão (``None`` se não abriu — o download
-        pode disparar mesmo assim; quem decide é o PDF no disco)."""
-        limite = time.monotonic() + self.TIMEOUT_POPUP
-        while time.monotonic() < limite:
-            novos = [h for h in self.driver.window_handles
-                     if h not in handles_antes]
-            if novos:
-                return novos[0]
-            time.sleep(self.DELAY_CURTO)
-        _log.warning("Popup de impressão não detectado em %.0fs",
-                     self.TIMEOUT_POPUP)
-        return None
-
-    def _aguardar_pdf_estavel(self) -> Path:
-        """Espera UM PDF aparecer na pasta de download e ficar estável
-        (tamanho constante em 2 leituras). Erro honesto no timeout."""
-        limite = time.monotonic() + self.TIMEOUT_DOWNLOAD
-        tamanho_anterior: dict[Path, int] = {}
-        while time.monotonic() < limite:
-            pdfs = sorted(self.pasta_download.glob("*.pdf"),
-                          key=lambda p: p.stat().st_mtime, reverse=True)
-            if pdfs:
-                atual = pdfs[0]
-                tamanho = atual.stat().st_size
-                if tamanho > 0 and tamanho_anterior.get(atual) == tamanho:
-                    return atual
-                tamanho_anterior[atual] = tamanho
-            time.sleep(self.DELAY_CURTO)
-        raise TimeoutError(
-            f"o PDF do bloco não apareceu em {self.pasta_download} em "
-            f"{self.TIMEOUT_DOWNLOAD}s — a pasta de download do driver "
-            f"coincide com pasta_download?")
 
     def _exigir_camada_de_texto(self, pdf: Path, bloco: tuple) -> None:
         """Recusa o PDF que saiu sem texto legível por máquina.
@@ -375,53 +352,6 @@ class FichaAnualServidor:
 
         if not legivel:
             raise PdfImpressoIlegivel(pdf, bloco, motivo)
-
-    def _fechar_popup(self, popup_handle: str) -> None:
-        """Fecha o popup por handle Selenium (retry); JS como fallback."""
-        for _tentativa in range(2):
-            try:
-                if popup_handle not in self.driver.window_handles:
-                    return
-                self.driver.switch_to.window(popup_handle)
-                self.driver.close()
-                time.sleep(self.DELAY_CURTO)
-                if popup_handle not in self.driver.window_handles:
-                    return
-            except Exception:
-                pass
-        try:  # fallback JS
-            if popup_handle in self.driver.window_handles:
-                self.driver.switch_to.window(popup_handle)
-                self.driver.execute_script("window.close();")
-        except Exception:
-            pass
-        if popup_handle in self.driver.window_handles:
-            _log.warning("Popup de impressão resistiu — janela órfã será "
-                         "varrida por fechar_janelas_extras")
-
-    def _retornar_apos_impressao(self, handle_principal: str) -> None:
-        """Volta à janela principal, refresh e contexto raiz (a página fica
-        em carregamento eterno sem o refresh — comportamento real do CIS)."""
-        try:
-            if handle_principal in self.driver.window_handles:
-                self.driver.switch_to.window(handle_principal)
-            elif self.driver.window_handles:
-                self.driver.switch_to.window(self.driver.window_handles[0])
-            self.driver.refresh()
-            self.driver.switch_to.default_content()
-            time.sleep(self.DELAY_PADRAO)
-        except Exception as exc:
-            _log.warning("Retorno pós-impressão com falha (%s)", exc)
-
-    def _limpar_downloads_orfaos(self) -> None:
-        """Remove PDFs de tentativas anteriores da pasta de download (o
-        'mais recente' confundiria resto antigo com o bloco atual)."""
-        for pdf in self.pasta_download.glob("*.pdf"):
-            try:
-                pdf.unlink()
-                _log.debug("Órfão removido: %s", pdf.name)
-            except OSError:
-                pass
 
     # ----- mesclagem -----
 
