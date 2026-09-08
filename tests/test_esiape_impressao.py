@@ -110,6 +110,28 @@ def test_aguardar_pdf_estavel_timeout_honesto_cita_a_pasta(tmp_path):
         aguardar_pdf_estavel(tmp_path, timeout=0.01, intervalo=0)
 
 
+def test_aguardar_pdf_estavel_espera_duas_leituras_iguais(tmp_path, monkeypatch):
+    caminho = tmp_path / "a.pdf"
+    caminho.write_bytes(b"%PDF-1")
+    tamanhos = iter([5, 9, 9])  # cresce, depois estabiliza
+    original = Path.stat
+
+    class _Stat:
+        def __init__(self, base, size):
+            self.st_mtime = base.st_mtime
+            self.st_size = size
+
+    def _stat(self, *a, **k):
+        base = original(self, *a, **k)
+        if self == caminho:
+            return _Stat(base, next(tamanhos, 9))
+        return base
+
+    monkeypatch.setattr(Path, "stat", _stat)
+    assert aguardar_pdf_estavel(tmp_path, timeout=2, intervalo=0) == caminho
+    assert next(tamanhos, None) is None  # consumiu as 3 leituras: só devolveu na 2ª igual
+
+
 # ------------------------------------------------------------ fechar
 def test_fechar_popup_por_selenium():
     d = DriverImpressao()
