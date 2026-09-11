@@ -142,3 +142,11 @@ def test_contexto_atual_stale_com_login_no_topo_detecta():
         login_no_topo=True,
     )
     assert sessao_expirada(driver) is True
+
+
+def test_modal_de_assinatura_nao_e_pagina_de_login():
+    """O modal de assinatura tem txtUsuario E pwdSenha (mais btnAssinar). Um
+    alerta do modal deixou o driver dentro dele e a sonda devolveu um falso
+    "sessão expirou" (gate de 11/09/2026)."""
+    driver = _driver(ids_presentes=("txtUsuario", "pwdSenha", "btnAssinar"))
+    assert sessao_expirada(driver) is False

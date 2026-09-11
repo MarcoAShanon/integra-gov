@@ -60,6 +60,10 @@ class AssinarDocumento:
     ICONE = "Assinar Documento"
     ID_SENHA = "pwdSenha"
     ID_BOTAO = "btnAssinar"
+    #: Select "Cargo/Função" do modal. Quando o servidor tem mais de um cargo na
+    #: unidade, o SEI exige a escolha ("Selecione um Cargo/Função." — visto ao
+    #: vivo em 11/09/2026); com um só, vem selecionado.
+    ID_CARGO = "selCargoFuncao"
     # O diálogo de assinatura abre num modal cujo iframe carrega uma URL de
     # "documento_assinar"; é assim que o localizamos entre os iframes do topo.
     MARCA_SRC_MODAL = "documento_assinar"
@@ -78,11 +82,13 @@ class AssinarDocumento:
 
     INTERVALO = 0.5
 
-    def __init__(self, driver, senha: str, *, timeout: float = 10):
+    def __init__(self, driver, senha: str, *, cargo_funcao: str | None = None,
+                 timeout: float = 10):
         if not senha:
             raise ValueError("senha é obrigatória para assinar")
         self.driver = driver
         self._senha = senha  # nunca logar/persistir
+        self.cargo_funcao = (cargo_funcao or "").strip() or None
         self.timeout = timeout
 
     def assinar(self) -> None:
@@ -103,6 +109,7 @@ class AssinarDocumento:
 
         self.driver.switch_to.default_content()
         self._entrar_no_modal()
+        self._selecionar_cargo()
         self._preencher_senha()
         self._clicar_assinar()
         self._confirmar()
@@ -129,6 +136,45 @@ class AssinarDocumento:
             raise AssinaturaError(
                 "campo de senha do modal de assinatura não carregou"
             ) from exc
+
+    def _selecionar_cargo(self) -> None:
+        """Garante um Cargo/Função escolhido no modal, quando o SEI o pede.
+
+        Sem o select (SEI que não o exibe): nada a fazer. Com ``cargo_funcao``:
+        escolhe a opção de texto igual (``strip``), ou levanta listando as
+        existentes. Sem ``cargo_funcao``: mantém o que já estiver selecionado;
+        se nada estiver e houver UMA opção válida, escolhe-a; com várias, levanta
+        — o cargo aparece na assinatura e não é decisão da biblioteca. Tudo
+        antes da senha: nada foi assinado.
+        """
+        selects = self.driver.find_elements(By.ID, self.ID_CARGO)
+        if not selects:
+            return
+        opcoes = [
+            o for o in selects[0].find_elements(By.TAG_NAME, "option")
+            if (o.get_attribute("value") or "").strip()
+        ]
+        textos = [(o.text or "").strip() for o in opcoes]
+        if self.cargo_funcao is not None:
+            for opcao, texto in zip(opcoes, textos):
+                if texto == self.cargo_funcao:
+                    opcao.click()
+                    _log.info("Cargo/Função selecionado: %s", texto)
+                    return
+            raise AssinaturaError(
+                f"cargo_funcao {self.cargo_funcao!r} não está entre as opções do modal: "
+                + ", ".join(repr(t) for t in textos)
+            )
+        if any(o.is_selected() for o in opcoes):
+            return
+        if len(opcoes) == 1:
+            opcoes[0].click()
+            _log.info("Cargo/Função único selecionado: %s", textos[0])
+            return
+        raise AssinaturaError(
+            "o modal exige um Cargo/Função e há mais de um: informe cargo_funcao com o "
+            "texto exato; opções: " + ", ".join(repr(t) for t in textos)
+        )
 
     def _preencher_senha(self) -> None:
         campo = self.driver.find_element(By.ID, self.ID_SENHA)

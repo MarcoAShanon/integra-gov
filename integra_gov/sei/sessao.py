@@ -77,11 +77,20 @@ def sessao_expirada(driver) -> bool:
     return caiu
 
 
+#: Botão do modal de assinatura. O modal reusa ``txtUsuario`` E ``pwdSenha`` (visto
+#: ao vivo em 11/09/2026: um alerta do modal derrubou a sonda num falso "sessão
+#: expirou"); a página de login nunca tem este botão.
+_ID_BOTAO_ASSINAR = "btnAssinar"
+
+
 def _formulario_login_presente(driver) -> bool:
-    """``True`` se o contexto atual do driver tem os DOIS campos do SIP."""
+    """``True`` se o contexto atual do driver tem os DOIS campos do SIP e NÃO é o
+    modal de assinatura (que também tem os dois, mais o botão Assinar)."""
     usuario = driver.find_elements(By.ID, LoginSei.TXT_USUARIO)
     senha = driver.find_elements(By.ID, LoginSei.PWD_SENHA)
-    return bool(usuario) and bool(senha)
+    if not (usuario and senha):
+        return False
+    return not driver.find_elements(By.ID, _ID_BOTAO_ASSINAR)
 
 
 def levantar_se_sessao_expirada(

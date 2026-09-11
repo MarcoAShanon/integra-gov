@@ -6,6 +6,15 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não publicado]
 
 ### Corrigido
+- **`AssinarDocumento` aceita `cargo_funcao`.** Com mais de um cargo na unidade,
+  o modal do SEI exige a escolha ("Selecione um Cargo/Função.") e a lib só
+  preenchia a senha — visto ao vivo em 11/09/2026. Agora escolhe pelo texto
+  exato, mantém o já selecionado, escolhe sozinha quando há um só, e levanta
+  `AssinaturaError` listando as opções quando há vários sem indicação.
+- **`sessao_expirada` não confunde mais o modal de assinatura com a página de
+  login.** O modal tem `txtUsuario` e `pwdSenha`; um alerta do modal deixava o
+  driver dentro dele e a sonda devolvia um falso "sessão expirou". Agora a
+  presença de `btnAssinar` descarta a detecção.
 - **A limpeza de órfãos do `criar_driver_chrome` podia encerrar uma aba do
   Chrome PESSOAL do usuário.** Quando uma tentativa de abrir o Chrome falhava,
   o módulo encerrava todo `chrome.exe` cujo PID não existia antes da tentativa.

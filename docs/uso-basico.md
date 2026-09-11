@@ -492,6 +492,13 @@ except AssinaturaError as exc:
     ...  # senha recusada, ou a assinatura não pôde ser confirmada
 ```
 
+**Cargo/Função.** Quando o servidor tem mais de um cargo na unidade, o modal
+exige a escolha (o SEI alerta "Selecione um Cargo/Função." e não assina). Passe
+`cargo_funcao="Analista Técnico Executivo"` com o texto exato da opção; sem ele,
+a lib mantém o cargo já selecionado, escolhe sozinha quando há um só, e levanta
+`AssinaturaError` listando as opções quando há vários — antes de digitar a senha,
+então nada foi assinado.
+
 `assinar()` **confirma pela verdade**: só conclui quando o documento passa a
 exibir os marcadores reais de assinatura do SEI ("assinado eletronicamente
 por…", código CRC) — nunca reporta "assinado" por suposição; senha recusada
