@@ -349,21 +349,41 @@ def test_listar_marcadores_do_processo():
 
 
 class _Opcao:
-    def __init__(self, texto, *, visivel=True, interagivel=True):
+    def __init__(self, texto, *, visivel=True, interagivel=True, seleciona=True):
         self._texto = texto
         self.visivel, self.interagivel = visivel, interagivel
+        self.seleciona = seleciona  # o clique registra a seleção no container?
         self.cliques = 0
-        self.li = _Li(self)
+        self.container = _Container()
+        self.ancora = _Ancora(self)
 
     def get_attribute(self, name):
         return self._texto if name == "textContent" else None
 
     def find_element(self, by, value):
-        return self.li  # ancestor::li[1]
+        if "dd-container" in value:
+            return self.container
+        return self.ancora  # ancestor::a[contains(@class, "dd-option")][1]
 
 
-class _Li:
-    """O <li> da opção: é nele que o plugin do dropdown escuta o clique."""
+class _Container:
+    """O .dd-container, com o valor escondido da seleção."""
+
+    def __init__(self):
+        self.valor = "null"
+
+    def find_elements(self, by, value):
+        cont = self
+
+        class _Hidden:
+            def get_attribute(self, nome):
+                return cont.valor
+
+        return [_Hidden()] if value == MarcadorProcesso.CSS_VALOR_SELECIONADO else []
+
+
+class _Ancora:
+    """O <a class="dd-option">: é nele que o plugin ddslick escuta o clique."""
 
     def __init__(self, opcao):
         self._o = opcao
@@ -377,6 +397,8 @@ class _Li:
         if not self._o.interagivel:
             raise ElementNotInteractableException("element not interactable")
         self._o.cliques += 1
+        if self._o.seleciona:
+            self._o.container.valor = "126946"
 
 
 class _Clicavel:
@@ -420,13 +442,27 @@ class _DropdownDriver:
         self.scripts.append(script)
         if args and hasattr(args[0], "_o"):
             args[0]._o.cliques += 1
+            if args[0]._o.seleciona:
+                args[0]._o.container.valor = "126946"
 
 
-def test_clicar_opcao_visivel_clica_o_li():
+def test_clicar_opcao_visivel_clica_a_ancora_e_confere():
     op = _Opcao("ALFA")
     d = _DropdownDriver(opcoes=[op])
     MarcadorProcesso(d, timeout=1)._clicar_opcao(op, _WaitImediato())
     assert op.cliques == 1 and d.cliques_dropdown == 0 and d.scripts == []
+    assert op.container.valor == "126946"
+
+
+def test_clique_que_nao_seleciona_repete_por_javascript_e_levanta():
+    """O caso do gate de 11/09: o clique não registrou a seleção e o SEI
+    respondeu "Marcador não informado". Agora: repete por JS e, se ainda nada,
+    levanta ANTES de salvar."""
+    op = _Opcao("ALFA", seleciona=False)
+    d = _DropdownDriver(opcoes=[op])
+    with pytest.raises(MarcadorError, match="não ficou selecionada"):
+        MarcadorProcesso(d, timeout=1)._clicar_opcao(op, _WaitImediato())
+    assert op.cliques == 2 and any("click()" in s for s in d.scripts)
 
 
 def test_clicar_opcao_oculta_reabre_o_dropdown_antes():

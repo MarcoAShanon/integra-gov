@@ -457,20 +457,24 @@ class MarcadorProcesso:
 
     # ----- internos -----
 
-    def _clicar_opcao(self, opcao, wait) -> None:
-        """Clica a opção do dropdown de forma tolerante à lista ainda fechada.
+    XPATH_ANCORA_OPCAO = "ancestor::a[contains(@class, 'dd-option')][1]"
+    XPATH_CONTAINER = "ancestor::div[contains(@class, 'dd-container')][1]"
+    CSS_VALOR_SELECIONADO = ".dd-selected-value"
 
-        Visto ao vivo em 11/09/2026: o clique em ``.dd-select`` pode não deixar a
-        lista visível a tempo (ou fechá-la) e o ``click()`` na opção falha com
-        ``ElementNotInteractableException``. Sequência: alvo = o ``li`` da opção
-        (é nele que o plugin do dropdown escuta o clique), reabre a lista se o
-        alvo não estiver visível, clica; se ainda assim não for interagível,
-        dispara o clique por JavaScript, que o plugin trata do mesmo jeito.
+    def _clicar_opcao(self, opcao, wait) -> None:
+        """Seleciona a opção no dropdown (plugin *ddslick*) e CONFERE a seleção.
+
+        DOM real, visto ao vivo em 11/09/2026: cada opção é ``<li><a class=
+        "dd-option"><input class="dd-option-value" hidden><label class=
+        "dd-option-text">…</label></a></li>`` e o clique que seleciona é o do
+        ``<a>``; a seleção fica em ``.dd-selected-value`` do container. Um
+        clique no ``li`` ou no rótulo pode cair fora do ``<a>`` e não
+        selecionar nada — o SEI então responde "Marcador não informado". Por
+        isso: o alvo é o ``<a>``, a lista é reaberta se estiver oculta, e a
+        seleção é conferida pelo valor escondido antes de seguir; um clique por
+        JavaScript entra como reserva. Nada foi salvo se levantar aqui.
         """
-        try:
-            alvo = opcao.find_element(By.XPATH, "ancestor::li[1]")
-        except WebDriverException:
-            alvo = opcao
+        alvo = self._ancora_da_opcao(opcao)
         try:
             if not alvo.is_displayed():
                 self.driver.find_element(By.CSS_SELECTOR, self.CSS_DROPDOWN).click()
@@ -482,6 +486,35 @@ class MarcadorProcesso:
         except ElementNotInteractableException:
             _log.info("Opção do dropdown não interagível; clique por JavaScript")
             self.driver.execute_script("arguments[0].click();", alvo)
+        if self._opcao_selecionada(opcao):
+            return
+        _log.info("Seleção não registrada após o clique; repetindo por JavaScript")
+        self.driver.execute_script("arguments[0].click();", alvo)
+        if not self._opcao_selecionada(opcao):
+            raise MarcadorError(
+                "a opção do marcador não ficou selecionada no dropdown "
+                "(o SEI recusaria com 'Marcador não informado')"
+            )
+
+    def _ancora_da_opcao(self, opcao):
+        try:
+            return opcao.find_element(By.XPATH, self.XPATH_ANCORA_OPCAO)
+        except WebDriverException:
+            return opcao
+
+    def _opcao_selecionada(self, opcao) -> bool:
+        """``True`` se o valor escondido do container deixou de ser vazio/"null".
+        Sem container ou sem o campo (DOM diferente), não dá para conferir:
+        devolve ``True`` para não bloquear um SEI que não use o plugin."""
+        try:
+            container = opcao.find_element(By.XPATH, self.XPATH_CONTAINER)
+            campo = container.find_elements(By.CSS_SELECTOR, self.CSS_VALOR_SELECIONADO)
+        except WebDriverException:
+            return True
+        if not campo:
+            return True
+        valor = (campo[0].get_attribute("value") or "").strip().lower()
+        return valor not in ("", "null")
 
     def _abrir_modal(self) -> None:
         try:

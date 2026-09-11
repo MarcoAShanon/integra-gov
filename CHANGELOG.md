@@ -9,7 +9,11 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 - **`MarcadorProcesso.incluir` tolera a lista do dropdown ainda oculta.** Ao vivo
   (11/09/2026) o clique na opção falhava com `ElementNotInteractableException`
   porque a lista não estava visível. Agora o alvo é o `li` da opção, a lista é
-  reaberta se preciso, e um clique por JavaScript entra como reserva.
+  reaberta se preciso, e um clique por JavaScript entra como reserva. Na
+  sequência (mesmo dia): o alvo certo é o `<a class="dd-option">` do plugin
+  ddslick (um clique no `li` caiu fora e o SEI respondeu "Marcador não
+  informado"), e a seleção passa a ser CONFERIDA pelo `.dd-selected-value`
+  antes de salvar — sem seleção, levanta sem gravar nada.
 - **`AssinarDocumento` aceita `cargo_funcao`.** Com mais de um cargo na unidade,
   o modal do SEI exige a escolha ("Selecione um Cargo/Função.") e a lib só
   preenchia a senha — visto ao vivo em 11/09/2026. Agora escolhe pelo texto
