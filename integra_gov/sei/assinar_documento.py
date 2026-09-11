@@ -64,6 +64,8 @@ class AssinarDocumento:
     #: unidade, o SEI exige a escolha ("Selecione um Cargo/Função." — visto ao
     #: vivo em 11/09/2026); com um só, vem selecionado.
     ID_CARGO = "selCargoFuncao"
+    #: Reserva quando o id não bater: o select logo depois do rótulo "Cargo / Função".
+    XPATH_CARGO_POR_ROTULO = "//label[contains(., 'Cargo')]/following::select[1]"
     # O diálogo de assinatura abre num modal cujo iframe carrega uma URL de
     # "documento_assinar"; é assim que o localizamos entre os iframes do topo.
     MARCA_SRC_MODAL = "documento_assinar"
@@ -148,6 +150,8 @@ class AssinarDocumento:
         antes da senha: nada foi assinado.
         """
         selects = self.driver.find_elements(By.ID, self.ID_CARGO)
+        if not selects:
+            selects = self.driver.find_elements(By.XPATH, self.XPATH_CARGO_POR_ROTULO)
         if not selects:
             return
         opcoes = [

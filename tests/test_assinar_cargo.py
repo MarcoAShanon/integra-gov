@@ -37,11 +37,16 @@ class _Select:
 
 
 class _Driver:
-    def __init__(self, select=None):
+    def __init__(self, select=None, *, so_por_rotulo=False):
         self._select = select
+        self._so_por_rotulo = so_por_rotulo
 
     def find_elements(self, by, valor):
-        if valor == AssinarDocumento.ID_CARGO and self._select is not None:
+        if self._select is None:
+            return []
+        if valor == AssinarDocumento.ID_CARGO and not self._so_por_rotulo:
+            return [self._select]
+        if valor == AssinarDocumento.XPATH_CARGO_POR_ROTULO:
             return [self._select]
         return []
 
@@ -89,3 +94,10 @@ def test_cargo_em_branco_equivale_a_nao_informado():
     unico = _Opcao("7", "Analista")
     _assinador(_Driver(_Select([unico])), cargo="   ")._selecionar_cargo()
     assert unico.cliques == 1
+
+
+def test_select_achado_pelo_rotulo_quando_o_id_nao_bate():
+    a, b = _Opcao("1", "Analista Técnico Executivo"), _Opcao("2", "Coordenador(a)")
+    driver = _Driver(_Select([_Opcao("", ""), a, b]), so_por_rotulo=True)
+    _assinador(driver, cargo="Analista Técnico Executivo")._selecionar_cargo()
+    assert a.cliques == 1 and b.cliques == 0
