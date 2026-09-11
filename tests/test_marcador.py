@@ -349,11 +349,34 @@ def test_listar_marcadores_do_processo():
 
 
 class _Opcao:
-    def __init__(self, texto):
+    def __init__(self, texto, *, visivel=True, interagivel=True):
         self._texto = texto
+        self.visivel, self.interagivel = visivel, interagivel
+        self.cliques = 0
+        self.li = _Li(self)
 
     def get_attribute(self, name):
         return self._texto if name == "textContent" else None
+
+    def find_element(self, by, value):
+        return self.li  # ancestor::li[1]
+
+
+class _Li:
+    """O <li> da opção: é nele que o plugin do dropdown escuta o clique."""
+
+    def __init__(self, opcao):
+        self._o = opcao
+
+    def is_displayed(self):
+        return self._o.visivel
+
+    def click(self):
+        from selenium.common.exceptions import ElementNotInteractableException
+
+        if not self._o.interagivel:
+            raise ElementNotInteractableException("element not interactable")
+        self._o.cliques += 1
 
 
 class _Clicavel:
@@ -371,16 +394,65 @@ class _Clicavel:
 
 class _DropdownDriver:
     """Driver do fluxo do dropdown de ``incluir``: botão/seletor sempre
-    clicáveis; as opções (``.dd-option-text``) vêm de ``textos``."""
+    clicáveis; as opções (``.dd-option-text``) vêm de ``textos`` (ou de
+    ``opcoes`` prontas)."""
 
-    def __init__(self, textos):
-        self._opcoes = [_Opcao(t) for t in textos]
+    def __init__(self, textos=(), opcoes=None):
+        self._opcoes = list(opcoes) if opcoes is not None else [_Opcao(t) for t in textos]
+        self.scripts: list[str] = []
+        self.cliques_dropdown = 0
 
     def find_element(self, by, value):
+        if value == MarcadorProcesso.CSS_DROPDOWN:
+            drv = self
+
+            class _Dd(_Clicavel):
+                def click(self):
+                    drv.cliques_dropdown += 1
+
+            return _Dd()
         return _Clicavel()
 
     def find_elements(self, by, value):
         return self._opcoes if value == MarcadorProcesso.CSS_OPCAO else []
+
+    def execute_script(self, script, *args):
+        self.scripts.append(script)
+        if args and hasattr(args[0], "_o"):
+            args[0]._o.cliques += 1
+
+
+def test_clicar_opcao_visivel_clica_o_li():
+    op = _Opcao("ALFA")
+    d = _DropdownDriver(opcoes=[op])
+    MarcadorProcesso(d, timeout=1)._clicar_opcao(op, _WaitImediato())
+    assert op.cliques == 1 and d.cliques_dropdown == 0 and d.scripts == []
+
+
+def test_clicar_opcao_oculta_reabre_o_dropdown_antes():
+    op = _Opcao("ALFA", visivel=False)
+    d = _DropdownDriver(opcoes=[op])
+    MarcadorProcesso(d, timeout=1)._clicar_opcao(op, _WaitImediato())
+    assert d.cliques_dropdown == 1 and op.cliques == 1
+
+
+def test_clicar_opcao_nao_interagivel_cai_para_javascript():
+    """O caso do gate de 11/09: ElementNotInteractableException no click()."""
+    op = _Opcao("ALFA", interagivel=False)
+    d = _DropdownDriver(opcoes=[op])
+    MarcadorProcesso(d, timeout=1)._clicar_opcao(op, _WaitImediato())
+    assert op.cliques == 1 and any("click()" in s for s in d.scripts)
+
+
+class _WaitImediato:
+    """WebDriverWait falso: avalia a condição uma vez, sem esperar."""
+
+    def until(self, cond):
+        from selenium.common.exceptions import TimeoutException
+
+        if cond(None):
+            return True
+        raise TimeoutException()
 
 
 def test_incluir_opcao_ausente_levanta_marcadorerror():

@@ -24,8 +24,10 @@ import re
 from dataclasses import dataclass
 
 from selenium.common.exceptions import (
+    ElementNotInteractableException,
     StaleElementReferenceException,
     TimeoutException,
+    WebDriverException,
 )
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -395,7 +397,7 @@ class MarcadorProcesso:
                 f"marcador {nome!r} não está disponível no dropdown 'Gerenciar "
                 "Marcador'. Opções: " + ", ".join(repr(d) for d in disponiveis)
             )
-        opcoes[indice].click()
+        self._clicar_opcao(opcoes[indice], wait)
         try:
             campo = wait.until(EC.element_to_be_clickable((By.XPATH, self.XPATH_TEXTO)))
             campo.clear()
@@ -454,6 +456,32 @@ class MarcadorProcesso:
         return nomes
 
     # ----- internos -----
+
+    def _clicar_opcao(self, opcao, wait) -> None:
+        """Clica a opção do dropdown de forma tolerante à lista ainda fechada.
+
+        Visto ao vivo em 11/09/2026: o clique em ``.dd-select`` pode não deixar a
+        lista visível a tempo (ou fechá-la) e o ``click()`` na opção falha com
+        ``ElementNotInteractableException``. Sequência: alvo = o ``li`` da opção
+        (é nele que o plugin do dropdown escuta o clique), reabre a lista se o
+        alvo não estiver visível, clica; se ainda assim não for interagível,
+        dispara o clique por JavaScript, que o plugin trata do mesmo jeito.
+        """
+        try:
+            alvo = opcao.find_element(By.XPATH, "ancestor::li[1]")
+        except WebDriverException:
+            alvo = opcao
+        try:
+            if not alvo.is_displayed():
+                self.driver.find_element(By.CSS_SELECTOR, self.CSS_DROPDOWN).click()
+                try:
+                    wait.until(lambda _d: alvo.is_displayed())
+                except TimeoutException:
+                    _log.debug("Lista do dropdown continua oculta; tentando o clique mesmo assim")
+            alvo.click()
+        except ElementNotInteractableException:
+            _log.info("Opção do dropdown não interagível; clique por JavaScript")
+            self.driver.execute_script("arguments[0].click();", alvo)
 
     def _abrir_modal(self) -> None:
         try:
