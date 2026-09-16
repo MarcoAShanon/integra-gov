@@ -3,10 +3,18 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
+from selenium.webdriver.common.keys import Keys
 
-from integra_gov.esiape.exceptions import DadosPessoaisIndisponiveis, EsiapeError
+from integra_gov.esiape import dados_pessoais as dmod
+from integra_gov.esiape.exceptions import (
+    DadosPessoaisIndisponiveis,
+    EsiapeError,
+    PdfImpressoIlegivel,
+    TransacaoNaoAbriu,
+)
 from integra_gov.ficha_financeira import PdfIlegivelError
 from tests._pdf_sintetico import pdf_bytes
 
@@ -158,3 +166,204 @@ def test_ler_dados_pessoais_le_todas_as_paginas(tmp_path):
     pdf.write_bytes(pdf_bytes([LINHAS_PDF[:3], LINHAS_PDF[3:]]))
     d = ler_dados_pessoais(pdf)
     assert d.uf == "XX" and d.orgao == "ORGAO/TESTE"
+
+
+# ------------------------------------------------- DadosPessoaisServidor
+class _Elemento:
+    def __init__(self):
+        self.cliques = 0
+        self.teclas = []
+
+    def click(self):
+        self.cliques += 1
+
+    def clear(self):
+        pass
+
+    def send_keys(self, *t):
+        self.teclas.extend(t)
+
+
+class _Driver:
+    """Driver mínimo: elementos por seletor CSS, relogin como atributo."""
+
+    def __init__(self, seletores):
+        self.el = {s: _Elemento() for s in seletores}
+        self._esiape_relogin_pendente = False
+
+    def find_element(self, by, valor):
+        if valor not in self.el:
+            raise Exception(f"no such element: {valor}")
+        return self.el[valor]
+
+
+S = dmod.DadosPessoaisServidor
+TODOS = (S.SEL_MATRICULA, S.SEL_CONSULTAR, S.SEL_IMPRIMIR, S.SEL_GERAR_PDF, S.SEL_SAIR)
+
+
+@pytest.fixture
+def ambiente(tmp_path, monkeypatch):
+    """Navegação e impressão substituídas; devolve (driver, servidor, chamadas)."""
+    monkeypatch.setattr(dmod.time, "sleep", lambda *_a, **_k: None)
+    driver = _Driver(TODOS)
+    chamadas = {"navegar": [], "limpar_flag": 0, "imprimir": 0}
+
+    def navegar(d, transacao, seletor, timeout=30):
+        chamadas["navegar"].append(transacao)
+        return True
+
+    def imprimir(d, clicar, pasta_download, **kw):
+        chamadas["imprimir"] += 1
+        clicar()
+        bruto = Path(pasta_download) / "cis_bruto.pdf"
+        pdf_cadastral(bruto)
+        return bruto
+
+    monkeypatch.setattr(dmod, "navegar_para_transacao", navegar)
+    monkeypatch.setattr(dmod, "esperar_seletor", lambda d, s, timeout=20: (0,) if s in d.el else None)
+    monkeypatch.setattr(dmod, "procurar_em_frames", lambda d, s: (0,) if s in d.el else None)
+    monkeypatch.setattr(dmod, "fechar_janelas_extras", lambda d, *a, **k: None)
+    monkeypatch.setattr(dmod, "limpar_overlay", lambda d, *a, **k: True)
+    monkeypatch.setattr(dmod, "limpar_flag_relogin",
+                        lambda d: chamadas.__setitem__("limpar_flag", chamadas["limpar_flag"] + 1))
+    monkeypatch.setattr(dmod, "imprimir_via_popup", imprimir)
+    servidor = S(driver, pasta_saida=tmp_path / "saida")
+    return driver, servidor, chamadas
+
+
+def test_pastas_default_como_ficha_anual(tmp_path):
+    s = S(object(), pasta_saida=tmp_path / "s")
+    assert s.pasta_saida == tmp_path / "s"
+    assert s.pasta_download == tmp_path / "s" / "_download_esiape"
+    assert s.pasta_saida.is_dir() and s.pasta_download.is_dir()
+
+
+def test_matricula_vazia_levanta_value_error(ambiente):
+    _, servidor, _ = ambiente
+    with pytest.raises(ValueError):
+        servidor.consultar("   ")
+
+
+def test_consultar_caminho_feliz(ambiente):
+    driver, servidor, chamadas = ambiente
+    d = servidor.consultar(" 0000000 ")
+    assert chamadas["navegar"] == ["CDCOINDPES"]
+    assert driver.el[S.SEL_MATRICULA].teclas == ["0000000", Keys.ENTER]
+    for sel in (S.SEL_CONSULTAR, S.SEL_IMPRIMIR, S.SEL_GERAR_PDF, S.SEL_SAIR):
+        assert driver.el[sel].cliques == 1, sel
+    assert d.pdf == servidor.pasta_saida / "dados_pessoais_0000000.pdf"
+    assert d.pdf.exists()
+    assert not (servidor.pasta_download / "cis_bruto.pdf").exists()
+    assert d.nome == "FULANO DE TAL" and d.matricula == "0000000"
+
+
+def test_consultar_sobrescreve_pdf_anterior(ambiente):
+    _, servidor, _ = ambiente
+    destino = servidor.pasta_saida / "dados_pessoais_0000000.pdf"
+    destino.write_bytes(b"velho")
+    d = servidor.consultar("0000000")
+    assert d.pdf == destino and destino.read_bytes() != b"velho"
+
+
+def test_relogin_atravessado_repete_uma_vez(ambiente):
+    driver, servidor, chamadas = ambiente
+    tentativas = []
+
+    def navegar(d, transacao, seletor, timeout=30):
+        tentativas.append(1)
+        if len(tentativas) == 1:
+            d._esiape_relogin_pendente = True
+            return False
+        return True
+
+    with patch.object(dmod, "navegar_para_transacao", navegar):
+        d = servidor.consultar("0000000")
+    assert len(tentativas) == 2
+    assert chamadas["limpar_flag"] == 1
+    assert d.matricula == "0000000"
+
+
+def test_falha_sem_relogin_nao_repete(ambiente):
+    driver, servidor, chamadas = ambiente
+    with patch.object(dmod, "navegar_para_transacao", lambda *a, **k: False):
+        with pytest.raises(TransacaoNaoAbriu):
+            servidor.consultar("0000000")
+    assert chamadas["limpar_flag"] == 0
+
+
+def test_relogin_persistente_levanta_apos_segunda_falha(ambiente):
+    driver, servidor, chamadas = ambiente
+
+    def navegar(d, transacao, seletor, timeout=30):
+        d._esiape_relogin_pendente = True
+        return False
+
+    with patch.object(dmod, "navegar_para_transacao", navegar):
+        with pytest.raises(TransacaoNaoAbriu):
+            servidor.consultar("0000000")
+    assert chamadas["limpar_flag"] == 1
+
+
+def test_botao_imprimir_ausente_levanta_indisponiveis(ambiente):
+    driver, servidor, _ = ambiente
+    del driver.el[S.SEL_IMPRIMIR]
+    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+        servidor.consultar("0000000")
+    assert "Imprimir" in str(exc.value) or S.SEL_IMPRIMIR in str(exc.value)
+
+
+def test_impressao_sem_pdf_levanta_indisponiveis(ambiente):
+    _, servidor, _ = ambiente
+
+    def imprimir(*a, **k):
+        raise TimeoutError("nenhum PDF apareceu")
+
+    with patch.object(dmod, "imprimir_via_popup", imprimir):
+        with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+            servidor.consultar("0000000")
+    assert "nenhum PDF apareceu" in str(exc.value)
+
+
+def test_matricula_divergente_no_pdf_levanta(ambiente):
+    _, servidor, _ = ambiente
+    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+        servidor.consultar("1111111")
+    assert "*****00" in str(exc.value) and "*****11" in str(exc.value)
+
+
+def test_pdf_sem_texto_levanta_ilegivel_e_mantem_arquivo(ambiente):
+    _, servidor, _ = ambiente
+
+    def imprimir(d, clicar, pasta_download, **kw):
+        bruto = Path(pasta_download) / "cis_bruto.pdf"
+        bruto.write_bytes(pdf_bytes([None], com_fonte=False))
+        return bruto
+
+    with patch.object(dmod, "imprimir_via_popup", imprimir):
+        with pytest.raises(PdfImpressoIlegivel) as exc:
+            servidor.consultar("0000000")
+    assert Path(exc.value.caminho).exists()
+
+
+def test_sair_falhando_nao_derruba(ambiente, caplog):
+    driver, servidor, _ = ambiente
+    driver.el[S.SEL_SAIR].click = lambda: (_ for _ in ()).throw(RuntimeError("stale"))
+    d = servidor.consultar("0000000")
+    assert d.matricula == "0000000"
+    assert any("Sair" in r.message for r in caplog.records)
+
+
+def test_log_nao_expoe_matricula_inteira(ambiente, caplog):
+    import logging
+
+    _, servidor, _ = ambiente
+    with caplog.at_level(logging.INFO, logger="integra_gov.esiape.dados_pessoais"):
+        with pytest.raises(DadosPessoaisIndisponiveis):   # PDF traz 0000000
+            servidor.consultar("1234567")
+    texto = "\n".join(r.getMessage() for r in caplog.records)
+    assert "1234567" not in texto and "*****67" in texto
+
+
+def test_pdf_impresso_ilegivel_sem_bloco_tem_mensagem_sem_bloco(tmp_path):
+    exc = PdfImpressoIlegivel(tmp_path / "x.pdf", None, "motivo")
+    assert "bloco" not in str(exc) and "ilegível" in str(exc)

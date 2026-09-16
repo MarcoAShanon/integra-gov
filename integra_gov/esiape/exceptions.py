@@ -92,14 +92,17 @@ class PdfImpressoIlegivel(EsiapeError):
 
     Attributes:
         caminho: o PDF ilegível, deixado no disco para inspeção.
-        bloco: o par ``(ano_de, ano_ate)`` que estava sendo impresso.
+        bloco: o par ``(ano_de, ano_ate)`` que estava sendo impresso, ou
+            ``None`` fora da ficha anual.
     """
 
     def __init__(self, caminho, bloco, motivo: str) -> None:
         self.caminho = caminho
         self.bloco = bloco
+        onde = (f"o PDF do bloco {bloco[0]}-{bloco[1]}" if bloco
+                else "o PDF impresso")
         super().__init__(
-            f"o PDF do bloco {bloco[0]}-{bloco[1]} saiu ilegível por máquina "
+            f"{onde} saiu ilegível por máquina "
             f"({motivo}): {caminho}. Confira a configuração de impressão do "
             f"Chrome — o destino tem de ser o 'Salvar como PDF' nativo; a "
             f"impressora virtual 'Microsoft Print to PDF' do Windows converte "

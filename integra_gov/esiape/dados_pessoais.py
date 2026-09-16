@@ -19,12 +19,30 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
 from pypdf import PdfReader
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 
 from ..ficha_financeira import PdfIlegivelError, tem_camada_de_texto
+from .exceptions import (
+    DadosPessoaisIndisponiveis,
+    PdfImpressoIlegivel,
+    TransacaoNaoAbriu,
+)
+from .impressao import imprimir_via_popup
+from .navegacao import (
+    esperar_seletor,
+    fechar_janelas_extras,
+    limpar_flag_relogin,
+    limpar_overlay,
+    navegar_para_transacao,
+    procurar_em_frames,
+    relogin_pendente,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -133,3 +151,149 @@ def ler_dados_pessoais(pdf: Path) -> DadosPessoais:
         for p in PdfReader(str(pdf)).pages)
     campos = extrair_campos(texto)
     return DadosPessoais(**campos, texto=texto, pdf=pdf)
+
+
+# --------------------------------------------------------- com navegador
+def _mascarar(matricula: str) -> str:
+    return f"*****{matricula[-2:]}"
+
+
+class DadosPessoaisServidor:
+    """Consulta a CDCOINDPES, imprime o PDF e devolve os campos lidos dele.
+
+    Args:
+        driver: WebDriver com a sessão do e-SIAPE autenticada e o Chrome
+            configurado para "Salvar como PDF" (``docs/uso-basico.md``).
+        pasta_saida: onde fica ``dados_pessoais_<matricula>.pdf``.
+        pasta_download: pasta de download do Chrome (default: subpasta
+            ``_download_esiape`` de ``pasta_saida``). Tem de ser DEDICADA:
+            :func:`~integra_gov.esiape.impressao.imprimir_via_popup` apaga
+            todos os PDFs dela antes de imprimir.
+    """
+
+    TRANSACAO = "CDCOINDPES"
+    SEL_MATRICULA = '[data-testtoolid="w_matr_infor_alfa"]'
+    SEL_CONSULTAR = '[data-testtoolid="onClickbtnConsulta"]'
+    SEL_IMPRIMIR = '[data-testtoolid="onClickbtnImprimir"]'
+    SEL_GERAR_PDF = '[data-testtoolid="w_report.onGeneratePrintVersion"]'
+    SEL_SAIR = '[data-testtoolid="onClickBtnSair"]'
+    # PENDÊNCIA (gate ao vivo): o sinal da tela para matrícula inexistente
+    # não é conhecido. Se houver mensagem, ela entra aqui e é detectada
+    # antes do timeout do botão Imprimir.
+    MSG_NAO_ENCONTRADA: str | None = None
+
+    TIMEOUT_TELA = 30
+    DELAY_APOS_ENTER = 1.0
+    DELAY_APOS_CONSULTAR = 1.5
+
+    def __init__(self, driver, pasta_saida: Path,
+                 pasta_download: Path | None = None):
+        self.driver = driver
+        self.pasta_saida = Path(pasta_saida)
+        self.pasta_saida.mkdir(parents=True, exist_ok=True)
+        self.pasta_download = (Path(pasta_download) if pasta_download
+                               else self.pasta_saida / "_download_esiape")
+        self.pasta_download.mkdir(parents=True, exist_ok=True)
+
+    # ----- passos -----
+
+    def _abrir_transacao(self) -> None:
+        """Abre a CDCOINDPES; se a lib abortou por relogin atravessado,
+        limpa a flag e tenta UMA vez mais (a transação é por matrícula e não
+        depende da habilitação, que o relogin devolve ao padrão)."""
+        for tentativa in (1, 2):
+            if navegar_para_transacao(self.driver, self.TRANSACAO,
+                                      self.SEL_MATRICULA,
+                                      timeout=self.TIMEOUT_TELA):
+                return
+            if tentativa == 1 and relogin_pendente(self.driver):
+                _log.warning("%s: relogin atravessado; repetindo a navegação",
+                             self.TRANSACAO)
+                limpar_flag_relogin(self.driver)
+                continue
+            break
+        raise TransacaoNaoAbriu(self.TRANSACAO, self.SEL_MATRICULA)
+
+    def _clicar(self, seletor: str, matricula: str, rotulo: str) -> None:
+        if esperar_seletor(self.driver, seletor,
+                           timeout=self.TIMEOUT_TELA) is None:
+            raise DadosPessoaisIndisponiveis(
+                matricula, f"o botão {rotulo} ({seletor}) não apareceu em "
+                           f"{self.TIMEOUT_TELA}s")
+        self.driver.find_element(By.CSS_SELECTOR, seletor).click()
+
+    def _sair(self) -> None:
+        try:
+            if procurar_em_frames(self.driver, self.SEL_SAIR) is not None:
+                self.driver.find_element(By.CSS_SELECTOR, self.SEL_SAIR).click()
+                time.sleep(self.DELAY_APOS_ENTER)
+        except Exception as exc:  # noqa: BLE001 — Sair é cortesia, não etapa
+            _log.warning("%s: Sair falhou (ignorado): %s", self.TRANSACAO, exc)
+
+    # ----- API -----
+
+    def consultar(self, matricula: str) -> DadosPessoais:
+        """Imprime e lê os dados pessoais da matrícula.
+
+        Raises:
+            ValueError: matrícula vazia.
+            TransacaoNaoAbriu: a tela não montou (mesmo após a repetição
+                por relogin).
+            DadosPessoaisIndisponiveis: botão ausente no prazo, impressão
+                sem PDF, ou PDF de outra matrícula.
+            PdfImpressoIlegivel: o PDF veio sem camada de texto (arquivo
+                mantido na pasta de download para inspeção).
+        """
+        matricula = str(matricula).strip()
+        if not matricula:
+            raise ValueError("matricula é obrigatória")
+        mascarada = _mascarar(matricula)
+        _log.info("%s: consultando a matrícula %s", self.TRANSACAO, mascarada)
+
+        fechar_janelas_extras(self.driver)
+        limpar_overlay(self.driver)
+        self._abrir_transacao()
+
+        campo = self.driver.find_element(By.CSS_SELECTOR, self.SEL_MATRICULA)
+        campo.clear()
+        campo.send_keys(matricula)
+        campo.send_keys(Keys.ENTER)
+        time.sleep(self.DELAY_APOS_ENTER)
+        self._clicar(self.SEL_CONSULTAR, matricula, "Consultar")
+        time.sleep(self.DELAY_APOS_CONSULTAR)
+        self._clicar(self.SEL_IMPRIMIR, matricula, "Imprimir")
+
+        try:
+            bruto = imprimir_via_popup(
+                self.driver,
+                lambda: self._clicar(self.SEL_GERAR_PDF, matricula, "Gerar PDF"),
+                self.pasta_download)
+        except DadosPessoaisIndisponiveis:
+            raise
+        except Exception as exc:  # noqa: BLE001 — timeout de popup/download
+            raise DadosPessoaisIndisponiveis(
+                matricula, f"a impressão não produziu PDF: {exc}") from exc
+
+        try:
+            legivel = tem_camada_de_texto(bruto)
+            motivo = "as fontes viraram contorno vetorial"
+        except PdfIlegivelError as exc:
+            legivel, motivo = False, f"o arquivo não pôde ser aberto: {exc}"
+        if not legivel:
+            # fica com o nome bruto, na pasta de download, para inspeção
+            raise PdfImpressoIlegivel(bruto, None, motivo)
+
+        destino = self.pasta_saida / f"dados_pessoais_{matricula}.pdf"
+        if destino.exists():
+            destino.unlink()
+        bruto.rename(destino)
+        self._sair()
+
+        dados = ler_dados_pessoais(destino)
+        if dados.matricula != matricula:
+            raise DadosPessoaisIndisponiveis(
+                matricula, f"o PDF traz a matrícula "
+                           f"{_mascarar(dados.matricula or '')}, não a pedida")
+        _log.info("%s: %s lida, %d/9 campos", self.TRANSACAO, mascarada,
+                  sum(1 for c in extrair_campos(dados.texto).values() if c))
+        return dados
