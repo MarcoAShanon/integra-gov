@@ -236,6 +236,20 @@ def test_mascarar_matricula_curta_nao_expoe_tudo():
     assert _mascarar("5") == "******5"
 
 
+@pytest.mark.parametrize("bruto, esperado", [
+    ("MATRICULA 1234567 NAO CADASTRADA", "MATRICULA *****67 NAO CADASTRADA"),
+    ("000.000-0", "*****00"),
+    ("123.456.789-00", "*****00"),
+    ("1234", "*****34"),
+    ("UF 12", "UF 12"),
+    ("ORGAO 40806 - X", "ORGAO *****06 - X"),
+])
+def test_mascarar_digitos(bruto, esperado):
+    from integra_gov.esiape.dados_pessoais import _mascarar_digitos
+
+    assert _mascarar_digitos(bruto) == esperado
+
+
 # ------------------------------------------------- DadosPessoaisServidor
 class _Elemento:
     def __init__(self, seletor, ordem):
@@ -488,7 +502,7 @@ def test_matricula_divergente_nao_apaga_pdf_anterior_bom(ambiente):
 
 
 def test_pdf_sem_texto_levanta_ilegivel_e_mantem_arquivo(ambiente):
-    _, servidor, _ = ambiente
+    _, servidor, chamadas = ambiente
 
     def imprimir(d, clicar, pasta_download, **kw):
         bruto = Path(pasta_download) / "cis_bruto.pdf"
@@ -499,6 +513,7 @@ def test_pdf_sem_texto_levanta_ilegivel_e_mantem_arquivo(ambiente):
         with pytest.raises(PdfImpressoIlegivel) as exc:
             servidor.consultar("0000000")
     assert Path(exc.value.caminho).exists()
+    assert chamadas["fechar_popups"] == 2  # início + recuperação (PdfImpressoIlegivel também recupera a tela)
 
 
 def test_sair_falhando_nao_derruba(ambiente, caplog):
@@ -520,6 +535,28 @@ def test_sair_falhando_na_recuperacao_nao_mascara_a_excecao_original(ambiente):
     assert "Consultar" in str(exc.value) or S.SEL_CONSULTAR in str(exc.value)
 
 
+def test_recuperacao_falhando_nao_mascara_a_excecao_original(ambiente, caplog):
+    """Mesmo se uma etapa DENTRO de ``_recuperar_tela`` (limpar_overlay)
+    explodir com algo que não a própria falha esperada, o try/except externo
+    da recuperação segura o estrago: a exceção original (Consultar ausente)
+    continua propagando, e o log registra a falha da recuperação."""
+    driver, servidor, _ = ambiente
+    del driver.el[S.SEL_CONSULTAR]
+    chamadas_overlay = []
+
+    def limpar_overlay_com_erro(d, *a, **k):
+        chamadas_overlay.append(1)
+        if len(chamadas_overlay) == 1:
+            return True  # chamada inicial em consultar(), antes da falha
+        raise RuntimeError("overlay travado")  # chamada dentro da recuperação
+
+    with patch.object(dmod, "limpar_overlay", limpar_overlay_com_erro):
+        with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+            servidor.consultar("0000000")
+    assert "Consultar" in str(exc.value) or S.SEL_CONSULTAR in str(exc.value)
+    assert any("recuperação" in r.message for r in caplog.records)
+
+
 def test_texto_popup_cis_mascarado_entra_no_motivo(ambiente):
     driver, servidor, _ = ambiente
     driver.popups.append(_Popup("MATRICULA 1234567 NAO CADASTRADA"))
@@ -528,6 +565,22 @@ def test_texto_popup_cis_mascarado_entra_no_motivo(ambiente):
         servidor.consultar("0000000")
     assert "a tela mostrou: MATRICULA *****67 NAO CADASTRADA" in str(exc.value)
     assert "1234567" not in str(exc.value)
+
+
+def test_texto_popup_cis_mascara_antes_de_truncar(ambiente):
+    """Uma matrícula que cai perto do corte de 200 caracteres não pode
+    escapar mascarada pela metade: a máscara roda no texto inteiro, o corte
+    vem depois."""
+    import re as _re
+
+    driver, servidor, _ = ambiente
+    driver.popups.append(_Popup("A" * 197 + "1234567 FIM"))
+    del driver.el[S.SEL_CONSULTAR]
+    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+        servidor.consultar("0000000")
+    msg = str(exc.value)
+    assert "1234567" not in msg
+    assert _re.search(r"\d{3,}", msg) is None
 
 
 def test_texto_popup_cis_invisivel_e_ignorado(ambiente):

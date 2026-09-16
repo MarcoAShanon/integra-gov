@@ -89,6 +89,19 @@ def _mascarar(matricula: str) -> str:
     return f"*****{matricula[-2:].rjust(2, '*')}"
 
 
+def _mascarar_digitos(texto: str) -> str:
+    """Todo grupo de 3+ dígitos vira ``*****`` + os 2 últimos dígitos do
+    grupo — cobre tanto uma sequência corrida (``1234567``) quanto uma
+    pontuada por ``.``, ``-``, ``/`` ou um único espaço entre dígitos
+    (matrícula ``000.000-0``, CPF ``123.456.789-00``). Um grupo de 1 ou 2
+    dígitos (ex.: ``UF: 12``) não é matrícula nem CPF e fica intocado."""
+    return re.sub(
+        r"\d(?:[.\-/ ]?\d){2,}",
+        lambda m: "*****" + re.sub(r"\D", "", m.group(0))[-2:],
+        texto,
+    )
+
+
 def _texto_popup_cis(driver) -> str | None:
     """Texto do popup de erro do CIS (se houver), para enriquecer o motivo de
     :class:`~integra_gov.esiape.exceptions.DadosPessoaisIndisponiveis` quando
@@ -96,18 +109,20 @@ def _texto_popup_cis(driver) -> str | None:
 
     PENDÊNCIA (gate ao vivo): o seletor ``[id^='IPO_']`` é um PALPITE — o
     sinal real da tela para matrícula inexistente ainda não é conhecido (ver
-    ``MSG_NAO_ENCONTRADA``). Qualquer dígito com 5 ou mais algarismos seguidos
-    (ex.: a matrícula) é mascarado antes do uso.
+    ``MSG_NAO_ENCONTRADA``). Qualquer dígito mascarado (ver
+    :func:`_mascarar_digitos`) ANTES do corte a 200 caracteres: se o corte
+    viesse primeiro, uma matrícula que caísse em cima da fronteira sobraria
+    parcialmente em claro.
     """
     try:
         driver.switch_to.default_content()
         for el in driver.find_elements(By.CSS_SELECTOR, "[id^='IPO_']"):
             if not el.is_displayed():
                 continue
-            texto = (el.text or "").strip()[:200]
+            texto = (el.text or "").strip()
             if not texto:
                 continue
-            return re.sub(r"\d{5,}", lambda m: _mascarar(m.group(0)), texto)
+            return _mascarar_digitos(texto)[:200]
     except Exception:  # noqa: BLE001 — captura de contexto é best-effort
         return None
     return None
@@ -137,8 +152,7 @@ class DadosPessoais:
     def __repr__(self) -> str:
         mascarada = _mascarar(self.matricula or "")
         if self.pdf is not None:
-            nome_mascarado = re.sub(
-                r"\d+", lambda m: "*****" + m.group(0)[-2:], self.pdf.name)
+            nome_mascarado = _mascarar_digitos(self.pdf.name)
             pdf_repr = repr(f"{self.pdf.parent}/{nome_mascarado}")
         else:
             pdf_repr = "None"
