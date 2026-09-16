@@ -113,9 +113,12 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   apaga um PDF anterior dela. `repr(DadosPessoais)` omite nome, CPF,
   nascimento, e-mail e texto. Porte do script que rodou na apresentação de
   11/09/2026 (5 matrículas, 9/9 campos). `PdfImpressoIlegivel` passa a
-  aceitar `bloco=None`. **Ainda não verificado ao vivo pelo módulo** (o gate
-  está planejado; até lá, espera-se que se manifeste como timeout do botão
-  Imprimir ou como matrícula divergente no PDF).
+  aceitar `bloco=None`. **Verificado ao vivo em 16/09/2026:** duas matrículas reais com 9/9 campos
+  na forma esperada, um relogin do SERPRO atravessado entre as pessoas absorvido
+  pela repetição, e matrícula inexistente se manifestando como botão Consultar
+  ausente (30 s), sem popup capturado, então `MSG_NAO_ENCONTRADA` segue vazio;
+  em falha dentro da transação o módulo fecha popups, limpa a cortina
+  (`.FLASHActive` incluída) e clica Sair antes de propagar.
 - **`integra_gov.esiape.impressao`**: a mecânica de imprimir via popup
   (esperar o popup, esperar o PDF ficar estável, fechar por Selenium com JS
   de reserva, voltar à janela principal com refresh) saiu de dentro de

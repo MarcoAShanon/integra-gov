@@ -134,11 +134,14 @@ Todas filhas de `EsiapeError`:
 | `DadosPessoaisIndisponiveis(matricula, motivo)` (nova) | Consultar ou Imprimir não apareceram no prazo; o PDF não veio (`imprimir_via_popup` levantou); a matrícula lida do PDF difere da pedida |
 | `PdfImpressoIlegivel` (existente, agora aceita `bloco=None`) | o PDF veio sem camada de texto (impressora errada); `consultar` converte o `PdfIlegivelError` de `ler_dados_pessoais` nela; o arquivo fica na pasta de download, com o nome bruto, até a próxima impressão (que limpa a pasta) |
 
-**Pendência declarada no código:** o sinal da CDCOINDPES para matrícula
-inexistente ou de outro órgão não é conhecido. Até o gate, ele se manifesta
-como Imprimir ausente (timeout) e cai em `DadosPessoaisIndisponiveis`. O
-gate testa uma matrícula inexistente e a mensagem real, se houver, entra
-como `MSG_NAO_ENCONTRADA` com detecção antes do timeout.
+**Pendência declarada no código, medida no gate de 16/09:** para matrícula
+inexistente a tela abre, aceita a matrícula e o botão **Consultar** nunca
+aparece (timeout de 30 s → `DadosPessoaisIndisponiveis`). Nenhum popup foi
+capturado pelo seletor `[id^='IPO_']` (palpite de `_texto_popup_cis`), então
+`MSG_NAO_ENCONTRADA` segue `None` e a detecção continua sendo o timeout. O
+que se sabe é que um popup de erro com backdrop `.FLASHActive` fica aberto
+depois disso e intercepta a navegação seguinte; por isso `consultar` fecha
+popups no início e faz `_recuperar_tela` em falha.
 
 Logs: só os dois últimos dígitos da matrícula (`*****NN`); nunca nome, CPF
 ou e-mail. O `texto` do PDF nunca é logado.
@@ -200,3 +203,27 @@ dedicada e a lista dos 9 campos.
   alheios; doc e default (subpasta dedicada) mitigam.
 - **Relogin atravessado** → uma repetição; mais que isso é problema de
   sessão e deve subir.
+
+## Verificado ao vivo (gate de 16/09/2026)
+
+Script gitignored `dados_reais/esiape_dados_pessoais_gate.py`, Chrome da
+automação com as prefs de impressão, SERPRO ID confirmado uma vez. Saída
+mascarada; nenhum valor foi registrado.
+
+| matrícula | resultado |
+|---|---|
+| real 1 (`*****43`) | PDF gerado e renomeado; 9/9 campos com a forma esperada (CPF `ddd.ddd.ddd-dd`, nascimento `dd/mm/aaaa`, UF 2 letras, e-mail com um `@`, nome 27 caracteres, sem `:` em campo nenhum); 183 linhas de texto |
+| real 2 (`*****17`) | idem, nome 26 caracteres; **um relogin do SERPRO atravessou entre as pessoas** e a repetição única de `_abrir_transacao` absorveu (log: "relogin atravessado; repetindo a navegação") |
+| inexistente (`*****99`) | tela abre, Consultar não aparece em 30 s → `DadosPessoaisIndisponiveis`, sem popup capturado; recuperação da tela executada; exit code do gate 0 (exceção esperada na última posição) |
+
+Também observado: o Chrome não subiu na 1ª tentativa ("Chrome instance
+exited") e `criar_driver_chrome` resolveu na 2ª, como documentado.
+
+Rodada anterior no mesmo dia, com três matrículas fictícias: as duas
+primeiras caíram em "Consultar ausente" e a terceira falhou em
+`navegar_para_transacao` por `element click intercepted` (`span.FLASHActive`,
+`id=IPO_0_3`). Foi o achado que originou `fechar_popups_cis` no início,
+`_recuperar_tela` e `.FLASHActive` em `SELETOR_OVERLAY`.
+
+`repr(DadosPessoais)` dos dois registros reais: nenhuma sequência de 3+
+dígitos (conferido por regex, não por leitura).
