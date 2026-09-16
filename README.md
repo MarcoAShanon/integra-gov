@@ -505,6 +505,11 @@ if resultado.lacunas:
     print("cobertura incompleta:", resultado.lacunas)
 ```
 
+Detalhes de blocos, pasta de download, semântica de bloco-sem-dados e
+lacunas multi-órgão em [Ficha anual e multi-órgão
+(e-SIAPE)](docs/uso-basico.md#ficha-anual-e-multi-órgão-e-siape) no guia de
+uso básico.
+
 Os **dados pessoais** de uma matrícula (`CDCOINDPES`) saem como PDF e como
 campos lidos dele — nome, situação, CPF, data de nascimento, e-mail,
 município, UF e órgão. Quem já tem o PDF no disco lê sem abrir o navegador:
@@ -521,11 +526,6 @@ dados = ler_dados_pessoais(Path("cadastrais/dados_pessoais_0000000.pdf"))  # sem
 
 Campo cujo rótulo não aparece no PDF fica `None`; o texto inteiro do PDF vem
 em `dados.texto` para quem precisar de outro rótulo.
-
-Detalhes de blocos, pasta de download, semântica de bloco-sem-dados e
-lacunas multi-órgão em [Ficha anual e multi-órgão
-(e-SIAPE)](docs/uso-basico.md#ficha-anual-e-multi-órgão-e-siape) no guia de
-uso básico.
 
 ### Ler uma ficha financeira em PDF
 

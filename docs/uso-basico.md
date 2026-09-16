@@ -1184,7 +1184,9 @@ Regras de honestidade do módulo:
 Para reler PDFs já no disco, sem navegador:
 
 ```python
+from pathlib import Path
 from integra_gov.esiape import ler_dados_pessoais
+
 dados = ler_dados_pessoais(Path("cadastrais/dados_pessoais_0000000.pdf"))
 ```
 
