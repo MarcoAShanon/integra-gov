@@ -550,3 +550,11 @@ def test_log_nao_expoe_a_matricula_inteira(ambiente, caplog):
         servidor.consultar("1234567")
     texto = "\n".join(r.getMessage() for r in caplog.records)
     assert "1234567" not in texto and "*****67" in texto
+
+
+def test_exportado_no_subpacote():
+    import integra_gov.esiape as pkg
+
+    for nome in ("DadosPensionista", "DadosPessoaisPensionista"):
+        assert hasattr(pkg, nome), nome
+        assert nome in pkg.__all__, nome

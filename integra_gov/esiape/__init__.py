@@ -2,7 +2,8 @@
 
 Navegação por frames visíveis, travessia de popups/relogin do SERPRO,
 acesso via SERPRO ID (você autentica), troca de habilitação (TROCAHAB) e
-dados pessoais (CDCOINDPES) lidos do PDF impresso.
+dados pessoais de servidor (CDCOINDPES, lidos do PDF impresso) e de
+pensionista (CDCOPSBENE, lidos do formulário).
 
 Exemplo mínimo::
 
@@ -16,6 +17,7 @@ Exemplo mínimo::
 
 from .acesso import AcessoEsiape
 from .dados_funcionais import DadosFuncionais, DadosFuncionaisOrgao
+from .dados_pensionista import DadosPensionista, DadosPessoaisPensionista
 from .dados_pessoais import DadosPessoais, DadosPessoaisServidor, ler_dados_pessoais
 from .exceptions import (
     AutenticacaoNaoConfirmada,
@@ -48,6 +50,8 @@ __all__ = [
     "AutenticacaoNaoConfirmada",
     "DadosFuncionais",
     "DadosFuncionaisOrgao",
+    "DadosPensionista",
+    "DadosPessoaisPensionista",
     "DadosPessoais",
     "DadosPessoaisIndisponiveis",
     "DadosPessoaisServidor",

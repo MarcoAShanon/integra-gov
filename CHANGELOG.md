@@ -101,6 +101,23 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   humana.
 
 ### Adicionado
+- **`integra_gov.esiape.dados_pensionista`** (`CDCOPSBENE`): `DadosPessoaisPensionista.consultar(matricula)`
+  devolve `DadosPensionista` com doze campos (matrícula, nome, CPF,
+  nascimento, e-mail e o endereço completo) mais `com_procuracao`, e o PDF
+  impresso da tela como documento. Os campos saem do **formulário**, não do
+  PDF: a CDCOPSBENE é uma tela de entrada, ao contrário da CDCOINDPES, que é
+  relatório. Campo vazio vira `None`, nunca exceção. A tela intermediária de
+  procuração é atravessada e registrada no resultado. Formulário ausente ou
+  todo vazio levanta `DadosPessoaisIndisponiveis` **antes de imprimir**.
+  `repr(DadosPensionista)` omite nome, CPF, nascimento, e-mail e endereço.
+  Porte do módulo privado, com a impressão trocada pela mecânica de
+  `esiape.impressao`. **Ainda não verificado ao vivo** (o gate está
+  planejado); até lá a data de nascimento aceita as duas formas plausíveis e
+  a conferência de identidade tolera o campo de busca vazio.
+- **`integra_gov.esiape._campos`** (interno): a máscara de dígitos, a máscara
+  de matrícula e a conversão de data do SIAPE saíram de `dados_pessoais` para
+  serem compartilhadas com o módulo de pensionista. Sem mudança de
+  comportamento.
 - **`integra_gov.esiape.dados_pessoais`** (`CDCOINDPES`): `DadosPessoaisServidor.consultar(matricula)`
   imprime o PDF dos dados pessoais e devolve `DadosPessoais` com nove campos
   lidos da camada de texto (matrícula, nome, situação, CPF, nascimento,

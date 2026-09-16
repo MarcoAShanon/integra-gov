@@ -1200,6 +1200,60 @@ e-mail nunca são logados.
 
 ---
 
+## Dados pessoais de um pensionista (e-SIAPE)
+
+A `CDCOPSBENE` é a transação do pensionista. Ela é um **formulário**, não um
+relatório: os valores chegam dentro dos campos da tela, e é de lá que o
+módulo os lê. O PDF impresso continua sendo gerado, porque é o documento que
+se anexa ao processo.
+
+```python
+from pathlib import Path
+from integra_gov.esiape import AcessoEsiape, DadosPessoaisPensionista
+
+AcessoEsiape(driver).executar()                  # você confirma no app
+cad = DadosPessoaisPensionista(driver, pasta_saida=Path("cadastrais/"))
+dados = cad.consultar("0000000")                 # matrícula fictícia
+dados.pdf                 # cadastrais/dados_pensionista_0000000.pdf
+dados.nome, dados.cpf, dados.data_nascimento, dados.email
+dados.logradouro, dados.numero, dados.complemento, dados.bairro
+dados.municipio, dados.uf, dados.cep
+dados.com_procuracao      # True quando há procurador cadastrado
+```
+
+O Chrome precisa das prefs de impressão da seção "Configuração do Chrome"
+(acima), e `pasta_download` (default `cadastrais/_download_esiape`) tem de
+ser **dedicada**: a impressão apaga todos os PDFs dela antes de começar.
+
+Regras de honestidade do módulo:
+
+- campo vazio fica `None`; não é erro;
+- formulário que não aparece, ou que vem todo vazio, é o sinal provável de
+  matrícula inexistente e levanta `DadosPessoaisIndisponiveis` **antes de
+  imprimir** (nenhum PDF é produzido);
+- a tela de procuração é atravessada quando existe, e o resultado registra
+  isso em `com_procuracao`;
+- PDF sem camada de texto levanta `PdfImpressoIlegivel`, com o arquivo
+  mantido na pasta de download, sob o nome bruto, até a próxima impressão;
+- se um relogin do SERPRO atravessar entre duas consultas, a navegação é
+  repetida uma vez; persistindo, `TransacaoNaoAbriu`.
+
+Duas limitações declaradas, e as duas diferem do módulo de servidor:
+
+1. **A conferência de identidade é mais fraca.** A tela não devolve a
+   matrícula junto dos dados, então o módulo compara apenas o que ficou no
+   campo de busca. Se esse campo vier vazio, um aviso registra que a
+   conferência não foi possível e a consulta segue. A proteção estrutural é
+   que cada consulta navega para a transação do zero.
+2. **Não há releitura sem navegador.** Os campos vêm do DOM, não do PDF, de
+   modo que um PDF de pensionista já no disco não pode ser relido como
+   dados. Para servidor isso existe, em `ler_dados_pessoais`.
+
+Nos logs só aparecem os dois últimos dígitos da matrícula; nome, CPF,
+e-mail e endereço nunca são logados.
+
+---
+
 ## Ler uma ficha financeira
 
 Os módulos anteriores **produzem** o PDF da ficha. Este o **lê de volta como
