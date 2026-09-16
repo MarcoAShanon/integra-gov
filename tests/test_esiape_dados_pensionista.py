@@ -284,7 +284,8 @@ def ambiente(tmp_path, monkeypatch):
     driver = _DriverConsulta()
     chamadas = {"navegar": [], "limpar_flag": 0, "imprimir": 0,
                 "fechar_popups": 0, "limpar_overlay": 0,
-                "fechar_janelas_extras": 0, "procuracao": 0}
+                "fechar_janelas_extras": 0, "procuracao": 0,
+                "procurar_em_frames": []}
 
     def navegar(d, transacao, seletor, timeout=30):
         chamadas["navegar"].append(transacao)
@@ -306,7 +307,12 @@ def ambiente(tmp_path, monkeypatch):
     monkeypatch.setattr(dmod, "navegar_para_transacao", navegar)
     monkeypatch.setattr(dmod, "esperar_seletor",
                         lambda d, s, timeout=20: (0,))
-    monkeypatch.setattr(dmod, "procurar_em_frames", lambda d, s: (0,))
+
+    def procurar_em_frames(d, s):
+        chamadas["procurar_em_frames"].append(s)
+        return (0,)
+
+    monkeypatch.setattr(dmod, "procurar_em_frames", procurar_em_frames)
     monkeypatch.setattr(dmod, "fechar_janelas_extras",
                         conta("fechar_janelas_extras", None))
     monkeypatch.setattr(dmod, "limpar_overlay", conta("limpar_overlay", True))
@@ -388,6 +394,30 @@ def test_procuracao_presa_entra_no_motivo(ambiente, monkeypatch):
     with pytest.raises(DadosPessoaisIndisponiveis) as exc:
         servidor.consultar("0000000")
     assert "procuração" in str(exc.value)
+
+
+def test_eco_procurado_entre_frames(ambiente):
+    driver, servidor, chamadas = ambiente
+    servidor.consultar("0000000")
+    assert P.SEL_MATRICULA in chamadas["procurar_em_frames"]
+
+
+def test_eco_em_frame_nao_encontrado_apenas_avisa(ambiente, monkeypatch,
+                                                   caplog):
+    import logging
+
+    driver, servidor, chamadas = ambiente
+
+    def procurar_em_frames(d, s):
+        chamadas["procurar_em_frames"].append(s)
+        return None if s == P.SEL_MATRICULA else (0,)
+
+    monkeypatch.setattr(dmod, "procurar_em_frames", procurar_em_frames)
+    with caplog.at_level(logging.WARNING,
+                         logger="integra_gov.esiape.dados_pensionista"):
+        d = servidor.consultar("0000000")
+    assert d.nome == "FULANO DE TAL"
+    assert any("nenhum frame" in r.getMessage() for r in caplog.records)
 
 
 def test_eco_divergente_levanta(ambiente):

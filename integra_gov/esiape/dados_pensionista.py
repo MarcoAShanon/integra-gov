@@ -290,11 +290,23 @@ class DadosPessoaisPensionista:
         proteção estrutural é que cada ``consultar`` navega para a transação
         do zero, com o formulário em branco.
 
+        O campo de busca é localizado entre os frames visíveis: por este
+        ponto, ``esperar_seletor`` já deixou o driver no frame dos campos do
+        formulário, que não é necessariamente o do campo de busca. Ler com
+        ``find_element`` direto arriscaria degradar a conferência para
+        "impossível" em TODA consulta caso os dois frames sejam diferentes.
+
         PENDÊNCIA (gate ao vivo): não se sabe se o campo ecoa o valor depois
         da consulta. Eco vazio registra um aviso e a consulta segue; eco
         divergente levanta. Medido o comportamento real, a tolerância sai.
         """
         try:
+            if procurar_em_frames(self.driver, self.SEL_MATRICULA) is None:
+                _log.warning(
+                    "%s: conferência de identidade impossível (o campo de "
+                    "busca não foi encontrado em nenhum frame visível)",
+                    self.TRANSACAO)
+                return
             eco = self.driver.find_element(
                 By.CSS_SELECTOR, self.SEL_MATRICULA).get_attribute("value")
             eco = re.sub(r"\D", "", eco or "")
@@ -392,6 +404,9 @@ class DadosPessoaisPensionista:
                                f"formulário não apareceram{ressalva})")
 
             campos = ler_campos(self.driver)
+            # O formulário já foi lido, então _conferir_identidade pode
+            # reposicionar o driver por outros frames sem risco de perder
+            # os campos.
             self._conferir_identidade(matricula)
             if not any(campos.values()):
                 raise DadosPessoaisIndisponiveis(
