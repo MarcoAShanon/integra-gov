@@ -37,6 +37,7 @@ from .impressao import imprimir_via_popup
 from .navegacao import (
     esperar_seletor,
     fechar_janelas_extras,
+    fechar_popups_cis,
     limpar_flag_relogin,
     limpar_overlay,
     navegar_para_transacao,
@@ -86,6 +87,30 @@ def _mascarar(matricula: str) -> str:
     """``matricula`` reduzida aos 2 últimos dígitos; nunca expõe tudo, mesmo
     para uma matrícula mais curta que 2 caracteres."""
     return f"*****{matricula[-2:].rjust(2, '*')}"
+
+
+def _texto_popup_cis(driver) -> str | None:
+    """Texto do popup de erro do CIS (se houver), para enriquecer o motivo de
+    :class:`~integra_gov.esiape.exceptions.DadosPessoaisIndisponiveis` quando
+    o botão esperado não aparece.
+
+    PENDÊNCIA (gate ao vivo): o seletor ``[id^='IPO_']`` é um PALPITE — o
+    sinal real da tela para matrícula inexistente ainda não é conhecido (ver
+    ``MSG_NAO_ENCONTRADA``). Qualquer dígito com 5 ou mais algarismos seguidos
+    (ex.: a matrícula) é mascarado antes do uso.
+    """
+    try:
+        driver.switch_to.default_content()
+        for el in driver.find_elements(By.CSS_SELECTOR, "[id^='IPO_']"):
+            if not el.is_displayed():
+                continue
+            texto = (el.text or "").strip()[:200]
+            if not texto:
+                continue
+            return re.sub(r"\d{5,}", lambda m: _mascarar(m.group(0)), texto)
+    except Exception:  # noqa: BLE001 — captura de contexto é best-effort
+        return None
+    return None
 
 
 @dataclass(repr=False)
@@ -254,9 +279,12 @@ class DadosPessoaisServidor:
     def _clicar(self, seletor: str, matricula: str, rotulo: str) -> None:
         if esperar_seletor(self.driver, seletor,
                            timeout=self.TIMEOUT_TELA) is None:
-            raise DadosPessoaisIndisponiveis(
-                matricula, f"o botão {rotulo} ({seletor}) não apareceu em "
-                           f"{self.TIMEOUT_TELA}s")
+            motivo = (f"o botão {rotulo} ({seletor}) não apareceu em "
+                      f"{self.TIMEOUT_TELA}s")
+            texto_popup = _texto_popup_cis(self.driver)
+            if texto_popup is not None:
+                motivo += f"; a tela mostrou: {texto_popup}"
+            raise DadosPessoaisIndisponiveis(matricula, motivo)
         self.driver.find_element(By.CSS_SELECTOR, seletor).click()
 
     def _sair(self) -> None:
@@ -266,6 +294,20 @@ class DadosPessoaisServidor:
                 time.sleep(self.DELAY_APOS_ENTER)
         except Exception as exc:  # noqa: BLE001 — Sair é cortesia, não etapa
             _log.warning("%s: Sair falhou (ignorado): %s", self.TRANSACAO, exc)
+
+    def _recuperar_tela(self) -> None:
+        """Recuperação best-effort após falha dentro da transação: fecha
+        popups, limpa a cortina e clica Sair — para a PRÓXIMA consulta
+        começar limpa. Cada etapa já engole os próprios erros; o try/except
+        aqui é só para garantir que a recuperação NUNCA mascare a exceção
+        original que está propagando."""
+        try:
+            fechar_popups_cis(self.driver)
+            limpar_overlay(self.driver)
+            self._sair()
+        except Exception as exc:  # noqa: BLE001 — recuperação é best-effort
+            _log.warning("%s: recuperação da tela falhou (ignorado): %s",
+                         self.TRANSACAO, exc)
 
     # ----- API -----
 
@@ -283,6 +325,11 @@ class DadosPessoaisServidor:
             PdfImpressoIlegivel: o PDF veio sem camada de texto (arquivo
                 mantido na pasta de download, sob o nome bruto, para
                 inspeção).
+
+        Em falha dentro da transação (botão ausente, impressão sem PDF ou
+        matrícula divergente), o módulo fecha popups, limpa a cortina e
+        clica Sair (melhor esforço) antes de propagar, para a PRÓXIMA
+        consulta começar com a tela limpa.
         """
         matricula = re.sub(r"\D", "", str(matricula).strip())
         if not matricula:
@@ -291,47 +338,52 @@ class DadosPessoaisServidor:
         _log.info("%s: consultando a matrícula %s", self.TRANSACAO, mascarada)
 
         fechar_janelas_extras(self.driver)
+        fechar_popups_cis(self.driver)
         limpar_overlay(self.driver)
         self._abrir_transacao()
 
-        campo = self.driver.find_element(By.CSS_SELECTOR, self.SEL_MATRICULA)
-        campo.clear()
-        campo.send_keys(matricula)
-        campo.send_keys(Keys.ENTER)
-        time.sleep(self.DELAY_APOS_ENTER)
-        self._clicar(self.SEL_CONSULTAR, matricula, "Consultar")
-        time.sleep(self.DELAY_APOS_CONSULTAR)
-        self._clicar(self.SEL_IMPRIMIR, matricula, "Imprimir")
-
         try:
-            bruto = imprimir_via_popup(
-                self.driver,
-                lambda: self._clicar(self.SEL_GERAR_PDF, matricula, "Gerar PDF"),
-                self.pasta_download)
-        except DadosPessoaisIndisponiveis:
+            campo = self.driver.find_element(By.CSS_SELECTOR, self.SEL_MATRICULA)
+            campo.clear()
+            campo.send_keys(matricula)
+            campo.send_keys(Keys.ENTER)
+            time.sleep(self.DELAY_APOS_ENTER)
+            self._clicar(self.SEL_CONSULTAR, matricula, "Consultar")
+            time.sleep(self.DELAY_APOS_CONSULTAR)
+            self._clicar(self.SEL_IMPRIMIR, matricula, "Imprimir")
+
+            try:
+                bruto = imprimir_via_popup(
+                    self.driver,
+                    lambda: self._clicar(self.SEL_GERAR_PDF, matricula, "Gerar PDF"),
+                    self.pasta_download)
+            except DadosPessoaisIndisponiveis:
+                raise
+            except Exception as exc:  # noqa: BLE001 — timeout de popup/download
+                raise DadosPessoaisIndisponiveis(
+                    matricula, f"a impressão não produziu PDF: {exc}") from exc
+
+            try:
+                # ainda em pasta_download, sob o nome bruto: só vira
+                # dados_pessoais_<matricula>.pdf depois de confirmada a matrícula.
+                dados = ler_dados_pessoais(bruto)
+            except PdfIlegivelError as exc:
+                # fica com o nome bruto, na pasta de download, para inspeção;
+                # motivo curto aqui, o detalhe fica em __cause__.
+                raise PdfImpressoIlegivel(
+                    bruto, None, "o PDF não abriu ou não tem camada de texto"
+                ) from exc
+
+            if dados.matricula != matricula:
+                # arquivo intocado em pasta_download: nunca recebe o nome da
+                # matrícula pedida nem apaga um dados_pessoais_<matricula>.pdf
+                # anterior que já estivesse correto.
+                raise DadosPessoaisIndisponiveis(
+                    matricula, f"o PDF traz a matrícula "
+                               f"{_mascarar(dados.matricula or '')}, não a pedida")
+        except (DadosPessoaisIndisponiveis, PdfImpressoIlegivel):
+            self._recuperar_tela()
             raise
-        except Exception as exc:  # noqa: BLE001 — timeout de popup/download
-            raise DadosPessoaisIndisponiveis(
-                matricula, f"a impressão não produziu PDF: {exc}") from exc
-
-        try:
-            # ainda em pasta_download, sob o nome bruto: só vira
-            # dados_pessoais_<matricula>.pdf depois de confirmada a matrícula.
-            dados = ler_dados_pessoais(bruto)
-        except PdfIlegivelError as exc:
-            # fica com o nome bruto, na pasta de download, para inspeção;
-            # motivo curto aqui, o detalhe fica em __cause__.
-            raise PdfImpressoIlegivel(
-                bruto, None, "o PDF não abriu ou não tem camada de texto"
-            ) from exc
-
-        if dados.matricula != matricula:
-            # arquivo intocado em pasta_download: nunca recebe o nome da
-            # matrícula pedida nem apaga um dados_pessoais_<matricula>.pdf
-            # anterior que já estivesse correto.
-            raise DadosPessoaisIndisponiveis(
-                matricula, f"o PDF traz a matrícula "
-                           f"{_mascarar(dados.matricula or '')}, não a pedida")
 
         destino = self.pasta_saida / f"dados_pessoais_{matricula}.pdf"
         if destino.exists():

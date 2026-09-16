@@ -255,6 +255,22 @@ class _Elemento:
         self.teclas.extend(t)
 
 
+class _Popup:
+    """Popup CIS fake (``[id^='IPO_']``) para ``_texto_popup_cis``."""
+
+    def __init__(self, texto, visivel=True):
+        self.text = texto
+        self.visivel = visivel
+
+    def is_displayed(self):
+        return self.visivel
+
+
+class _SwitchToFake:
+    def default_content(self):
+        pass
+
+
 class _Driver:
     """Driver mínimo: elementos por seletor CSS, relogin como atributo.
 
@@ -262,15 +278,22 @@ class _Driver:
     grava o próprio seletor nela, na ordem real dos cliques.
     """
 
-    def __init__(self, seletores):
+    def __init__(self, seletores, popups=None):
         self.ordem: list[str] = []
         self.el = {s: _Elemento(s, self.ordem) for s in seletores}
         self._esiape_relogin_pendente = False
+        self.popups = list(popups) if popups else []
+        self.switch_to = _SwitchToFake()
 
     def find_element(self, by, valor):
         if valor not in self.el:
             raise Exception(f"no such element: {valor}")
         return self.el[valor]
+
+    def find_elements(self, by, valor):
+        if valor == "[id^='IPO_']":
+            return self.popups
+        return []
 
 
 S = dmod.DadosPessoaisServidor
@@ -283,7 +306,8 @@ def ambiente(tmp_path, monkeypatch):
     monkeypatch.setattr(dmod.time, "sleep", lambda *_a, **_k: None)
     driver = _Driver(TODOS)
     chamadas = {"navegar": [], "limpar_flag": 0, "imprimir": 0,
-                "fechar_janelas_extras": 0, "limpar_overlay": 0}
+                "fechar_janelas_extras": 0, "limpar_overlay": 0,
+                "fechar_popups": 0}
 
     def navegar(d, transacao, seletor, timeout=30):
         chamadas["navegar"].append(transacao)
@@ -303,11 +327,16 @@ def ambiente(tmp_path, monkeypatch):
         chamadas["limpar_overlay"] += 1
         return True
 
+    def fechar_popups(d, *a, **k):
+        chamadas["fechar_popups"] += 1
+        return 0
+
     monkeypatch.setattr(dmod, "navegar_para_transacao", navegar)
     monkeypatch.setattr(dmod, "esperar_seletor", lambda d, s, timeout=20: (0,) if s in d.el else None)
     monkeypatch.setattr(dmod, "procurar_em_frames", lambda d, s: (0,) if s in d.el else None)
     monkeypatch.setattr(dmod, "fechar_janelas_extras", fechar_janelas_extras)
     monkeypatch.setattr(dmod, "limpar_overlay", limpar_overlay)
+    monkeypatch.setattr(dmod, "fechar_popups_cis", fechar_popups)
     monkeypatch.setattr(dmod, "limpar_flag_relogin",
                         lambda d: chamadas.__setitem__("limpar_flag", chamadas["limpar_flag"] + 1))
     monkeypatch.setattr(dmod, "imprimir_via_popup", imprimir)
@@ -350,6 +379,7 @@ def test_consultar_caminho_feliz(ambiente):
         assert driver.el[sel].cliques == 1, sel
     assert driver.ordem == [S.SEL_CONSULTAR, S.SEL_IMPRIMIR, S.SEL_GERAR_PDF, S.SEL_SAIR]
     assert chamadas["fechar_janelas_extras"] == 1
+    assert chamadas["fechar_popups"] == 1
     assert chamadas["limpar_overlay"] == 1
     assert chamadas["imprimir"] == 1
     assert d.pdf == servidor.pasta_saida / "dados_pessoais_0000000.pdf"
@@ -411,6 +441,19 @@ def test_botao_imprimir_ausente_levanta_indisponiveis(ambiente):
     with pytest.raises(DadosPessoaisIndisponiveis) as exc:
         servidor.consultar("0000000")
     assert "Imprimir" in str(exc.value) or S.SEL_IMPRIMIR in str(exc.value)
+    assert "a tela mostrou" not in str(exc.value)
+
+
+def test_botao_consultar_ausente_recupera_a_tela(ambiente):
+    """Sem o Consultar: recuperação roda (fechar popups de novo, Sair
+    clicado, cortina limpa de novo) e a exceção original propaga."""
+    driver, servidor, chamadas = ambiente
+    del driver.el[S.SEL_CONSULTAR]
+    with pytest.raises(DadosPessoaisIndisponiveis):
+        servidor.consultar("0000000")
+    assert chamadas["fechar_popups"] == 2  # início + recuperação
+    assert chamadas["limpar_overlay"] == 2  # início + recuperação
+    assert driver.el[S.SEL_SAIR].cliques == 1
 
 
 def test_impressao_sem_pdf_levanta_indisponiveis(ambiente):
@@ -426,11 +469,13 @@ def test_impressao_sem_pdf_levanta_indisponiveis(ambiente):
 
 
 def test_matricula_divergente_no_pdf_levanta(ambiente):
-    _, servidor, _ = ambiente
+    _, servidor, chamadas = ambiente
     with pytest.raises(DadosPessoaisIndisponiveis) as exc:
         servidor.consultar("1111111")
     assert "*****00" in str(exc.value) and "*****11" in str(exc.value)
     assert not (servidor.pasta_saida / "dados_pessoais_1111111.pdf").exists()
+    # PDF divergente também recupera a tela antes de propagar.
+    assert chamadas["fechar_popups"] == 2
 
 
 def test_matricula_divergente_nao_apaga_pdf_anterior_bom(ambiente):
@@ -462,6 +507,36 @@ def test_sair_falhando_nao_derruba(ambiente, caplog):
     d = servidor.consultar("0000000")
     assert d.matricula == "0000000"
     assert any("Sair" in r.message for r in caplog.records)
+
+
+def test_sair_falhando_na_recuperacao_nao_mascara_a_excecao_original(ambiente):
+    """Mesmo se o Sair da recuperação falhar, a exceção original (botão
+    ausente) tem de propagar intacta — a recuperação nunca a mascara."""
+    driver, servidor, _ = ambiente
+    del driver.el[S.SEL_CONSULTAR]
+    driver.el[S.SEL_SAIR].click = lambda: (_ for _ in ()).throw(RuntimeError("stale"))
+    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+        servidor.consultar("0000000")
+    assert "Consultar" in str(exc.value) or S.SEL_CONSULTAR in str(exc.value)
+
+
+def test_texto_popup_cis_mascarado_entra_no_motivo(ambiente):
+    driver, servidor, _ = ambiente
+    driver.popups.append(_Popup("MATRICULA 1234567 NAO CADASTRADA"))
+    del driver.el[S.SEL_CONSULTAR]
+    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+        servidor.consultar("0000000")
+    assert "a tela mostrou: MATRICULA *****67 NAO CADASTRADA" in str(exc.value)
+    assert "1234567" not in str(exc.value)
+
+
+def test_texto_popup_cis_invisivel_e_ignorado(ambiente):
+    driver, servidor, _ = ambiente
+    driver.popups.append(_Popup("MATRICULA 1234567 NAO CADASTRADA", visivel=False))
+    del driver.el[S.SEL_CONSULTAR]
+    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+        servidor.consultar("0000000")
+    assert "a tela mostrou" not in str(exc.value)
 
 
 def test_log_nao_expoe_matricula_inteira(ambiente, caplog):

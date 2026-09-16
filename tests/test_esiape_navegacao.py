@@ -34,6 +34,10 @@ def test_habilitacao_nao_encontrada_lista_codigos():
     assert "11111" in str(exc)
 
 
+def test_seletor_overlay_cobre_backdrop_de_popup_inline():
+    assert ".FLASHActive" in nav.SELETOR_OVERLAY
+
+
 @pytest.fixture(autouse=True)
 def _sem_espera(monkeypatch):
     monkeypatch.setattr(nav.time, "sleep", lambda *_a, **_k: None)

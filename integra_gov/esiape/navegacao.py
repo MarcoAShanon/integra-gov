@@ -22,7 +22,7 @@ SELETOR_LUPA = '[data-testtoolid="onMenuClickPesqTrans"]'
 SELETOR_CAMPO_TRANSACAO = '[data-testtoolid="w_transacao"]'
 SELETOR_BTN_IR = '[data-testtoolid="onMenuClickBtnIr"]'
 SELETOR_HOME = '[data-testtoolid="onMenuClickHome"]'
-SELETOR_OVERLAY = "#OPA, .FLASHPageSwitch"
+SELETOR_OVERLAY = "#OPA, .FLASHPageSwitch, .FLASHActive"
 SELETOR_BTN_AVANCAR = '[data-testtoolid="meucert.onCheck"]'
 SELETOR_BTN_PULAR = '[data-testtoolid="onClickBtnPular"]'
 SELETOR_POPUP_FECHAR = "td[id^='TITLEBAR'][id$='CLOSE']"
@@ -133,7 +133,9 @@ def limpar_overlay(driver, timeout: float = 10) -> bool:
     """Espera a cortina do CIS sumir; se ficar presa, esconde via JS.
 
     A cortina presa intercepta TODO clique ("element click intercepted") e
-    derruba o lote inteiro; escondê-la é seguro — é decorativa.
+    derruba o lote inteiro; escondê-la é seguro — é decorativa. ``.FLASHActive``
+    é o backdrop de um popup inline (``IPO_*``) que fica preso depois de um
+    erro e também intercepta todo clique.
     """
     limite = time.monotonic() + timeout
     while time.monotonic() < limite:
