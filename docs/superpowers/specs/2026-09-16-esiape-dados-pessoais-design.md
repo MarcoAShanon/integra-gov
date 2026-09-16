@@ -67,8 +67,13 @@ dados = ler_dados_pessoais(Path("cadastrais/dados_pessoais_0000000.pdf"))
 
 Campo cujo rótulo não aparece no texto fica `None`, sem levantar: campo
 ausente é informação, não falha. O valor de cada rótulo vai até o próximo
-rótulo na mesma linha (2+ espaços seguidos de MAIÚSCULAS e `:`) ou o fim da
-linha, a mesma regra do script validado. Cada normalização é uma função
+rótulo **conhecido** na mesma linha (um ou mais espaços seguidos de um dos
+nove rótulos e `:`) ou o fim da linha. *(Revisão final de 16/09: o script
+cortava em "2+ espaços + maiúsculas + `:`", o que truncava valores com dois
+espaços internos e engolia o rótulo seguinte quando o modo layout separava
+duas colunas por um espaço só; a regra por rótulos conhecidos cobre os dois
+casos.)* O `repr` de `DadosPessoais` omite nome, CPF, nascimento, e-mail e
+`texto`, e mostra a matrícula mascarada. Cada normalização é uma função
 pequena do módulo (`_situacao`, `_data_siape`, `_orgao`), testável isolada.
 
 ### `ler_dados_pessoais(pdf: Path) -> DadosPessoais`
@@ -96,12 +101,19 @@ DEVE ser dedicada: `imprimir_via_popup` apaga os PDFs órfãos dela.
 4. Matrícula + ENTER, botão Consultar, botão Imprimir (cada botão esperado
    com `esperar_seletor`, `TIMEOUT_TELA = 30`).
 5. `imprimir_via_popup(driver, clicar_gerar_pdf, pasta_download)` → PDF
-   bruto; renomeado para `pasta_saida / f"dados_pessoais_{matricula}.pdf"`,
-   sobrescrevendo o anterior.
-6. Botão Sair, falha ignorada com `warning` (a transação seguinte começa
+   bruto na pasta de download.
+6. `ler_dados_pessoais(bruto)` **ainda na pasta de download**; se
+   `dados.matricula != matricula` → `DadosPessoaisIndisponiveis`, e o PDF
+   fica lá com o nome bruto. *(Revisão final de 16/09: conferir ANTES de
+   renomear, senão o PDF de outra pessoa recebia o nome da matrícula pedida
+   e apagava o PDF anterior dela.)*
+7. Só então renomeado para `pasta_saida / f"dados_pessoais_{matricula}.pdf"`,
+   sobrescrevendo o anterior; `dados.pdf` aponta para o destino.
+8. Botão Sair, falha ignorada com `warning` (a transação seguinte começa
    pelo menu de qualquer forma).
-7. `ler_dados_pessoais(pdf)`; se `dados.matricula != matricula` →
-   `DadosPessoaisIndisponiveis`.
+
+A matrícula de entrada é normalizada a dígitos (`000.000-0` → `0000000`)
+antes de tudo.
 
 Seletores (fatos da tela, confirmados ao vivo em 11/09):
 `w_matr_infor_alfa`, `onClickbtnConsulta`, `onClickbtnImprimir`,
@@ -116,7 +128,7 @@ Todas filhas de `EsiapeError`:
 |---|---|
 | `TransacaoNaoAbriu` (existente) | a tela não montou, mesmo após a repetição por relogin |
 | `DadosPessoaisIndisponiveis(matricula, motivo)` (nova) | Consultar ou Imprimir não apareceram no prazo; o PDF não veio (`imprimir_via_popup` levantou); a matrícula lida do PDF difere da pedida |
-| `PdfImpressoIlegivel` (existente) | o PDF veio sem camada de texto (impressora errada); `consultar` converte o `PdfIlegivelError` de `ler_dados_pessoais` nela, mantendo o arquivo para inspeção |
+| `PdfImpressoIlegivel` (existente, agora aceita `bloco=None`) | o PDF veio sem camada de texto (impressora errada); `consultar` converte o `PdfIlegivelError` de `ler_dados_pessoais` nela; o arquivo fica na pasta de download, com o nome bruto, até a próxima impressão (que limpa a pasta) |
 
 **Pendência declarada no código:** o sinal da CDCOINDPES para matrícula
 inexistente ou de outro órgão não é conhecido. Até o gate, ele se manifesta
