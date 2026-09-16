@@ -103,6 +103,29 @@ def test_extrair_campos_colunas_com_um_espaco_nao_engole_o_rotulo():
     assert c["uf"] == "XX"
 
 
+def test_extrair_campos_rotulo_nao_mapeado_corta_com_dois_espacos():
+    from integra_gov.esiape.dados_pessoais import extrair_campos
+
+    c = extrair_campos(
+        "E-MAIL PESSOAL: A@B.COM     E-MAIL INSTITUCIONAL: C@D.GOV.BR")
+    assert c["email"] == "a@b.com"
+
+
+def test_extrair_campos_rotulo_nao_mapeado_sexo_corta_o_nome():
+    from integra_gov.esiape.dados_pessoais import extrair_campos
+
+    c = extrair_campos("NOME: FULANO DE TAL     SEXO: M")
+    assert c["nome"] == "FULANO DE TAL"
+
+
+def test_extrair_campos_nome_contendo_palavra_uf_nao_confunde_o_rotulo():
+    from integra_gov.esiape.dados_pessoais import extrair_campos
+
+    c = extrair_campos("NOME: MARIA UF DA SILVA     UF: XX")
+    assert c["nome"] == "MARIA UF DA SILVA"
+    assert c["uf"] == "XX"
+
+
 def test_extrair_campos_rotulo_precedido_de_barra_nao_confunde():
     from integra_gov.esiape.dados_pessoais import extrair_campos
 
@@ -197,13 +220,14 @@ def test_ler_dados_pessoais_le_todas_as_paginas(tmp_path):
 def test_repr_nao_expoe_dados_pessoais(tmp_path):
     from integra_gov.esiape.dados_pessoais import ler_dados_pessoais
 
-    pdf = pdf_cadastral(tmp_path / "x.pdf")
+    pdf = pdf_cadastral(tmp_path / "dados_pessoais_0000000.pdf")
     d = ler_dados_pessoais(pdf)
     r = repr(d)
     assert "FULANO" not in r
     assert "000.000.000-00" not in r
     assert "NUMERO DO CPF" not in r
     assert "*****00" in r
+    assert "0000000" not in r
 
 
 def test_mascarar_matricula_curta_nao_expoe_tudo():

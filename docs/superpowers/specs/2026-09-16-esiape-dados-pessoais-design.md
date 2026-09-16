@@ -68,13 +68,17 @@ dados = ler_dados_pessoais(Path("cadastrais/dados_pessoais_0000000.pdf"))
 Campo cujo rótulo não aparece no texto fica `None`, sem levantar: campo
 ausente é informação, não falha. O valor de cada rótulo vai até o próximo
 rótulo **conhecido** na mesma linha (um ou mais espaços seguidos de um dos
-nove rótulos e `:`) ou o fim da linha. *(Revisão final de 16/09: o script
-cortava em "2+ espaços + maiúsculas + `:`", o que truncava valores com dois
-espaços internos e engolia o rótulo seguinte quando o modo layout separava
-duas colunas por um espaço só; a regra por rótulos conhecidos cobre os dois
-casos.)* O `repr` de `DadosPessoais` omite nome, CPF, nascimento, e-mail e
-`texto`, e mostra a matrícula mascarada. Cada normalização é uma função
-pequena do módulo (`_situacao`, `_data_siape`, `_orgao`), testável isolada.
+nove rótulos e `:`) ou o fim da linha. Rótulos que a lib não mapeia (SEXO,
+ESTADO CIVIL, TELEFONE, E-MAIL INSTITUCIONAL…) também encerram o valor
+quando vêm após dois ou mais espaços, em maiúsculas e com `:`; assim um
+rótulo desconhecido nunca é engolido pelo campo anterior. *(Revisão final de
+16/09: o script cortava em "2+ espaços + maiúsculas + `:`", o que truncava
+valores com dois espaços internos e engolia o rótulo seguinte quando o modo
+layout separava duas colunas por um espaço só; a regra por rótulos
+conhecidos cobre os dois casos.)* O `repr` de `DadosPessoais` omite nome,
+CPF, nascimento, e-mail e `texto`, e mostra a matrícula mascarada. Cada
+normalização é uma função pequena do módulo (`_situacao`, `_data_siape`,
+`_orgao`), testável isolada.
 
 ### `ler_dados_pessoais(pdf: Path) -> DadosPessoais`
 

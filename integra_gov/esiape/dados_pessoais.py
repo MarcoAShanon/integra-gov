@@ -62,16 +62,24 @@ _ROTULOS = {
     "orgao": r"ORGAO SOLICITADO",
 }
 
-#: O que encerra um valor: o início de um dos rótulos CONHECIDOS (não
-#: qualquer sequência em maiúsculas). Um valor pode legitimamente conter dois
-#: espaços seguidos (ex.: "FULANO  DE TAL" na camada de texto em modo
-#: layout), e um único espaço pode separar duas colunas lado a lado (ex.:
-#: "CIDADE EXEMPLO UF: XX") — por isso o corte não pode ser por espaçamento,
-#: só pelo próximo rótulo que a tela realmente usa. O ``-`` de ``E-MAIL`` já
-#: está coberto por listar o rótulo por extenso, não por uma classe de
-#: caracteres.
+#: O que encerra um valor: o início de um dos rótulos CONHECIDOS, ou de
+#: QUALQUER OUTRO rótulo em maiúsculas (a tela tem mais rótulos do que os 9
+#: mapeados — SEXO, ESTADO CIVIL, ENDERECO, TELEFONE, E-MAIL INSTITUCIONAL —
+#: e um deles na mesma linha não pode ser engolido pelo campo anterior). Um
+#: valor pode legitimamente conter dois espaços seguidos (ex.: "FULANO  DE
+#: TAL" na camada de texto em modo layout), e um único espaço pode separar
+#: duas colunas lado a lado (ex.: "CIDADE EXEMPLO UF: XX") — por isso um
+#: rótulo CONHECIDO corta com um ou mais espaços, mas um rótulo desconhecido
+#: só corta com dois ou mais espaços (assim um valor com espaço duplo
+#: interno não é truncado, a menos que o que vem depois pareça mesmo um
+#: rótulo terminado em ``:``). O ``-`` de ``E-MAIL`` já está coberto por
+#: listar o rótulo por extenso, não por uma classe de caracteres.
 _PROXIMO_ROTULO = "|".join(_ROTULOS.values())
-_FIM_DO_VALOR = rf"(?=\s+(?:{_PROXIMO_ROTULO})\s*:|$)"
+_FIM_DO_VALOR = (
+    rf"(?=\s+(?:{_PROXIMO_ROTULO})\s*:"
+    rf"|\s{{2,}}[A-ZÀ-Ú][A-ZÀ-Ú./0-9º-]*(?: [A-ZÀ-Ú./0-9º-]+){{0,3}}\s*:"
+    rf"|$)"
+)
 
 
 def _mascarar(matricula: str) -> str:
@@ -103,10 +111,16 @@ class DadosPessoais:
 
     def __repr__(self) -> str:
         mascarada = _mascarar(self.matricula or "")
+        if self.pdf is not None:
+            nome_mascarado = re.sub(
+                r"\d+", lambda m: "*****" + m.group(0)[-2:], self.pdf.name)
+            pdf_repr = repr(f"{self.pdf.parent}/{nome_mascarado}")
+        else:
+            pdf_repr = "None"
         return (
             f"DadosPessoais(matricula={mascarada!r}, situacao={self.situacao!r}, "
             f"municipio={self.municipio!r}, uf={self.uf!r}, "
-            f"orgao={self.orgao!r}, pdf={self.pdf!r})"
+            f"orgao={self.orgao!r}, pdf={pdf_repr})"
         )
 
 
@@ -305,8 +319,11 @@ class DadosPessoaisServidor:
             # dados_pessoais_<matricula>.pdf depois de confirmada a matrícula.
             dados = ler_dados_pessoais(bruto)
         except PdfIlegivelError as exc:
-            # fica com o nome bruto, na pasta de download, para inspeção
-            raise PdfImpressoIlegivel(bruto, None, str(exc))
+            # fica com o nome bruto, na pasta de download, para inspeção;
+            # motivo curto aqui, o detalhe fica em __cause__.
+            raise PdfImpressoIlegivel(
+                bruto, None, "o PDF não abriu ou não tem camada de texto"
+            ) from exc
 
         if dados.matricula != matricula:
             # arquivo intocado em pasta_download: nunca recebe o nome da
