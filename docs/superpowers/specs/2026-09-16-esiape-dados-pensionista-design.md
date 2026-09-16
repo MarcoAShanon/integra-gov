@@ -115,6 +115,13 @@ pasta de download DEVE ser dedicada: a impressão apaga todos os PDFs dela.
     popups, limpar cortina, Sair), best effort, que **nunca** mascara a
     exceção original.
 
+*(Limitação declarada, apontada na review final de 16/09: o código recupera a
+tela apenas para `DadosPessoaisIndisponiveis` e `PdfImpressoIlegivel`, não
+para qualquer falha. Uma exceção crua do Selenium no meio da transação escapa
+sem limpeza, e a consulta seguinte começa numa tela suja. O módulo irmão de
+servidor tem exatamente a mesma cláusula estreita; os dois se corrigem juntos
+ou nenhum, para não divergirem. Fica para depois do gate.)*
+
 Seletores (do privado, validados em produção): `w_matr_infor_alfa`,
 `onClickbtnConsulta`, `onPrintPDF`, `w_report.onGeneratePrintVersion`,
 `onClickBtnSair`, todos por `data-testtoolid`.
