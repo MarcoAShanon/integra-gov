@@ -16,6 +16,8 @@ import time
 
 from selenium.webdriver.common.by import By
 
+from ._campos import mascarar_digitos
+
 _log = logging.getLogger(__name__)
 
 SELETOR_LUPA = '[data-testtoolid="onMenuClickPesqTrans"]'
@@ -305,3 +307,29 @@ def navegar_para_transacao(driver, transacao: str, seletor_confirmacao: str,
         return False
     _log.info("Tela da transação %s aberta", transacao)
     return True
+
+
+def texto_popup_cis(driver) -> str | None:
+    """Texto do popup de erro do CIS (se houver), para enriquecer o motivo de
+    :class:`~integra_gov.esiape.exceptions.DadosPessoaisIndisponiveis` quando
+    o botão esperado não aparece.
+
+    PENDÊNCIA (gate ao vivo): o seletor ``[id^='IPO_']`` é um PALPITE — o
+    sinal real da tela para matrícula inexistente ainda não é conhecido (ver
+    ``MSG_NAO_ENCONTRADA``). Qualquer dígito mascarado (ver
+    :func:`~integra_gov.esiape._campos.mascarar_digitos`) ANTES do corte a
+    200 caracteres: se o corte viesse primeiro, uma matrícula que caísse em
+    cima da fronteira sobraria parcialmente em claro.
+    """
+    try:
+        driver.switch_to.default_content()
+        for el in driver.find_elements(By.CSS_SELECTOR, "[id^='IPO_']"):
+            if not el.is_displayed():
+                continue
+            texto = (el.text or "").strip()
+            if not texto:
+                continue
+            return mascarar_digitos(texto)[:200]
+    except Exception:  # noqa: BLE001 — captura de contexto é best-effort
+        return None
+    return None

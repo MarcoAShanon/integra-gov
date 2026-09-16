@@ -43,6 +43,7 @@ from .navegacao import (
     navegar_para_transacao,
     procurar_em_frames,
     relogin_pendente,
+    texto_popup_cis,
 )
 
 _log = logging.getLogger(__name__)
@@ -98,7 +99,11 @@ class DadosPensionista:
 
     def __repr__(self) -> str:
         if self.pdf is not None:
-            pdf_repr = repr(f"{self.pdf.parent}/{mascarar_digitos(self.pdf.name)}")
+            # mascarar_digitos roda no CAMINHO INTEIRO, não só no nome do
+            # arquivo: quem organiza a saída por matrícula (ex.:
+            # cadastrais/<matricula>/) não pode ver a matrícula vazar pela
+            # pasta. str(Path) já usa o separador correto do SO.
+            pdf_repr = repr(mascarar_digitos(str(self.pdf)))
         else:
             pdf_repr = "None"
         return (
@@ -255,9 +260,12 @@ class DadosPessoaisPensionista:
     def _clicar(self, seletor: str, matricula: str, rotulo: str) -> None:
         if esperar_seletor(self.driver, seletor,
                            timeout=self.TIMEOUT_TELA) is None:
-            raise DadosPessoaisIndisponiveis(
-                matricula, f"o botão {rotulo} ({seletor}) não apareceu em "
-                           f"{self.TIMEOUT_TELA}s")
+            motivo = (f"o botão {rotulo} ({seletor}) não apareceu em "
+                      f"{self.TIMEOUT_TELA}s")
+            texto_popup = texto_popup_cis(self.driver)
+            if texto_popup is not None:
+                motivo += f"; a tela mostrou: {texto_popup}"
+            raise DadosPessoaisIndisponiveis(matricula, motivo)
         self.driver.find_element(By.CSS_SELECTOR, seletor).click()
 
     def _sair(self) -> None:
@@ -266,7 +274,8 @@ class DadosPessoaisPensionista:
                 self.driver.find_element(By.CSS_SELECTOR, self.SEL_SAIR).click()
                 time.sleep(self.DELAY_APOS_ENTER)
         except Exception as exc:  # noqa: BLE001 — Sair é cortesia, não etapa
-            _log.warning("%s: Sair falhou (ignorado): %s", self.TRANSACAO, exc)
+            _log.warning("%s: Sair falhou (ignorado): %s", self.TRANSACAO,
+                         mascarar_digitos(str(exc)))
 
     def _recuperar_tela(self) -> None:
         """Recuperação best-effort após falha dentro da transação: fecha
@@ -279,7 +288,7 @@ class DadosPessoaisPensionista:
             self._sair()
         except Exception as exc:  # noqa: BLE001 — recuperação é best-effort
             _log.warning("%s: recuperação da tela falhou (ignorado): %s",
-                         self.TRANSACAO, exc)
+                         self.TRANSACAO, mascarar_digitos(str(exc)))
 
     def _conferir_identidade(self, matricula: str) -> None:
         """Confere a matrícula que ficou no campo de busca contra a pedida.
@@ -312,7 +321,7 @@ class DadosPessoaisPensionista:
             eco = re.sub(r"\D", "", eco or "")
         except Exception as exc:  # noqa: BLE001
             _log.warning("%s: conferência de identidade impossível (%s)",
-                         self.TRANSACAO, exc)
+                         self.TRANSACAO, mascarar_digitos(str(exc)))
             return
         if not eco:
             _log.warning("%s: conferência de identidade impossível (o campo "
@@ -336,7 +345,8 @@ class DadosPessoaisPensionista:
             raise
         except Exception as exc:  # noqa: BLE001 — timeout de popup/download
             raise DadosPessoaisIndisponiveis(
-                matricula, f"a impressão não produziu PDF: {exc}") from exc
+                matricula, "a impressão não produziu PDF: "
+                           f"{mascarar_digitos(str(exc))}") from exc
 
         try:
             legivel = tem_camada_de_texto(bruto)
@@ -399,9 +409,21 @@ class DadosPessoaisPensionista:
 
             if esperar_seletor(self.driver, self.SEL_NOME,
                                timeout=self.TIMEOUT_CAMPOS) is None:
-                raise DadosPessoaisIndisponiveis(
-                    matricula, "a consulta não trouxe dados (os campos do "
-                               f"formulário não apareceram{ressalva})")
+                # segunda chance: a tela de procuração pode ter renderizado
+                # tarde e a primeira varredura ter passado batido por ela.
+                achou = False
+                if atravessar_procuracao(self.driver):
+                    com_procuracao = True
+                    time.sleep(self.DELAY_APOS_CONSULTAR)
+                    achou = esperar_seletor(
+                        self.driver, self.SEL_NOME,
+                        timeout=self.TIMEOUT_CAMPOS) is not None
+                if not achou:
+                    raise DadosPessoaisIndisponiveis(
+                        matricula, "a consulta não trouxe dados (os campos "
+                                   "do formulário não apareceram; considere "
+                                   "a hipótese de procuração — com ou sem "
+                                   "tela intermediária detectada)")
 
             campos = ler_campos(self.driver)
             # O formulário já foi lido, então _conferir_identidade pode

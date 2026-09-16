@@ -657,7 +657,7 @@ Detalhes em [Ler uma ficha financeira](docs/uso-basico.md#ler-uma-ficha-financei
 | `integra_gov.esiape.impressao` | imprimir via popup (Save as PDF): a sequência estabilizada, reutilizável por qualquer tela que imprime | ✅ |
 | `integra_gov.esiape.dados_funcionais` | `CDCOINDFUN`: descobre o órgão anterior e o ano de ingresso do servidor | ✅ |
 | `integra_gov.esiape.dados_pessoais` | `CDCOINDPES`: PDF dos dados pessoais + 9 campos lidos dele (`ler_dados_pessoais` funciona sem navegador); confere a matrícula do PDF | ✅ |
-| `integra_gov.esiape.dados_pensionista` | `CDCOPSBENE`: 12 campos do pensionista lidos do formulário + PDF da tela; atravessa e registra a tela de procuração | ✅ |
+| `integra_gov.esiape.dados_pensionista` | `CDCOPSBENE`: 12 campos do pensionista lidos do formulário + PDF da tela; atravessa e registra a tela de procuração (pendente de verificação ao vivo) | 🚧 |
 | `integra_gov.esiape.ficha_multi_orgao` | Encadeia `ficha_anual` por todos os órgãos do servidor (via `dados_funcionais`), com lacunas sempre declaradas | ✅ |
 | `integra_gov.esiape.exceptions` | Exceções tipadas | ✅ |
 

@@ -44,6 +44,7 @@ from .navegacao import (
     navegar_para_transacao,
     procurar_em_frames,
     relogin_pendente,
+    texto_popup_cis,
 )
 
 _log = logging.getLogger(__name__)
@@ -81,32 +82,6 @@ _FIM_DO_VALOR = (
 )
 
 
-def _texto_popup_cis(driver) -> str | None:
-    """Texto do popup de erro do CIS (se houver), para enriquecer o motivo de
-    :class:`~integra_gov.esiape.exceptions.DadosPessoaisIndisponiveis` quando
-    o botão esperado não aparece.
-
-    PENDÊNCIA (gate ao vivo): o seletor ``[id^='IPO_']`` é um PALPITE — o
-    sinal real da tela para matrícula inexistente ainda não é conhecido (ver
-    ``MSG_NAO_ENCONTRADA``). Qualquer dígito mascarado (ver
-    :func:`~integra_gov.esiape._campos.mascarar_digitos`) ANTES do corte a
-    200 caracteres: se o corte viesse primeiro, uma matrícula que caísse em
-    cima da fronteira sobraria parcialmente em claro.
-    """
-    try:
-        driver.switch_to.default_content()
-        for el in driver.find_elements(By.CSS_SELECTOR, "[id^='IPO_']"):
-            if not el.is_displayed():
-                continue
-            texto = (el.text or "").strip()
-            if not texto:
-                continue
-            return mascarar_digitos(texto)[:200]
-    except Exception:  # noqa: BLE001 — captura de contexto é best-effort
-        return None
-    return None
-
-
 @dataclass(repr=False)
 class DadosPessoais:
     """Os campos cadastrais lidos do PDF da CDCOINDPES (ausente = ``None``).
@@ -131,8 +106,11 @@ class DadosPessoais:
     def __repr__(self) -> str:
         mascarada = mascarar_matricula(self.matricula or "")
         if self.pdf is not None:
-            nome_mascarado = mascarar_digitos(self.pdf.name)
-            pdf_repr = repr(f"{self.pdf.parent}/{nome_mascarado}")
+            # mascarar_digitos roda no CAMINHO INTEIRO, não só no nome do
+            # arquivo: quem organiza a saída por matrícula (ex.:
+            # cadastrais/<matricula>/) não pode ver a matrícula vazar pela
+            # pasta. str(Path) já usa o separador correto do SO.
+            pdf_repr = repr(mascarar_digitos(str(self.pdf)))
         else:
             pdf_repr = "None"
         return (
@@ -266,7 +244,7 @@ class DadosPessoaisServidor:
                            timeout=self.TIMEOUT_TELA) is None:
             motivo = (f"o botão {rotulo} ({seletor}) não apareceu em "
                       f"{self.TIMEOUT_TELA}s")
-            texto_popup = _texto_popup_cis(self.driver)
+            texto_popup = texto_popup_cis(self.driver)
             if texto_popup is not None:
                 motivo += f"; a tela mostrou: {texto_popup}"
             raise DadosPessoaisIndisponiveis(matricula, motivo)
@@ -278,7 +256,8 @@ class DadosPessoaisServidor:
                 self.driver.find_element(By.CSS_SELECTOR, self.SEL_SAIR).click()
                 time.sleep(self.DELAY_APOS_ENTER)
         except Exception as exc:  # noqa: BLE001 — Sair é cortesia, não etapa
-            _log.warning("%s: Sair falhou (ignorado): %s", self.TRANSACAO, exc)
+            _log.warning("%s: Sair falhou (ignorado): %s", self.TRANSACAO,
+                         mascarar_digitos(str(exc)))
 
     def _recuperar_tela(self) -> None:
         """Recuperação best-effort após falha dentro da transação: fecha
@@ -292,7 +271,7 @@ class DadosPessoaisServidor:
             self._sair()
         except Exception as exc:  # noqa: BLE001 — recuperação é best-effort
             _log.warning("%s: recuperação da tela falhou (ignorado): %s",
-                         self.TRANSACAO, exc)
+                         self.TRANSACAO, mascarar_digitos(str(exc)))
 
     # ----- API -----
 
@@ -346,7 +325,8 @@ class DadosPessoaisServidor:
                 raise
             except Exception as exc:  # noqa: BLE001 — timeout de popup/download
                 raise DadosPessoaisIndisponiveis(
-                    matricula, f"a impressão não produziu PDF: {exc}") from exc
+                    matricula, "a impressão não produziu PDF: "
+                               f"{mascarar_digitos(str(exc))}") from exc
 
             try:
                 # ainda em pasta_download, sob o nome bruto: só vira

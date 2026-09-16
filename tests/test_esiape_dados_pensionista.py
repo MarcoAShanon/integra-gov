@@ -179,13 +179,17 @@ def test_procuracao_com_enter_falhando_ainda_devolve_true(frames, caplog):
 
 # ------------------------------------------------------------- dataclass
 def test_repr_nao_expoe_dados_pessoais(tmp_path):
+    # a pasta de saída, aqui, é organizada por matrícula (ex.: cadastrais/
+    # <matricula>/) — o repr não pode vazar a matrícula pelo PARENT do pdf.
+    pasta = tmp_path / "0000000"
+    pasta.mkdir()
     d = dmod.DadosPensionista(
         matricula="0000000", nome="FULANO DE TAL", cpf="000.000.000-00",
         data_nascimento="15/08/1960", email="fulano@exemplo.gov.br",
         logradouro="RUA EXEMPLO", numero="100", complemento="APTO 1",
         bairro="BAIRRO EXEMPLO", municipio="Cidade Exemplo", uf="XX",
         cep="00000-000", com_procuracao=True,
-        pdf=tmp_path / "dados_pensionista_0000000.pdf")
+        pdf=pasta / "dados_pensionista_0000000.pdf")
     r = repr(d)
     for proibido in ("FULANO", "000.000.000-00", "15/08/1960",
                      "fulano@exemplo", "RUA EXEMPLO", "BAIRRO", "00000-000",
@@ -252,6 +256,17 @@ class _Botao:
         return self.eco if self.eco_forcado is None else self.eco_forcado
 
 
+class _Popup:
+    """Popup CIS fake (``[id^='IPO_']``) para ``texto_popup_cis``."""
+
+    def __init__(self, texto, visivel=True):
+        self.text = texto
+        self.visivel = visivel
+
+    def is_displayed(self):
+        return self.visivel
+
+
 class _DriverConsulta:
     """Botões por seletor CSS e campos do formulário por data-testtoolid."""
 
@@ -261,6 +276,7 @@ class _DriverConsulta:
         self.valores = dict(valores if valores is not None else VALORES)
         self._esiape_relogin_pendente = False
         self.switch_to = _SwitchToFake()
+        self.popups: list[_Popup] = []
 
     def find_element(self, by, valor):
         if valor in self.el:
@@ -271,6 +287,8 @@ class _DriverConsulta:
         raise Exception(f"no such element: {valor}")
 
     def find_elements(self, by, valor):
+        if valor == "[id^='IPO_']":
+            return self.popups
         return []
 
 
@@ -396,6 +414,49 @@ def test_procuracao_presa_entra_no_motivo(ambiente, monkeypatch):
     assert "procuração" in str(exc.value)
 
 
+def test_procuracao_tardia_segunda_chance_confirma(ambiente, monkeypatch):
+    """A tela de procuração pode renderizar depois da primeira varredura: a
+    1a chamada não a vê, o campo NOME não aparece, a 2a chamada a vê, e só
+    então o campo aparece — resultado normal, com_procuracao True."""
+    driver, servidor, _ = ambiente
+    chamadas_proc = {"n": 0}
+
+    def procuracao(d):
+        chamadas_proc["n"] += 1
+        return chamadas_proc["n"] == 2   # False na 1a, True na 2a
+
+    chamadas_campo = {"n": 0}
+
+    def esperar(d, s, timeout=20):
+        if s == P.SEL_NOME:
+            chamadas_campo["n"] += 1
+            return None if chamadas_campo["n"] == 1 else (0,)
+        return (0,)
+
+    monkeypatch.setattr(dmod, "atravessar_procuracao", procuracao)
+    monkeypatch.setattr(dmod, "esperar_seletor", esperar)
+    d = servidor.consultar("0000000")
+    assert d.com_procuracao is True
+    assert d.nome == "FULANO DE TAL"
+    assert chamadas_proc["n"] == 2
+    assert chamadas_campo["n"] == 2
+
+
+def test_campo_ausente_menciona_procuracao_mesmo_sem_deteccao(ambiente,
+                                                               monkeypatch):
+    """A mensagem cita a hipótese de procuração mesmo quando nenhuma tela de
+    procuração foi detectada — é uma hipótese de diagnóstico, não uma
+    constatação."""
+    _, servidor, _ = ambiente
+    monkeypatch.setattr(dmod, "atravessar_procuracao", lambda d: False)
+    monkeypatch.setattr(
+        dmod, "esperar_seletor",
+        lambda d, s, timeout=20: None if s == P.SEL_NOME else (0,))
+    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+        servidor.consultar("0000000")
+    assert "procuração" in str(exc.value)
+
+
 def test_eco_procurado_entre_frames(ambiente):
     driver, servidor, chamadas = ambiente
     servidor.consultar("0000000")
@@ -421,12 +482,13 @@ def test_eco_em_frame_nao_encontrado_apenas_avisa(ambiente, monkeypatch,
 
 
 def test_eco_divergente_levanta(ambiente):
-    driver, servidor, _ = ambiente
+    driver, servidor, chamadas = ambiente
     driver.el[P.SEL_MATRICULA].eco_forcado = "1111111"
     with pytest.raises(DadosPessoaisIndisponiveis) as exc:
         servidor.consultar("0000000")
     assert "*****11" in str(exc.value) and "*****00" in str(exc.value)
     assert "1111111" not in str(exc.value)
+    assert chamadas["imprimir"] == 0
 
 
 def test_eco_vazio_apenas_avisa(ambiente, caplog):
@@ -477,6 +539,19 @@ def test_botao_consultar_ausente_levanta(ambiente, monkeypatch):
     assert "Consultar" in str(exc.value)
 
 
+def test_botao_consultar_ausente_com_popup_mostra_a_tela_mascarada(ambiente,
+                                                                    monkeypatch):
+    driver, servidor, _ = ambiente
+    driver.popups.append(_Popup("MATRICULA 1234567 NAO CADASTRADA"))
+    monkeypatch.setattr(
+        dmod, "esperar_seletor",
+        lambda d, s, timeout=20: None if s == P.SEL_CONSULTAR else (0,))
+    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+        servidor.consultar("0000000")
+    assert "a tela mostrou: MATRICULA *****67 NAO CADASTRADA" in str(exc.value)
+    assert "1234567" not in str(exc.value)
+
+
 def test_impressao_sem_pdf_levanta(ambiente):
     _, servidor, _ = ambiente
 
@@ -487,6 +562,22 @@ def test_impressao_sem_pdf_levanta(ambiente):
         with pytest.raises(DadosPessoaisIndisponiveis) as exc:
             servidor.consultar("0000000")
     assert "nenhum PDF apareceu" in str(exc.value)
+
+
+def test_impressao_sem_pdf_mascara_matricula_do_exc_do_driver(ambiente):
+    """Um alerta do CIS pode carregar a matrícula inteira dentro da exceção
+    do WebDriver (ex.: UnexpectedAlertPresentException) — ela tem de sair
+    mascarada da mensagem final."""
+    _, servidor, _ = ambiente
+
+    def imprimir(*a, **k):
+        raise TimeoutError("MATRICULA 1234567 NAO CADASTRADA")
+
+    with patch.object(dmod, "imprimir_via_popup", imprimir):
+        with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+            servidor.consultar("0000000")
+    assert "*****67" in str(exc.value)
+    assert "1234567" not in str(exc.value)
 
 
 def test_pdf_sem_camada_de_texto_levanta_e_mantem_arquivo(ambiente):

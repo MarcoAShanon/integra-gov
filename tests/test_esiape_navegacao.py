@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from integra_gov.esiape import navegacao as nav
@@ -445,6 +447,41 @@ def test_navegar_popup_perdido_recupera_e_segue():
     assert nav.navegar_para_transacao(driver, "TRANSX", SELETOR_TELA_X,
                                       timeout=1) is True
     assert nav.relogin_pendente(driver) is False
+
+
+def test_texto_popup_cis_mascarado():
+    raiz = FrameFake()
+    raiz.elementos["[id^='IPO_']"] = [
+        ElementoFake(texto="MATRICULA 1234567 NAO CADASTRADA")]
+    driver = DriverFake(raiz)
+    assert nav.texto_popup_cis(driver) == "MATRICULA *****67 NAO CADASTRADA"
+
+
+def test_texto_popup_cis_mascara_antes_de_truncar():
+    """Uma matrícula que cai perto do corte de 200 caracteres não pode
+    escapar mascarada pela metade: a máscara roda no texto inteiro, o corte
+    vem depois."""
+    raiz = FrameFake()
+    raiz.elementos["[id^='IPO_']"] = [
+        ElementoFake(texto="A" * 197 + "1234567 FIM")]
+    driver = DriverFake(raiz)
+    texto = nav.texto_popup_cis(driver)
+    assert texto is not None
+    assert "1234567" not in texto
+    assert re.search(r"\d{3,}", texto) is None
+
+
+def test_texto_popup_cis_invisivel_e_ignorado():
+    raiz = FrameFake()
+    raiz.elementos["[id^='IPO_']"] = [
+        ElementoFake(texto="MATRICULA 1234567 NAO CADASTRADA", visivel=False)]
+    driver = DriverFake(raiz)
+    assert nav.texto_popup_cis(driver) is None
+
+
+def test_texto_popup_cis_ausente_devolve_none():
+    driver = DriverFake(FrameFake())
+    assert nav.texto_popup_cis(driver) is None
 
 
 def test_exports_do_subpacote():

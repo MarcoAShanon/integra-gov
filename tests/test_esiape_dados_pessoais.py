@@ -207,7 +207,11 @@ def test_ler_dados_pessoais_le_todas_as_paginas(tmp_path):
 def test_repr_nao_expoe_dados_pessoais(tmp_path):
     from integra_gov.esiape.dados_pessoais import ler_dados_pessoais
 
-    pdf = pdf_cadastral(tmp_path / "dados_pessoais_0000000.pdf")
+    # a pasta de saída, aqui, é organizada por matrícula (ex.: cadastrais/
+    # <matricula>/) — o repr não pode vazar a matrícula pelo PARENT do pdf.
+    pasta = tmp_path / "0000000"
+    pasta.mkdir()
+    pdf = pdf_cadastral(pasta / "dados_pessoais_0000000.pdf")
     d = ler_dados_pessoais(pdf)
     r = repr(d)
     assert "FULANO" not in r
@@ -234,17 +238,6 @@ class _Elemento:
 
     def send_keys(self, *t):
         self.teclas.extend(t)
-
-
-class _Popup:
-    """Popup CIS fake (``[id^='IPO_']``) para ``_texto_popup_cis``."""
-
-    def __init__(self, texto, visivel=True):
-        self.text = texto
-        self.visivel = visivel
-
-    def is_displayed(self):
-        return self.visivel
 
 
 class _SwitchToFake:
@@ -449,6 +442,22 @@ def test_impressao_sem_pdf_levanta_indisponiveis(ambiente):
     assert "nenhum PDF apareceu" in str(exc.value)
 
 
+def test_impressao_sem_pdf_mascara_matricula_do_exc_do_driver(ambiente):
+    """Um alerta do CIS pode carregar a matrícula inteira dentro da exceção
+    do WebDriver (ex.: UnexpectedAlertPresentException) — ela tem de sair
+    mascarada da mensagem final."""
+    _, servidor, _ = ambiente
+
+    def imprimir(*a, **k):
+        raise TimeoutError("MATRICULA 1234567 NAO CADASTRADA")
+
+    with patch.object(dmod, "imprimir_via_popup", imprimir):
+        with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+            servidor.consultar("0000000")
+    assert "*****67" in str(exc.value)
+    assert "1234567" not in str(exc.value)
+
+
 def test_matricula_divergente_no_pdf_levanta(ambiente):
     _, servidor, chamadas = ambiente
     with pytest.raises(DadosPessoaisIndisponiveis) as exc:
@@ -522,41 +531,6 @@ def test_recuperacao_falhando_nao_mascara_a_excecao_original(ambiente, caplog):
             servidor.consultar("0000000")
     assert "Consultar" in str(exc.value) or S.SEL_CONSULTAR in str(exc.value)
     assert any("recuperação" in r.message for r in caplog.records)
-
-
-def test_texto_popup_cis_mascarado_entra_no_motivo(ambiente):
-    driver, servidor, _ = ambiente
-    driver.popups.append(_Popup("MATRICULA 1234567 NAO CADASTRADA"))
-    del driver.el[S.SEL_CONSULTAR]
-    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
-        servidor.consultar("0000000")
-    assert "a tela mostrou: MATRICULA *****67 NAO CADASTRADA" in str(exc.value)
-    assert "1234567" not in str(exc.value)
-
-
-def test_texto_popup_cis_mascara_antes_de_truncar(ambiente):
-    """Uma matrícula que cai perto do corte de 200 caracteres não pode
-    escapar mascarada pela metade: a máscara roda no texto inteiro, o corte
-    vem depois."""
-    import re as _re
-
-    driver, servidor, _ = ambiente
-    driver.popups.append(_Popup("A" * 197 + "1234567 FIM"))
-    del driver.el[S.SEL_CONSULTAR]
-    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
-        servidor.consultar("0000000")
-    msg = str(exc.value)
-    assert "1234567" not in msg
-    assert _re.search(r"\d{3,}", msg) is None
-
-
-def test_texto_popup_cis_invisivel_e_ignorado(ambiente):
-    driver, servidor, _ = ambiente
-    driver.popups.append(_Popup("MATRICULA 1234567 NAO CADASTRADA", visivel=False))
-    del driver.el[S.SEL_CONSULTAR]
-    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
-        servidor.consultar("0000000")
-    assert "a tela mostrou" not in str(exc.value)
 
 
 def test_log_nao_expoe_matricula_inteira(ambiente, caplog):

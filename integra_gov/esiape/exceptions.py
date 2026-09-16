@@ -111,12 +111,21 @@ class PdfImpressoIlegivel(EsiapeError):
 
 
 class DadosPessoaisIndisponiveis(EsiapeError):
-    """A CDCOINDPES não devolveu os dados pessoais da matrícula pedida.
+    """A CDCOINDPES ou a CDCOPSBENE não devolveu os dados da matrícula pedida.
 
-    Cobre três situações: o botão Consultar/Imprimir não apareceu no prazo
-    (o sinal real para matrícula inexistente ainda não é conhecido — ver o
-    comentário em ``dados_pessoais``), a impressão não produziu PDF, ou o PDF
-    impresso traz OUTRA matrícula (tela anterior ainda carregada).
+    Reutilizada pelas duas transações de dados pessoais, cada uma com o seu
+    próprio conjunto de situações:
+
+    - CDCOINDPES (servidor, :mod:`~integra_gov.esiape.dados_pessoais`): o
+      botão Consultar/Imprimir não apareceu no prazo (o sinal real para
+      matrícula inexistente ainda não é conhecido), a impressão não produziu
+      PDF, ou o PDF impresso traz OUTRA matrícula (tela anterior ainda
+      carregada).
+    - CDCOPSBENE (pensionista, :mod:`~integra_gov.esiape.dados_pensionista`):
+      o formulário não apareceu ou veio com todos os campos vazios (o sinal
+      provável de matrícula inexistente, inclusive quando há uma tela de
+      procuração de permeio), o eco da matrícula no campo de busca diverge
+      da pedida, ou a impressão não produziu PDF.
 
     Attributes:
         matricula: a matrícula pedida (na mensagem, só os 2 últimos dígitos).
