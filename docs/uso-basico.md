@@ -1175,8 +1175,13 @@ Regras de honestidade do módulo:
 - campo cujo rótulo não aparece fica `None`; não é erro;
 - o PDF é conferido: se trouxer outra matrícula (tela anterior ainda
   carregada), `DadosPessoaisIndisponiveis`;
+- a matrícula lida do PDF é conferida ANTES de renomear: um PDF de outra
+  pessoa nunca recebe o nome da matrícula pedida nem apaga um PDF anterior
+  dela;
 - PDF sem camada de texto (impressora errada) → `PdfImpressoIlegivel`, com o
-  arquivo mantido na pasta de download para inspeção;
+  arquivo mantido na pasta de download, sob o nome bruto, até a próxima
+  impressão (que limpa a pasta); inspecione antes de consultar a próxima
+  matrícula;
 - se um relogin do SERPRO atravessar entre duas consultas, a navegação é
   repetida uma vez (a transação é por matrícula, não depende da
   habilitação); persistindo, `TransacaoNaoAbriu`.

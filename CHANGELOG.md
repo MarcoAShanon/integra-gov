@@ -108,11 +108,14 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   faz a leitura sem navegador. Rótulo ausente vira `None`, nunca exceção. A
   matrícula lida do PDF é conferida com a pedida (`DadosPessoaisIndisponiveis`
   se divergir); um relogin do SERPRO atravessado entre consultas é absorvido
-  com uma repetição. Porte do script que rodou na apresentação de 11/09/2026
-  (5 matrículas, 9/9 campos). `PdfImpressoIlegivel` passa a aceitar
-  `bloco=None`. **Ainda não verificado ao vivo pelo módulo** (o gate está
-  planejado; até lá, o sinal de matrícula inexistente é o timeout do botão
-  Imprimir).
+  com uma repetição. A conferência da matrícula acontece antes de renomear
+  o PDF: um PDF de outra pessoa nunca recebe o nome da matrícula pedida nem
+  apaga um PDF anterior dela. `repr(DadosPessoais)` omite nome, CPF,
+  nascimento, e-mail e texto. Porte do script que rodou na apresentação de
+  11/09/2026 (5 matrículas, 9/9 campos). `PdfImpressoIlegivel` passa a
+  aceitar `bloco=None`. **Ainda não verificado ao vivo pelo módulo** (o gate
+  está planejado; até lá, espera-se que se manifeste como timeout do botão
+  Imprimir ou como matrícula divergente no PDF).
 - **`integra_gov.esiape.impressao`**: a mecânica de imprimir via popup
   (esperar o popup, esperar o PDF ficar estável, fechar por Selenium com JS
   de reserva, voltar à janela principal com refresh) saiu de dentro de

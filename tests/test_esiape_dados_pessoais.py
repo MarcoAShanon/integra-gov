@@ -86,6 +86,31 @@ def test_extrair_campos_matricula_so_digitos():
     assert extrair_campos("MATRICULA: 00.000-00")["matricula"] == "0000000"
 
 
+def test_extrair_campos_valor_com_dois_espacos_nao_trunca():
+    from integra_gov.esiape.dados_pessoais import extrair_campos
+
+    c = extrair_campos(
+        "NOME: FULANO  DE TAL     SIT.SER.: 01 ATIVO PERMANENTE")
+    assert c["nome"] == "FULANO  DE TAL"
+    assert c["situacao"] == "ATIVO PERMANENTE"
+
+
+def test_extrair_campos_colunas_com_um_espaco_nao_engole_o_rotulo():
+    from integra_gov.esiape.dados_pessoais import extrair_campos
+
+    c = extrair_campos("MUNICIPIO: CIDADE EXEMPLO UF: XX")
+    assert c["municipio"] == "Cidade Exemplo"
+    assert c["uf"] == "XX"
+
+
+def test_extrair_campos_rotulo_precedido_de_barra_nao_confunde():
+    from integra_gov.esiape.dados_pessoais import extrair_campos
+
+    c = extrair_campos("ORGAO/UF: 00000/XX")
+    assert c["uf"] is None
+    assert c["orgao"] is None
+
+
 def test_extrair_campos_texto_irreconhecivel_tudo_none():
     from integra_gov.esiape.dados_pessoais import extrair_campos
 
@@ -108,6 +133,7 @@ def test_data_siape(bruto, esperado):
 @pytest.mark.parametrize("bruto, esperado", [
     ("02 APOSENTADO", "APOSENTADO"),
     ("APOSENTADO", "APOSENTADO"),
+    ("1 - ATIVO", "ATIVO"),
     ("", None),
 ])
 def test_situacao(bruto, esperado):
@@ -168,14 +194,35 @@ def test_ler_dados_pessoais_le_todas_as_paginas(tmp_path):
     assert d.uf == "XX" and d.orgao == "ORGAO/TESTE"
 
 
+def test_repr_nao_expoe_dados_pessoais(tmp_path):
+    from integra_gov.esiape.dados_pessoais import ler_dados_pessoais
+
+    pdf = pdf_cadastral(tmp_path / "x.pdf")
+    d = ler_dados_pessoais(pdf)
+    r = repr(d)
+    assert "FULANO" not in r
+    assert "000.000.000-00" not in r
+    assert "NUMERO DO CPF" not in r
+    assert "*****00" in r
+
+
+def test_mascarar_matricula_curta_nao_expoe_tudo():
+    from integra_gov.esiape.dados_pessoais import _mascarar
+
+    assert _mascarar("5") == "******5"
+
+
 # ------------------------------------------------- DadosPessoaisServidor
 class _Elemento:
-    def __init__(self):
+    def __init__(self, seletor, ordem):
+        self.seletor = seletor
+        self.ordem = ordem
         self.cliques = 0
         self.teclas = []
 
     def click(self):
         self.cliques += 1
+        self.ordem.append(self.seletor)
 
     def clear(self):
         pass
@@ -185,10 +232,15 @@ class _Elemento:
 
 
 class _Driver:
-    """Driver mínimo: elementos por seletor CSS, relogin como atributo."""
+    """Driver mínimo: elementos por seletor CSS, relogin como atributo.
+
+    ``ordem`` é compartilhada por todos os ``_Elemento``: cada ``click()``
+    grava o próprio seletor nela, na ordem real dos cliques.
+    """
 
     def __init__(self, seletores):
-        self.el = {s: _Elemento() for s in seletores}
+        self.ordem: list[str] = []
+        self.el = {s: _Elemento(s, self.ordem) for s in seletores}
         self._esiape_relogin_pendente = False
 
     def find_element(self, by, valor):
@@ -206,7 +258,8 @@ def ambiente(tmp_path, monkeypatch):
     """Navegação e impressão substituídas; devolve (driver, servidor, chamadas)."""
     monkeypatch.setattr(dmod.time, "sleep", lambda *_a, **_k: None)
     driver = _Driver(TODOS)
-    chamadas = {"navegar": [], "limpar_flag": 0, "imprimir": 0}
+    chamadas = {"navegar": [], "limpar_flag": 0, "imprimir": 0,
+                "fechar_janelas_extras": 0, "limpar_overlay": 0}
 
     def navegar(d, transacao, seletor, timeout=30):
         chamadas["navegar"].append(transacao)
@@ -219,11 +272,18 @@ def ambiente(tmp_path, monkeypatch):
         pdf_cadastral(bruto)
         return bruto
 
+    def fechar_janelas_extras(d, *a, **k):
+        chamadas["fechar_janelas_extras"] += 1
+
+    def limpar_overlay(d, *a, **k):
+        chamadas["limpar_overlay"] += 1
+        return True
+
     monkeypatch.setattr(dmod, "navegar_para_transacao", navegar)
     monkeypatch.setattr(dmod, "esperar_seletor", lambda d, s, timeout=20: (0,) if s in d.el else None)
     monkeypatch.setattr(dmod, "procurar_em_frames", lambda d, s: (0,) if s in d.el else None)
-    monkeypatch.setattr(dmod, "fechar_janelas_extras", lambda d, *a, **k: None)
-    monkeypatch.setattr(dmod, "limpar_overlay", lambda d, *a, **k: True)
+    monkeypatch.setattr(dmod, "fechar_janelas_extras", fechar_janelas_extras)
+    monkeypatch.setattr(dmod, "limpar_overlay", limpar_overlay)
     monkeypatch.setattr(dmod, "limpar_flag_relogin",
                         lambda d: chamadas.__setitem__("limpar_flag", chamadas["limpar_flag"] + 1))
     monkeypatch.setattr(dmod, "imprimir_via_popup", imprimir)
@@ -244,6 +304,19 @@ def test_matricula_vazia_levanta_value_error(ambiente):
         servidor.consultar("   ")
 
 
+def test_matricula_so_pontuacao_levanta_value_error(ambiente):
+    _, servidor, _ = ambiente
+    with pytest.raises(ValueError):
+        servidor.consultar("...-")
+
+
+def test_consultar_normaliza_matricula_a_digitos(ambiente):
+    _, servidor, _ = ambiente
+    d = servidor.consultar("000.000-0")
+    assert d.pdf == servidor.pasta_saida / "dados_pessoais_0000000.pdf"
+    assert d.pdf.exists()
+
+
 def test_consultar_caminho_feliz(ambiente):
     driver, servidor, chamadas = ambiente
     d = servidor.consultar(" 0000000 ")
@@ -251,6 +324,10 @@ def test_consultar_caminho_feliz(ambiente):
     assert driver.el[S.SEL_MATRICULA].teclas == ["0000000", Keys.ENTER]
     for sel in (S.SEL_CONSULTAR, S.SEL_IMPRIMIR, S.SEL_GERAR_PDF, S.SEL_SAIR):
         assert driver.el[sel].cliques == 1, sel
+    assert driver.ordem == [S.SEL_CONSULTAR, S.SEL_IMPRIMIR, S.SEL_GERAR_PDF, S.SEL_SAIR]
+    assert chamadas["fechar_janelas_extras"] == 1
+    assert chamadas["limpar_overlay"] == 1
+    assert chamadas["imprimir"] == 1
     assert d.pdf == servidor.pasta_saida / "dados_pessoais_0000000.pdf"
     assert d.pdf.exists()
     assert not (servidor.pasta_download / "cis_bruto.pdf").exists()
@@ -329,6 +406,16 @@ def test_matricula_divergente_no_pdf_levanta(ambiente):
     with pytest.raises(DadosPessoaisIndisponiveis) as exc:
         servidor.consultar("1111111")
     assert "*****00" in str(exc.value) and "*****11" in str(exc.value)
+    assert not (servidor.pasta_saida / "dados_pessoais_1111111.pdf").exists()
+
+
+def test_matricula_divergente_nao_apaga_pdf_anterior_bom(ambiente):
+    _, servidor, _ = ambiente
+    destino = servidor.pasta_saida / "dados_pessoais_1111111.pdf"
+    destino.write_bytes(b"bom, de verdade")
+    with pytest.raises(DadosPessoaisIndisponiveis):
+        servidor.consultar("1111111")
+    assert destino.read_bytes() == b"bom, de verdade"
 
 
 def test_pdf_sem_texto_levanta_ilegivel_e_mantem_arquivo(ambiente):

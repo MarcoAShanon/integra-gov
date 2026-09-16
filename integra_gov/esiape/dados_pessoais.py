@@ -20,7 +20,7 @@ from __future__ import annotations
 import logging
 import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 
 from pypdf import PdfReader
@@ -62,32 +62,58 @@ _ROTULOS = {
     "orgao": r"ORGAO SOLICITADO",
 }
 
-#: O que encerra um valor: 2+ espaços seguidos de outro rótulo (MAIÚSCULAS,
-#: pontos, barras, dígitos) e ``:``, ou o fim da linha.
-_FIM_DO_VALOR = r"(?=\s{2,}[A-ZÀ-Ú][A-ZÀ-Ú ./0-9º-]*:|$)"
+#: O que encerra um valor: o início de um dos rótulos CONHECIDOS (não
+#: qualquer sequência em maiúsculas). Um valor pode legitimamente conter dois
+#: espaços seguidos (ex.: "FULANO  DE TAL" na camada de texto em modo
+#: layout), e um único espaço pode separar duas colunas lado a lado (ex.:
+#: "CIDADE EXEMPLO UF: XX") — por isso o corte não pode ser por espaçamento,
+#: só pelo próximo rótulo que a tela realmente usa. O ``-`` de ``E-MAIL`` já
+#: está coberto por listar o rótulo por extenso, não por uma classe de
+#: caracteres.
+_PROXIMO_ROTULO = "|".join(_ROTULOS.values())
+_FIM_DO_VALOR = rf"(?=\s+(?:{_PROXIMO_ROTULO})\s*:|$)"
 
 
-@dataclass
+def _mascarar(matricula: str) -> str:
+    """``matricula`` reduzida aos 2 últimos dígitos; nunca expõe tudo, mesmo
+    para uma matrícula mais curta que 2 caracteres."""
+    return f"*****{matricula[-2:].rjust(2, '*')}"
+
+
+@dataclass(repr=False)
 class DadosPessoais:
-    """Os campos cadastrais lidos do PDF da CDCOINDPES (ausente = ``None``)."""
+    """Os campos cadastrais lidos do PDF da CDCOINDPES (ausente = ``None``).
+
+    ``repr()`` omite nome, CPF, nascimento, e-mail e texto — só a matrícula
+    (mascarada) e os campos não sensíveis aparecem, para não vazar dados
+    pessoais em log ou traceback.
+    """
 
     matricula: str | None
-    nome: str | None
+    nome: str | None = field(repr=False)
     situacao: str | None
-    cpf: str | None
-    data_nascimento: str | None
-    email: str | None
+    cpf: str | None = field(repr=False)
+    data_nascimento: str | None = field(repr=False)
+    email: str | None = field(repr=False)
     municipio: str | None
     uf: str | None
     orgao: str | None
-    texto: str
+    texto: str = field(repr=False)
     pdf: Path | None = None
+
+    def __repr__(self) -> str:
+        mascarada = _mascarar(self.matricula or "")
+        return (
+            f"DadosPessoais(matricula={mascarada!r}, situacao={self.situacao!r}, "
+            f"municipio={self.municipio!r}, uf={self.uf!r}, "
+            f"orgao={self.orgao!r}, pdf={self.pdf!r})"
+        )
 
 
 # ----------------------------------------------------------- normalizações
 def _campo(texto: str, rotulo: str) -> str | None:
     """Valor cru após ``rotulo:`` até o próximo rótulo ou o fim da linha."""
-    m = re.search(rf"(?<![A-Z]){rotulo}\s*:\s*(.*?){_FIM_DO_VALOR}", texto, re.M)
+    m = re.search(rf"(?<![A-Z/]){rotulo}\s*:\s*(.*?){_FIM_DO_VALOR}", texto, re.M)
     if not m:
         return None
     valor = m.group(1).strip()
@@ -103,8 +129,9 @@ def _data_siape(bruto: str | None) -> str | None:
 
 
 def _situacao(bruto: str | None) -> str | None:
-    """``02 APOSENTADO`` → ``APOSENTADO`` (o código numérico não interessa)."""
-    valor = re.sub(r"^\d+\s*", "", (bruto or "").strip())
+    """``02 APOSENTADO`` / ``1 - ATIVO`` → sem o código numérico nem o
+    separador (o código não interessa)."""
+    valor = re.sub(r"^\d+\s*-?\s*", "", (bruto or "").strip())
     return valor or None
 
 
@@ -154,10 +181,6 @@ def ler_dados_pessoais(pdf: Path) -> DadosPessoais:
 
 
 # --------------------------------------------------------- com navegador
-def _mascarar(matricula: str) -> str:
-    return f"*****{matricula[-2:]}"
-
-
 class DadosPessoaisServidor:
     """Consulta a CDCOINDPES, imprime o PDF e devolve os campos lidos dele.
 
@@ -240,11 +263,14 @@ class DadosPessoaisServidor:
             TransacaoNaoAbriu: a tela não montou (mesmo após a repetição
                 por relogin).
             DadosPessoaisIndisponiveis: botão ausente no prazo, impressão
-                sem PDF, ou PDF de outra matrícula.
+                sem PDF, ou PDF de outra matrícula — a matrícula é conferida
+                ANTES de renomear, então o arquivo fica na pasta de download,
+                sob o nome bruto, e nunca apaga um PDF anterior correto.
             PdfImpressoIlegivel: o PDF veio sem camada de texto (arquivo
-                mantido na pasta de download para inspeção).
+                mantido na pasta de download, sob o nome bruto, para
+                inspeção).
         """
-        matricula = str(matricula).strip()
+        matricula = re.sub(r"\D", "", str(matricula).strip())
         if not matricula:
             raise ValueError("matricula é obrigatória")
         mascarada = _mascarar(matricula)
@@ -275,25 +301,29 @@ class DadosPessoaisServidor:
                 matricula, f"a impressão não produziu PDF: {exc}") from exc
 
         try:
-            legivel = tem_camada_de_texto(bruto)
-            motivo = "as fontes viraram contorno vetorial"
+            # ainda em pasta_download, sob o nome bruto: só vira
+            # dados_pessoais_<matricula>.pdf depois de confirmada a matrícula.
+            dados = ler_dados_pessoais(bruto)
         except PdfIlegivelError as exc:
-            legivel, motivo = False, f"o arquivo não pôde ser aberto: {exc}"
-        if not legivel:
             # fica com o nome bruto, na pasta de download, para inspeção
-            raise PdfImpressoIlegivel(bruto, None, motivo)
+            raise PdfImpressoIlegivel(bruto, None, str(exc))
+
+        if dados.matricula != matricula:
+            # arquivo intocado em pasta_download: nunca recebe o nome da
+            # matrícula pedida nem apaga um dados_pessoais_<matricula>.pdf
+            # anterior que já estivesse correto.
+            raise DadosPessoaisIndisponiveis(
+                matricula, f"o PDF traz a matrícula "
+                           f"{_mascarar(dados.matricula or '')}, não a pedida")
 
         destino = self.pasta_saida / f"dados_pessoais_{matricula}.pdf"
         if destino.exists():
             destino.unlink()
         bruto.rename(destino)
+        dados.pdf = destino
         self._sair()
 
-        dados = ler_dados_pessoais(destino)
-        if dados.matricula != matricula:
-            raise DadosPessoaisIndisponiveis(
-                matricula, f"o PDF traz a matrícula "
-                           f"{_mascarar(dados.matricula or '')}, não a pedida")
         _log.info("%s: %s lida, %d/9 campos", self.TRANSACAO, mascarada,
-                  sum(1 for c in extrair_campos(dados.texto).values() if c))
+                  sum(1 for f in fields(dados)
+                      if f.name not in ("texto", "pdf") and getattr(dados, f.name)))
         return dados
