@@ -1,0 +1,248 @@
+# Dados pessoais do pensionista no e-SIAPE (CDCOPSBENE) — design
+
+**Data:** 2026-09-16
+**Módulo alvo:** `integra_gov/esiape/dados_pensionista.py`
+**Estratégia:** porte guiado do módulo privado `DadosPessoaisPensionista`
+(CDCOPSBENE, validado em produção), com a impressão trocada pela mecânica
+já estabilizada da lib. Nenhum dado pessoal ou órgão real embutido.
+
+## Contexto
+
+O módulo `esiape.dados_pessoais` (CDCOINDPES, mergeado em 16/09) cobre
+servidor, aposentado e instituidor. **Pensionista não tem equivalente**: o
+SIAPE 3270 só oferece a ficha financeira (`siape.ficha_pensionista`), e o
+cadastro de pensionista só existe no e-SIAPE, na transação CDCOPSBENE.
+
+As duas telas são de naturezas diferentes, e isso governa o desenho:
+
+| | CDCOINDPES (servidor) | CDCOPSBENE (pensionista) |
+|---|---|---|
+| tela | relatório impresso | formulário com campos de entrada |
+| origem dos campos | camada de texto do PDF | valores no DOM, por `data-testtoolid` |
+| tela intermediária | nenhuma | procuração, quando há procurador |
+| conferência de identidade | matrícula impressa no PDF | eco do campo de busca (mais fraca, ver §Identidade) |
+
+Ler o formulário pelo DOM é o que o privado faz em produção. Ler pelo PDF
+seria apostar que o impresso tem camada de texto e carrega os valores
+digitados, o que ninguém mediu. A lib passa a ter duas mecânicas de leitura,
+uma por tela, e isso é deliberado.
+
+Consumidores previstos: a fatia B-5 do `integra-flow` e processos de pensão
+que hoje dependem de consulta manual.
+
+## Escopo
+
+**Entra:** o módulo, o arquivo compartilhado de máscara, testes mockados,
+README + CHANGELOG + uso-basico no mesmo commit, gate ao vivo.
+
+**Fica fora:**
+- Dados do **benefício** (instituidor, tipo e início da pensão): o privado
+  tem isso em módulo à parte, provavelmente outra transação. Fatia própria.
+- Nome do procurador: o resultado diz apenas que **existe** procuração. Ler
+  quem é acrescenta dado pessoal de terceiro sem finalidade declarada.
+- Leitura pura de um PDF de pensionista já no disco: não se sabe se o
+  impresso carrega os campos. O gate mede; se carregar, vira fatia futura.
+- Lote, checkpoint e "só faltantes" → orquestrador (B-5 do flow).
+
+## API pública
+
+```python
+from pathlib import Path
+from integra_gov.esiape import DadosPessoaisPensionista
+
+cad = DadosPessoaisPensionista(driver, pasta_saida=Path("cadastrais/"))
+dados = cad.consultar("0000000")          # matrícula fictícia
+dados.nome, dados.cep, dados.com_procuracao, dados.pdf
+```
+
+### `DadosPensionista` (dataclass)
+
+| campo | origem (`data-testtoolid`) | normalização |
+|---|---|---|
+| `matricula` | a pedida, normalizada | só dígitos |
+| `nome` | `w_tl_no_benef` | `strip` |
+| `cpf` | `w_tl_nu_cpf` | `strip` |
+| `data_nascimento` | `w_da_nascimento` | ver abaixo |
+| `email` | `w_tl_ed_correio_eletronico` | minúsculas |
+| `logradouro` | `w_tl_no_logradouro` | `strip` |
+| `numero` | `w_nu_end` | `strip` |
+| `complemento` | `w_tl_complemento_endereco` | `strip` |
+| `bairro` | `w_tl_no_bairro_novo` | `strip` |
+| `municipio` | `w_tl_no_municipio` | maiúsculas iniciais |
+| `uf` | `w_tl_uf_end` | `strip` |
+| `cep` | `w_co_cep` | `strip` |
+| `com_procuracao` | tela intermediária | `bool`, default `False` |
+| `pdf` | — | caminho do PDF renomeado |
+
+Campo vazio vira `None`, sem levantar: ausência é informação, não falha
+(mesma regra do módulo de servidor). O valor de cada campo sai de
+`get_attribute("value")` do elemento de entrada.
+
+**Data de nascimento, formato a confirmar no gate.** A leitura aceita
+`DDMMMAAAA` (padrão SIAPE, convertido para `dd/mm/aaaa`) **e** `dd/mm/aaaa`
+(mantido); qualquer outra forma vira `None`. Depois do gate, a forma que não
+ocorrer sai do código, com o registro do que foi medido.
+
+**Privacidade.** `repr(DadosPensionista)` omite nome, CPF, nascimento,
+e-mail e o endereço inteiro; mostra município, UF, `com_procuracao` e a
+matrícula mascarada. Logs trazem só os dois últimos dígitos da matrícula.
+
+### `DadosPessoaisPensionista(driver, pasta_saida, pasta_download=None)`
+
+Mesma assinatura e mesmos defaults de `DadosPessoaisServidor`
+(`pasta_download` = `pasta_saida / "_download_esiape"`, ambas criadas). A
+pasta de download DEVE ser dedicada: a impressão apaga todos os PDFs dela.
+
+`consultar(matricula) -> DadosPensionista`, sequência:
+
+1. `matricula` normalizada a dígitos; vazia → `ValueError`.
+2. `fechar_janelas_extras`, `fechar_popups_cis`, `limpar_overlay`.
+3. `navegar_para_transacao(driver, "CDCOPSBENE", SEL_MATRICULA)`, com **uma**
+   repetição quando falha e `relogin_pendente` (limpa a flag antes). Falha de
+   novo → `TransacaoNaoAbriu`.
+4. Matrícula no campo de busca + ENTER; botão Consultar.
+5. **Tela de procuração** (§ própria abaixo): se presente, atravessa e marca
+   `com_procuracao = True`.
+6. Lê os 11 campos do formulário.
+7. Conferência de identidade (§ própria abaixo).
+8. Se **todos** os 11 campos vierem vazios → `DadosPessoaisIndisponiveis`
+   com motivo "a consulta não trouxe dados".
+9. `imprimir_via_popup` com `onPrintPDF` e depois
+   `w_report.onGeneratePrintVersion`; guarda de camada de texto; renomeia
+   para `pasta_saida / f"dados_pensionista_{matricula}.pdf"`, sobrescrevendo.
+10. Botão Sair, falha ignorada com `warning`.
+11. Em falha dentro da transação (passos 4 a 9): `_recuperar_tela` (fechar
+    popups, limpar cortina, Sair), best effort, que **nunca** mascara a
+    exceção original.
+
+Seletores (do privado, validados em produção): `w_matr_infor_alfa`,
+`onClickbtnConsulta`, `onPrintPDF`, `w_report.onGeneratePrintVersion`,
+`onClickBtnSair`, todos por `data-testtoolid`.
+
+**A impressão NÃO é portada do privado.** O privado envia dez tabulações e um
+ENTER, depois procura `StartDynamicContent.pdf` em três pastas (temporária,
+Downloads e Área de Trabalho). Isso é anterior a `esiape.impressao`, que
+estabilizou a sequência e já rendeu quatro defeitos de gate até ficar assim.
+
+## Tela de procuração
+
+Aparece entre a consulta e os dados quando o pensionista tem procurador.
+Vive num iframe cujo `id` contém `SUBPAGE`, e traz o texto
+`BENEFICIARIO COM PROCURACAO`. É fechada enviando ENTER ao `body` desse
+iframe (mecânica do privado).
+
+Detecção e travessia são best effort com limite de tempo curto: a tela é
+opcional, então **não encontrá-la é o caso normal**, não erro. Se o texto
+aparecer e o ENTER não a dissolver, os campos seguintes não vão preencher e
+o passo 8 levanta `DadosPessoaisIndisponiveis`, com o motivo dizendo que a
+tela de procuração pode ter ficado presa.
+
+## Identidade: a conferência é mais fraca que no servidor
+
+No módulo de servidor a matrícula é lida do PDF e comparada com a pedida.
+A tela do pensionista **não devolve a matrícula junto dos dados**, então essa
+comparação não existe aqui. As proteções são:
+
+1. **Estrutural:** cada `consultar` navega para a transação do zero, então o
+   formulário chega em branco. Não há reaproveitamento de tela entre pessoas.
+2. **Eco do campo de busca:** depois da consulta, o módulo lê o valor de
+   `w_matr_infor_alfa`. Se vier preenchido, tem de bater com a pedida
+   (senão `DadosPessoaisIndisponiveis`). Se vier vazio, um `warning` registra
+   que a conferência não foi possível e a consulta segue.
+
+O gate mede qual dos dois casos é o real. Se o eco existir sempre, a
+tolerância do caso vazio sai do código na sequência, e a spec registra a
+medição. Enquanto a medição não existe, o comportamento tolerante fica
+declarado aqui e na documentação, em vez de prometido como conferência.
+
+## Erros
+
+`ValueError` é da linguagem; as demais são filhas de `EsiapeError`:
+
+| exceção | quando |
+|---|---|
+| `ValueError` | matrícula vazia depois de normalizada |
+| `TransacaoNaoAbriu` (existente) | a tela não montou, mesmo após a repetição por relogin |
+| `DadosPessoaisIndisponiveis` (existente, reaproveitada) | nenhum campo preenchido; eco de matrícula divergente; a impressão não produziu PDF |
+| `PdfImpressoIlegivel` (existente) | o impresso saiu sem camada de texto; o arquivo fica na pasta de download, com o nome bruto, até a próxima impressão |
+
+`DadosPessoaisIndisponiveis` é reaproveitada de propósito: o significado é o
+mesmo e quem consome trata servidor e pensionista com um `except` só.
+
+## Mudança pontual no código existente
+
+`_mascarar_digitos` vive hoje dentro de `dados_pessoais.py` e passa a ser
+usada pelos dois módulos. Sai para `integra_gov/esiape/_mascara.py`, com a
+função pública ao módulo `mascarar_digitos(texto)` e seus testes movidos
+junto. `dados_pessoais.py` importa de lá. Sem mudança de comportamento: os
+testes existentes de máscara continuam valendo como estão.
+
+## Testes (`tests/test_esiape_dados_pensionista.py`)
+
+Sem navegador real. Driver falso que devolve elementos de entrada por
+`data-testtoolid`, com valores fictícios (matrícula `0000000`, CPF
+`000.000.000-00`, e-mail `fulano@exemplo.gov.br`).
+
+- Os 12 campos do resultado (11 lidos do formulário, mais a matrícula pedida)
+  a partir de um formulário completo; campo vazio vira `None`;
+  e-mail em minúsculas; município em maiúsculas iniciais.
+- Data: `15AGO1960` → `15/08/1960`; `15/08/1960` mantido; `1960-08-15` e
+  lixo → `None`.
+- Procuração: tela presente → atravessada, ENTER enviado ao `body` do iframe
+  e `com_procuracao is True`; tela ausente → `False` e nenhum ENTER.
+- Todos os campos vazios → `DadosPessoaisIndisponiveis`, e **nenhum PDF é
+  impresso** (a impressão só acontece depois da checagem).
+- Eco divergente → levanta, com as duas matrículas mascaradas na mensagem;
+  eco vazio → segue e registra `warning`.
+- Relogin atravessado → exatamente uma repetição; persistindo →
+  `TransacaoNaoAbriu`.
+- Impressão levantando → `DadosPessoaisIndisponiveis`; PDF sem camada de
+  texto → `PdfImpressoIlegivel` com o arquivo mantido.
+- Recuperação de tela roda nas falhas e nunca mascara a exceção original
+  (inclusive quando a própria recuperação levanta).
+- `repr` não expõe nome, CPF, e-mail, endereço nem a matrícula inteira.
+- Ordem dos cliques e chamadas de limpeza conferidas por contador.
+- Exportação dos nomes em `integra_gov.esiape`.
+
+## Verificação ao vivo (gate antes do merge)
+
+Script em `dados_reais/` (gitignored), nos moldes do gate do módulo de
+servidor: saída mascarada, verificação por **forma** e não por valor, código
+de saída 1 só em falha real. Duas matrículas de pensionista reais e uma
+inexistente por último.
+
+Perguntas que o gate responde, e que entram nesta spec como medição:
+
+1. formato da data de nascimento no formulário;
+2. se `w_matr_infor_alfa` ecoa a matrícula depois da consulta;
+3. o que a tela faz com matrícula inexistente (campos vazios? popup? outra
+   coisa?);
+4. se o PDF impresso tem camada de texto e carrega os mesmos campos, o que
+   decide se vale uma leitura pura numa fatia futura.
+
+Se uma das matrículas reais for de pessoa **com procurador**, a tela
+intermediária é exercitada ao vivo. Se não houver uma à mão, esse caminho
+fica coberto só pelo teste mockado, e a documentação diz isso em vez de
+prometer verificação que não houve.
+
+## Documentação (junto com o módulo)
+
+README: linha na tabela do e-SIAPE + exemplo curto. CHANGELOG: "Adicionado",
+com a nota de verificação ao vivo preenchida só depois do gate.
+`docs/uso-basico.md`: seção do módulo com a pasta de download dedicada, a
+lista dos 12 campos, a semântica de `com_procuracao` e as duas limitações
+declaradas (conferência de identidade mais fraca; sem releitura offline).
+
+## Riscos e mitigação
+
+- **Seletor de campo muda no e-SIAPE** → o campo vira `None`; se todos
+  virarem, a consulta levanta em vez de devolver resultado vazio como se
+  fosse bom.
+- **Tela de procuração presa** → os campos não preenchem e o passo 8 levanta,
+  com o motivo apontando essa hipótese.
+- **Dados da pessoa anterior** → navegação nova por consulta, mais o eco do
+  campo de busca quando existir.
+- **Pasta de download compartilhada** → a impressão apagaria PDFs alheios;
+  default dedicado e aviso na documentação.
+- **Formato de data desconhecido** → duas formas aceitas, resto `None`, e a
+  medição do gate reduz o código depois.
