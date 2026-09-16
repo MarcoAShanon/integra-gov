@@ -1,7 +1,8 @@
 """Automação do e-SIAPE web (CIS/Software AG) — fundação.
 
 Navegação por frames visíveis, travessia de popups/relogin do SERPRO,
-acesso via SERPRO ID (você autentica) e troca de habilitação (TROCAHAB).
+acesso via SERPRO ID (você autentica), troca de habilitação (TROCAHAB) e
+dados pessoais (CDCOINDPES) lidos do PDF impresso.
 
 Exemplo mínimo::
 
@@ -15,8 +16,10 @@ Exemplo mínimo::
 
 from .acesso import AcessoEsiape
 from .dados_funcionais import DadosFuncionais, DadosFuncionaisOrgao
+from .dados_pessoais import DadosPessoais, DadosPessoaisServidor, ler_dados_pessoais
 from .exceptions import (
     AutenticacaoNaoConfirmada,
+    DadosPessoaisIndisponiveis,
     EsiapeError,
     ExtracaoFichaEsiapeInterrompida,
     FichaEsiapeIndisponivel,
@@ -45,6 +48,9 @@ __all__ = [
     "AutenticacaoNaoConfirmada",
     "DadosFuncionais",
     "DadosFuncionaisOrgao",
+    "DadosPessoais",
+    "DadosPessoaisIndisponiveis",
+    "DadosPessoaisServidor",
     "EsiapeError",
     "ExtracaoFichaEsiapeInterrompida",
     "FichaAnualServidor",
@@ -61,6 +67,7 @@ __all__ = [
     "fechar_janelas_extras",
     "garantir_menu",
     "imprimir_via_popup",
+    "ler_dados_pessoais",
     "limpar_flag_relogin",
     "limpar_overlay",
     "navegar_para_transacao",

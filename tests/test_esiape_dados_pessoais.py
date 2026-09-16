@@ -367,3 +367,12 @@ def test_log_nao_expoe_matricula_inteira(ambiente, caplog):
 def test_pdf_impresso_ilegivel_sem_bloco_tem_mensagem_sem_bloco(tmp_path):
     exc = PdfImpressoIlegivel(tmp_path / "x.pdf", None, "motivo")
     assert "bloco" not in str(exc) and "ilegível" in str(exc)
+
+
+def test_exportado_no_subpacote():
+    import integra_gov.esiape as pkg
+
+    for nome in ("DadosPessoais", "DadosPessoaisServidor",
+                 "DadosPessoaisIndisponiveis", "ler_dados_pessoais"):
+        assert hasattr(pkg, nome), nome
+        assert nome in pkg.__all__, nome

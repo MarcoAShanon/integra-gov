@@ -505,6 +505,23 @@ if resultado.lacunas:
     print("cobertura incompleta:", resultado.lacunas)
 ```
 
+Os **dados pessoais** de uma matrícula (`CDCOINDPES`) saem como PDF e como
+campos lidos dele — nome, situação, CPF, data de nascimento, e-mail,
+município, UF e órgão. Quem já tem o PDF no disco lê sem abrir o navegador:
+
+```python
+from pathlib import Path
+from integra_gov.esiape import DadosPessoaisServidor, ler_dados_pessoais
+
+dados = DadosPessoaisServidor(driver, pasta_saida=Path("cadastrais/")).consultar("0000000")
+print(dados.pdf, dados.nome, dados.situacao)   # matrícula fictícia
+
+dados = ler_dados_pessoais(Path("cadastrais/dados_pessoais_0000000.pdf"))  # sem navegador
+```
+
+Campo cujo rótulo não aparece no PDF fica `None`; o texto inteiro do PDF vem
+em `dados.texto` para quem precisar de outro rótulo.
+
 Detalhes de blocos, pasta de download, semântica de bloco-sem-dados e
 lacunas multi-órgão em [Ficha anual e multi-órgão
 (e-SIAPE)](docs/uso-basico.md#ficha-anual-e-multi-órgão-e-siape) no guia de
@@ -621,6 +638,7 @@ Detalhes em [Ler uma ficha financeira](docs/uso-basico.md#ler-uma-ficha-financei
 | `integra_gov.esiape.ficha_anual` | Ficha financeira anual (`FPEMFICHAF`), um único órgão: blocos de até 15 anos, PDF mesclado, bloco sem dados ≠ erro; **recusa PDF impresso sem camada de texto** | ✅ |
 | `integra_gov.esiape.impressao` | imprimir via popup (Save as PDF): a sequência estabilizada, reutilizável por qualquer tela que imprime | ✅ |
 | `integra_gov.esiape.dados_funcionais` | `CDCOINDFUN`: descobre o órgão anterior e o ano de ingresso do servidor | ✅ |
+| `integra_gov.esiape.dados_pessoais` | `CDCOINDPES`: PDF dos dados pessoais + 9 campos lidos dele (`ler_dados_pessoais` funciona sem navegador); confere a matrícula do PDF | ✅ |
 | `integra_gov.esiape.ficha_multi_orgao` | Encadeia `ficha_anual` por todos os órgãos do servidor (via `dados_funcionais`), com lacunas sempre declaradas | ✅ |
 | `integra_gov.esiape.exceptions` | Exceções tipadas | ✅ |
 

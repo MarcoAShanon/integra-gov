@@ -1147,6 +1147,52 @@ if not resultado.voltou_ao_orgao_inicial:
 
 ---
 
+## Dados pessoais de uma matrícula (e-SIAPE)
+
+A `CDCOINDPES` mostra o cadastro de uma matrícula e imprime um PDF. O módulo
+imprime e lê os campos **do PDF** (os rótulos da camada de texto são estáveis;
+o texto dos frames CIS, não).
+
+```python
+from pathlib import Path
+from integra_gov.esiape import AcessoEsiape, DadosPessoaisServidor
+
+AcessoEsiape(driver).executar()                      # você confirma no app
+cad = DadosPessoaisServidor(driver, pasta_saida=Path("cadastrais/"))
+dados = cad.consultar("0000000")                     # matrícula fictícia
+dados.pdf            # cadastrais/dados_pessoais_0000000.pdf
+dados.nome, dados.situacao, dados.cpf, dados.data_nascimento   # "15/08/1960"
+dados.email, dados.municipio, dados.uf, dados.orgao
+dados.texto          # o PDF inteiro, para outro rótulo que você precise
+```
+
+O Chrome precisa das prefs de impressão da seção "Configuração do Chrome"
+(acima), e `pasta_download` (default `cadastrais/_download_esiape`) tem de
+ser **dedicada**: a impressão apaga todos os PDFs dela antes de começar.
+
+Regras de honestidade do módulo:
+
+- campo cujo rótulo não aparece fica `None`; não é erro;
+- o PDF é conferido: se trouxer outra matrícula (tela anterior ainda
+  carregada), `DadosPessoaisIndisponiveis`;
+- PDF sem camada de texto (impressora errada) → `PdfImpressoIlegivel`, com o
+  arquivo mantido na pasta de download para inspeção;
+- se um relogin do SERPRO atravessar entre duas consultas, a navegação é
+  repetida uma vez (a transação é por matrícula, não depende da
+  habilitação); persistindo, `TransacaoNaoAbriu`.
+
+Para reler PDFs já no disco, sem navegador:
+
+```python
+from integra_gov.esiape import ler_dados_pessoais
+dados = ler_dados_pessoais(Path("cadastrais/dados_pessoais_0000000.pdf"))
+```
+
+Nos logs só aparecem os dois últimos dígitos da matrícula; nome, CPF e
+e-mail nunca são logados.
+
+---
+
 ## Ler uma ficha financeira
 
 Os módulos anteriores **produzem** o PDF da ficha. Este o **lê de volta como
