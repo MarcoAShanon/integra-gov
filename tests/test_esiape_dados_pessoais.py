@@ -141,19 +141,6 @@ def test_extrair_campos_texto_irreconhecivel_tudo_none():
 
 
 @pytest.mark.parametrize("bruto, esperado", [
-    ("15AGO1960", "15/08/1960"),
-    ("01JAN2001", "01/01/2001"),
-    ("15XYZ1960", None),
-    ("1960-08-15", None),
-    ("", None),
-])
-def test_data_siape(bruto, esperado):
-    from integra_gov.esiape.dados_pessoais import _data_siape
-
-    assert _data_siape(bruto) == esperado
-
-
-@pytest.mark.parametrize("bruto, esperado", [
     ("02 APOSENTADO", "APOSENTADO"),
     ("APOSENTADO", "APOSENTADO"),
     ("1 - ATIVO", "ATIVO"),
@@ -228,26 +215,6 @@ def test_repr_nao_expoe_dados_pessoais(tmp_path):
     assert "NUMERO DO CPF" not in r
     assert "*****00" in r
     assert "0000000" not in r
-
-
-def test_mascarar_matricula_curta_nao_expoe_tudo():
-    from integra_gov.esiape.dados_pessoais import _mascarar
-
-    assert _mascarar("5") == "******5"
-
-
-@pytest.mark.parametrize("bruto, esperado", [
-    ("MATRICULA 1234567 NAO CADASTRADA", "MATRICULA *****67 NAO CADASTRADA"),
-    ("000.000-0", "*****00"),
-    ("123.456.789-00", "*****00"),
-    ("1234", "*****34"),
-    ("UF 12", "UF 12"),
-    ("ORGAO 40806 - X", "ORGAO *****06 - X"),
-])
-def test_mascarar_digitos(bruto, esperado):
-    from integra_gov.esiape.dados_pessoais import _mascarar_digitos
-
-    assert _mascarar_digitos(bruto) == esperado
 
 
 # ------------------------------------------------- DadosPessoaisServidor

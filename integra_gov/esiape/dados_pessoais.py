@@ -28,6 +28,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
 from ..ficha_financeira import PdfIlegivelError, tem_camada_de_texto
+from ._campos import data_siape, mascarar_digitos, mascarar_matricula
 from .exceptions import (
     DadosPessoaisIndisponiveis,
     PdfImpressoIlegivel,
@@ -46,9 +47,6 @@ from .navegacao import (
 )
 
 _log = logging.getLogger(__name__)
-
-_MESES = {"JAN": 1, "FEV": 2, "MAR": 3, "ABR": 4, "MAI": 5, "JUN": 6,
-          "JUL": 7, "AGO": 8, "SET": 9, "OUT": 10, "NOV": 11, "DEZ": 12}
 
 #: Rótulos da tela, como regex. ``SIT.SER.`` tem pontos literais.
 _ROTULOS = {
@@ -83,25 +81,6 @@ _FIM_DO_VALOR = (
 )
 
 
-def _mascarar(matricula: str) -> str:
-    """``matricula`` reduzida aos 2 últimos dígitos; nunca expõe tudo, mesmo
-    para uma matrícula mais curta que 2 caracteres."""
-    return f"*****{matricula[-2:].rjust(2, '*')}"
-
-
-def _mascarar_digitos(texto: str) -> str:
-    """Todo grupo de 3+ dígitos vira ``*****`` + os 2 últimos dígitos do
-    grupo — cobre tanto uma sequência corrida (``1234567``) quanto uma
-    pontuada por ``.``, ``-``, ``/`` ou um único espaço entre dígitos
-    (matrícula ``000.000-0``, CPF ``123.456.789-00``). Um grupo de 1 ou 2
-    dígitos (ex.: ``UF: 12``) não é matrícula nem CPF e fica intocado."""
-    return re.sub(
-        r"\d(?:[.\-/ ]?\d){2,}",
-        lambda m: "*****" + re.sub(r"\D", "", m.group(0))[-2:],
-        texto,
-    )
-
-
 def _texto_popup_cis(driver) -> str | None:
     """Texto do popup de erro do CIS (se houver), para enriquecer o motivo de
     :class:`~integra_gov.esiape.exceptions.DadosPessoaisIndisponiveis` quando
@@ -110,9 +89,9 @@ def _texto_popup_cis(driver) -> str | None:
     PENDÊNCIA (gate ao vivo): o seletor ``[id^='IPO_']`` é um PALPITE — o
     sinal real da tela para matrícula inexistente ainda não é conhecido (ver
     ``MSG_NAO_ENCONTRADA``). Qualquer dígito mascarado (ver
-    :func:`_mascarar_digitos`) ANTES do corte a 200 caracteres: se o corte
-    viesse primeiro, uma matrícula que caísse em cima da fronteira sobraria
-    parcialmente em claro.
+    :func:`~integra_gov.esiape._campos.mascarar_digitos`) ANTES do corte a
+    200 caracteres: se o corte viesse primeiro, uma matrícula que caísse em
+    cima da fronteira sobraria parcialmente em claro.
     """
     try:
         driver.switch_to.default_content()
@@ -122,7 +101,7 @@ def _texto_popup_cis(driver) -> str | None:
             texto = (el.text or "").strip()
             if not texto:
                 continue
-            return _mascarar_digitos(texto)[:200]
+            return mascarar_digitos(texto)[:200]
     except Exception:  # noqa: BLE001 — captura de contexto é best-effort
         return None
     return None
@@ -150,9 +129,9 @@ class DadosPessoais:
     pdf: Path | None = None
 
     def __repr__(self) -> str:
-        mascarada = _mascarar(self.matricula or "")
+        mascarada = mascarar_matricula(self.matricula or "")
         if self.pdf is not None:
-            nome_mascarado = _mascarar_digitos(self.pdf.name)
+            nome_mascarado = mascarar_digitos(self.pdf.name)
             pdf_repr = repr(f"{self.pdf.parent}/{nome_mascarado}")
         else:
             pdf_repr = "None"
@@ -171,14 +150,6 @@ def _campo(texto: str, rotulo: str) -> str | None:
         return None
     valor = m.group(1).strip()
     return valor or None
-
-
-def _data_siape(bruto: str | None) -> str | None:
-    """``15AGO1960`` → ``15/08/1960``; qualquer outra forma → ``None``."""
-    m = re.fullmatch(r"(\d{2})([A-Z]{3})(\d{4})", (bruto or "").strip().upper())
-    if not m or m.group(2) not in _MESES:
-        return None
-    return f"{m.group(1)}/{_MESES[m.group(2)]:02d}/{m.group(3)}"
 
 
 def _situacao(bruto: str | None) -> str | None:
@@ -203,7 +174,7 @@ def extrair_campos(texto: str) -> dict[str, str | None]:
         "nome": cru["nome"],
         "situacao": _situacao(cru["situacao"]),
         "cpf": cru["cpf"],
-        "data_nascimento": _data_siape(cru["data_nascimento"]),
+        "data_nascimento": data_siape(cru["data_nascimento"]),
         "email": (cru["email"] or "").lower() or None,
         "municipio": (cru["municipio"] or "").title() or None,
         "uf": cru["uf"],
@@ -348,7 +319,7 @@ class DadosPessoaisServidor:
         matricula = re.sub(r"\D", "", str(matricula).strip())
         if not matricula:
             raise ValueError("matricula é obrigatória")
-        mascarada = _mascarar(matricula)
+        mascarada = mascarar_matricula(matricula)
         _log.info("%s: consultando a matrícula %s", self.TRANSACAO, mascarada)
 
         fechar_janelas_extras(self.driver)
@@ -394,7 +365,7 @@ class DadosPessoaisServidor:
                 # anterior que já estivesse correto.
                 raise DadosPessoaisIndisponiveis(
                     matricula, f"o PDF traz a matrícula "
-                               f"{_mascarar(dados.matricula or '')}, não a pedida")
+                               f"{mascarar_matricula(dados.matricula or '')}, não a pedida")
         except (DadosPessoaisIndisponiveis, PdfImpressoIlegivel):
             self._recuperar_tela()
             raise
