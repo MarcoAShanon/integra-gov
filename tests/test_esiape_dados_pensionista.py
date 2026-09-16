@@ -405,6 +405,31 @@ def test_todos_os_campos_vazios_levanta_sem_imprimir(ambiente, monkeypatch):
     assert chamadas["limpar_overlay"] == 2      # início + recuperação
 
 
+def test_campos_do_formulario_nao_aparecem_com_popup_mostra_a_tela(
+        ambiente, monkeypatch):
+    driver, servidor, _ = ambiente
+    driver.popups.append(_Popup("MATRICULA 1234567 NAO CADASTRADA"))
+    monkeypatch.setattr(
+        dmod, "esperar_seletor",
+        lambda d, s, timeout=20: None if s == P.SEL_NOME else (0,))
+    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+        servidor.consultar("0000000")
+    assert "a tela mostrou:" in str(exc.value)
+    assert "*****67" in str(exc.value)
+    assert "1234567" not in str(exc.value)
+
+
+def test_todos_os_campos_vazios_com_popup_mostra_a_tela(ambiente, monkeypatch):
+    driver, servidor, _ = ambiente
+    driver.valores = {tid: "" for tid in VALORES}
+    driver.popups.append(_Popup("MATRICULA 1234567 NAO CADASTRADA"))
+    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+        servidor.consultar("0000000")
+    assert "a tela mostrou:" in str(exc.value)
+    assert "*****67" in str(exc.value)
+    assert "1234567" not in str(exc.value)
+
+
 def test_procuracao_presa_entra_no_motivo(ambiente, monkeypatch):
     driver, servidor, _ = ambiente
     driver.valores = {tid: "" for tid in VALORES}
@@ -440,6 +465,36 @@ def test_procuracao_tardia_segunda_chance_confirma(ambiente, monkeypatch):
     assert d.nome == "FULANO DE TAL"
     assert chamadas_proc["n"] == 2
     assert chamadas_campo["n"] == 2
+
+
+def test_procuracao_tardia_e_todos_os_campos_vazios_ressalva_no_motivo(
+        ambiente, monkeypatch):
+    """A procuração só é detectada na segunda varredura (a 1a passa batido)
+    e o formulário volta vazio mesmo assim: é exatamente o caso em que a
+    ressalva de procuração mais importa, e ela não pode ficar congelada no
+    ``False`` da 1a varredura."""
+    driver, servidor, _ = ambiente
+    driver.valores = {tid: "" for tid in VALORES}
+    chamadas_proc = {"n": 0}
+
+    def procuracao(d):
+        chamadas_proc["n"] += 1
+        return chamadas_proc["n"] == 2   # False na 1a, True na 2a
+
+    chamadas_campo = {"n": 0}
+
+    def esperar(d, s, timeout=20):
+        if s == P.SEL_NOME:
+            chamadas_campo["n"] += 1
+            return None if chamadas_campo["n"] == 1 else (0,)
+        return (0,)
+
+    monkeypatch.setattr(dmod, "atravessar_procuracao", procuracao)
+    monkeypatch.setattr(dmod, "esperar_seletor", esperar)
+    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+        servidor.consultar("0000000")
+    assert "todos os campos vazios" in str(exc.value)
+    assert "procuração" in str(exc.value)
 
 
 def test_campo_ausente_menciona_procuracao_mesmo_sem_deteccao(ambiente,

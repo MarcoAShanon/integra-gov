@@ -245,6 +245,17 @@ class _SwitchToFake:
         pass
 
 
+class _Popup:
+    """Popup CIS fake (``[id^='IPO_']``) para ``texto_popup_cis``."""
+
+    def __init__(self, texto, visivel=True):
+        self.text = texto
+        self.visivel = visivel
+
+    def is_displayed(self):
+        return self.visivel
+
+
 class _Driver:
     """Driver mínimo: elementos por seletor CSS, relogin como atributo.
 
@@ -428,6 +439,20 @@ def test_botao_consultar_ausente_recupera_a_tela(ambiente):
     assert chamadas["fechar_popups"] == 2  # início + recuperação
     assert chamadas["limpar_overlay"] == 2  # início + recuperação
     assert driver.el[S.SEL_SAIR].cliques == 1
+
+
+def test_botao_consultar_ausente_com_popup_mostra_a_tela_mascarada(ambiente):
+    """Mesma enriquecimento de ``_clicar`` que o módulo de pensionista já
+    tem coberto: sem este teste, apagar as linhas de enriquecimento aqui
+    deixaria a suíte inteira verde."""
+    driver, servidor, _ = ambiente
+    del driver.el[S.SEL_CONSULTAR]
+    driver.popups.append(_Popup("MATRICULA 1234567 NAO CADASTRADA"))
+    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+        servidor.consultar("0000000")
+    assert "a tela mostrou:" in str(exc.value)
+    assert "*****67" in str(exc.value)
+    assert "1234567" not in str(exc.value)
 
 
 def test_impressao_sem_pdf_levanta_indisponiveis(ambiente):

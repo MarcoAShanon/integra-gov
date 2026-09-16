@@ -404,8 +404,6 @@ class DadosPessoaisPensionista:
             com_procuracao = atravessar_procuracao(self.driver)
             if com_procuracao:
                 time.sleep(self.DELAY_APOS_CONSULTAR)
-            ressalva = ("; a tela de procuração pode ter ficado presa"
-                        if com_procuracao else "")
 
             if esperar_seletor(self.driver, self.SEL_NOME,
                                timeout=self.TIMEOUT_CAMPOS) is None:
@@ -419,11 +417,14 @@ class DadosPessoaisPensionista:
                         self.driver, self.SEL_NOME,
                         timeout=self.TIMEOUT_CAMPOS) is not None
                 if not achou:
-                    raise DadosPessoaisIndisponiveis(
-                        matricula, "a consulta não trouxe dados (os campos "
-                                   "do formulário não apareceram; considere "
-                                   "a hipótese de procuração — com ou sem "
-                                   "tela intermediária detectada)")
+                    motivo = ("a consulta não trouxe dados (os campos "
+                               "do formulário não apareceram; considere "
+                               "a hipótese de procuração — com ou sem "
+                               "tela intermediária detectada)")
+                    texto_popup = texto_popup_cis(self.driver)
+                    if texto_popup is not None:
+                        motivo += f"; a tela mostrou: {texto_popup}"
+                    raise DadosPessoaisIndisponiveis(matricula, motivo)
 
             campos = ler_campos(self.driver)
             # O formulário já foi lido, então _conferir_identidade pode
@@ -431,9 +432,17 @@ class DadosPessoaisPensionista:
             # os campos.
             self._conferir_identidade(matricula)
             if not any(campos.values()):
-                raise DadosPessoaisIndisponiveis(
-                    matricula, "a consulta não trouxe dados (todos os campos "
-                               f"vazios{ressalva})")
+                # ressalva derivada de com_procuracao NESTE ponto (não
+                # congelada na 1a varredura): a 2a chance acima pode tê-lo
+                # virado True depois do cálculo inicial.
+                ressalva = ("; a tela de procuração pode ter ficado presa"
+                            if com_procuracao else "")
+                motivo = ("a consulta não trouxe dados (todos os campos "
+                          f"vazios{ressalva})")
+                texto_popup = texto_popup_cis(self.driver)
+                if texto_popup is not None:
+                    motivo += f"; a tela mostrou: {texto_popup}"
+                raise DadosPessoaisIndisponiveis(matricula, motivo)
 
             bruto = self._imprimir(matricula)
         except (DadosPessoaisIndisponiveis, PdfImpressoIlegivel):
