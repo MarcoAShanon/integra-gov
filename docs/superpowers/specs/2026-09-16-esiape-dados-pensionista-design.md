@@ -171,11 +171,21 @@ mesmo e quem consome trata servidor e pensionista com um `except` só.
 
 ## Mudança pontual no código existente
 
-`_mascarar_digitos` vive hoje dentro de `dados_pessoais.py` e passa a ser
-usada pelos dois módulos. Sai para `integra_gov/esiape/_mascara.py`, com a
-função pública ao módulo `mascarar_digitos(texto)` e seus testes movidos
-junto. `dados_pessoais.py` importa de lá. Sem mudança de comportamento: os
-testes existentes de máscara continuam valendo como estão.
+Três helpers vivem hoje dentro de `dados_pessoais.py` e passam a ser usados
+pelos dois módulos: `_mascarar` (matrícula), `_mascarar_digitos` (qualquer
+número longo) e `_data_siape` (conversão `DDMMMAAAA`). Saem para
+`integra_gov/esiape/_campos.py` como `mascarar_matricula`,
+`mascarar_digitos` e `data_siape`, junto com a tabela `MESES_SIAPE`, e os
+testes que os cobriam vão para `tests/test_esiape_campos.py`.
+`dados_pessoais.py` importa de lá.
+
+*(Ajuste feito ao escrever o plano: a spec previa mover só a máscara, mas o
+módulo de pensionista também precisa da conversão de data, e duplicar a
+tabela de meses mais o regex seria duplicar lógica. O nome `_campos` cobre
+as duas famílias; `_mascara` cobriria só uma.)*
+
+Sem mudança de comportamento: os corpos são os mesmos e a suíte existente é
+a prova.
 
 ## Testes (`tests/test_esiape_dados_pensionista.py`)
 
