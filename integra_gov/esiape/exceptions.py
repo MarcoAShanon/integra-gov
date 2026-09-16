@@ -105,3 +105,25 @@ class PdfImpressoIlegivel(EsiapeError):
             f"impressora virtual 'Microsoft Print to PDF' do Windows converte "
             f"as fontes em contorno e destrói o texto. "
             f"Ver docs/uso-basico.md, seção 'Configuração do Chrome'")
+
+
+class DadosPessoaisIndisponiveis(EsiapeError):
+    """A CDCOINDPES não devolveu os dados pessoais da matrícula pedida.
+
+    Cobre três situações: o botão Consultar/Imprimir não apareceu no prazo
+    (o sinal real para matrícula inexistente ainda não é conhecido — ver o
+    comentário em ``dados_pessoais``), a impressão não produziu PDF, ou o PDF
+    impresso traz OUTRA matrícula (tela anterior ainda carregada).
+
+    Attributes:
+        matricula: a matrícula pedida (na mensagem, só os 2 últimos dígitos).
+        motivo: descrição curta do que faltou.
+    """
+
+    def __init__(self, matricula: str, motivo: str):
+        self.matricula = matricula
+        self.motivo = motivo
+        super().__init__(
+            f"dados pessoais indisponíveis para a matrícula "
+            f"*****{str(matricula)[-2:]}: {motivo}"
+        )
