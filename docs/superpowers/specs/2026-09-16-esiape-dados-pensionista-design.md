@@ -126,6 +126,19 @@ pasta de download DEVE ser dedicada: a impressão apaga todos os PDFs dela.
    arquivos há na pasta de download e de que extensões, sem nome nenhum,
    para o próximo estouro vir com diagnóstico em vez de só um timeout mudo.)*
 
+   *(Medição do gate ao vivo de 16/09, quarta rodada: as duas matrículas
+   reais falharam com a pasta de download VAZIA — não por tempo, o
+   orçamento de 120s não mudou nada. O PDF desta transação chega como
+   DOWNLOAD disparado a partir de uma janela popup, diferente do módulo de
+   servidor, que imprime um relatório HTML via kiosk printing; um
+   screenshot da rodada anterior mostra o popup exibindo o placeholder do
+   próprio Chrome para `StartDynamicContent.pdf` com um botão "Abrir" —
+   isso é UI do Chrome, não DOM da página, e uma janela popup não respeita
+   de forma confiável `download.default_directory` do perfil. O módulo
+   passa a fixar a pasta de download via `Browser.setDownloadBehavior` do
+   CDP, em melhor esforço, imediatamente antes de cada impressão
+   (`_forcar_pasta_de_download`, chamada de `_imprimir`).)*
+
    *(Medido no gate ao vivo de 16/09: as duas matrículas reais chegaram até
    aqui com sucesso — leitura dos campos ok — e falharam esperando o botão
    `w_report.onGeneratePrintVersion`, que nunca aparece nesta tela. O clique
@@ -270,14 +283,13 @@ inexistente por último.
 
 Perguntas que o gate responde, e que entram nesta spec como medição:
 
-1. formato da data de nascimento no formulário — **em aberto**: na terceira
-   rodada (16/09), a única matrícula que passou inteira teve
-   `data_nascimento` convertida com sucesso pela função que já aceita as
-   duas formas, então o gate não isolou sozinho qual delas ocorreu na tela.
-   O instrumento para responder sem nunca imprimir o valor já existe no
-   gate (`_forma_da_data_na_tela`, que lê o campo bruto com o mesmo `_valor`
-   do módulo e classifica DDMMMAAAA / dd/mm/aaaa / outra / ausente): falta
-   rodar de novo e observar a saída.
+1. formato da data de nascimento no formulário — **respondida** (quarta
+   rodada, 16/09): as duas matrículas reais logaram `data de nascimento na
+   forma DDMMMAAAA` (o instrumento passou a viver dentro do módulo,
+   `ler_campos`, em DEBUG, desde a wave anterior). O ramo `dd/mm/aaaa` que
+   `_data_nascimento` aceitava por precaução nunca ocorreu nas duas
+   medições e saiu do código; `forma_da_data` continua classificando-o de
+   propósito — é o instrumento que revelaria uma mudança futura da tela.
 2. se `w_matr_infor_alfa` ecoa a matrícula depois da consulta —
    **respondida**: não ecoa, o campo SOME de todos os frames visíveis
    depois da consulta, nas duas matrículas reais (ver §Identidade).

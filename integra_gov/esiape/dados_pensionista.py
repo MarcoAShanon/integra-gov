@@ -130,16 +130,18 @@ def forma_da_data(bruto: str | None) -> str:
 
 
 def _data_nascimento(bruto: str | None) -> str | None:
-    """``15AGO1960`` → ``15/08/1960``; ``15/08/1960`` mantido; resto ``None``.
+    """``15AGO1960`` → ``15/08/1960``; qualquer outra forma vira ``None``.
 
-    PENDÊNCIA (gate ao vivo): qual das duas formas a CDCOPSBENE devolve não
-    foi medido. Depois do gate, a que não ocorrer sai daqui.
+    MEDIDO no gate ao vivo de 16/09, nas duas matrículas reais: a tela
+    devolve a data de nascimento sempre na forma ``DDMMMAAAA`` (padrão
+    SIAPE) — o ramo ``dd/mm/aaaa``, que a função aceitava por precaução,
+    nunca ocorreu nas duas medições, e sai daqui. ``forma_da_data``
+    continua classificando ``dd/mm/aaaa`` de propósito: é o instrumento que
+    revelaria uma mudança futura da tela, visível porque ``ler_campos`` loga
+    em DEBUG a forma que viu, mesmo quando o campo vira ``None`` aqui.
     """
-    forma = forma_da_data(bruto)
-    if forma == "DDMMMAAAA":
+    if forma_da_data(bruto) == "DDMMMAAAA":
         return data_siape(bruto)
-    if forma == "dd/mm/aaaa":
-        return (bruto or "").strip()
     return None
 
 
@@ -372,6 +374,40 @@ class DadosPessoaisPensionista:
                 matricula, f"o campo de busca traz a matrícula "
                            f"{mascarar_matricula(eco)}, não a pedida")
 
+    def _forcar_pasta_de_download(self) -> None:
+        """Fixa a pasta de download via CDP antes de cada impressão.
+
+        O PDF desta transação chega como DOWNLOAD disparado a partir de uma
+        janela POPUP — diferente do módulo de servidor (CDCOINDPES), que
+        imprime um relatório HTML via kiosk printing e nunca depende de um
+        download. Medido no gate ao vivo de 16/09: nas duas matrículas
+        reais a pasta de download ficou VAZIA — não por tempo, o orçamento
+        de 120s (``TIMEOUT_DOWNLOAD``) não mudou nada — enquanto um
+        screenshot da rodada anterior mostrava o popup exibindo o
+        placeholder do próprio Chrome para ``StartDynamicContent.pdf``, com
+        um botão "Abrir": isso é UI do Chrome, não DOM da página, e o
+        Selenium não consegue clicá-lo. Uma janela popup não respeita de
+        forma confiável a preferência ``download.default_directory`` do
+        perfil; ``Browser.setDownloadBehavior`` do CDP a sobrescreve e vale
+        também para popups.
+
+        Best effort: nem todo driver suporta CDP (ex.: um Remote WebDriver
+        sem esse endpoint), e essa falha nunca pode ser a razão de uma
+        consulta falhar — só um aviso mascarado; a impressão segue
+        dependendo da configuração do perfil.
+        """
+        try:
+            self.driver.execute_cdp_cmd(
+                "Browser.setDownloadBehavior",
+                {"behavior": "allow",
+                 "downloadPath": str(self.pasta_download),
+                 "eventsEnabled": True})
+        except Exception as exc:  # noqa: BLE001 — CDP é best-effort
+            _log.warning(
+                "%s: não foi possível fixar a pasta de download via CDP "
+                "(%s); a impressão segue dependendo da configuração do "
+                "perfil", self.TRANSACAO, mascarar_digitos(str(exc)))
+
     def _imprimir(self, matricula: str) -> Path:
         """Imprime a tela e devolve o PDF BRUTO, ainda em pasta_download.
 
@@ -380,6 +416,7 @@ class DadosPessoaisPensionista:
         ``clicar_imprimir`` de :func:`imprimir_via_popup`, em vez de um
         clique solto seguido de um segundo botão que não existe aqui.
         """
+        self._forcar_pasta_de_download()
         try:
             bruto = imprimir_via_popup(
                 self.driver,
@@ -398,6 +435,16 @@ class DadosPessoaisPensionista:
                            f"{', '.join(sufixos)}")
             except Exception:  # noqa: BLE001 — listar a pasta é best-effort
                 motivo += "; a pasta de download não pôde ser listada"
+            try:
+                # Um popup ainda ABERTO com a pasta vazia é sinal de que o
+                # Chrome está segurando o PDF atrás da própria UI (ver
+                # _forcar_pasta_de_download); nenhum popup é sinal de que o
+                # clique nunca abriu nada. Nem URL nem título — só a
+                # contagem.
+                motivo += (f"; {len(self.driver.window_handles)} "
+                           f"janela(s) aberta(s)")
+            except Exception:  # noqa: BLE001 — contar janelas é best-effort
+                pass
             raise DadosPessoaisIndisponiveis(matricula, motivo) from exc
 
         try:

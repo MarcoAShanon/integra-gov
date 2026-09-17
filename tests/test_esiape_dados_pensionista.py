@@ -95,15 +95,36 @@ def test_ler_campos_formulario_vazio_tudo_none():
 
 
 @pytest.mark.parametrize("bruto, esperado", [
-    ("15AGO1960", "15/08/1960"),     # forma SIAPE
-    ("15/08/1960", "15/08/1960"),    # já com barras
+    ("15AGO1960", "15/08/1960"),     # forma SIAPE — a única medida no gate
+    ("15/08/1960", None),            # medido no gate de 16/09: nunca ocorreu
     ("1960-08-15", None),
     ("15XYZ1960", None),
     ("", None),
     (None, None),
 ])
-def test_data_nascimento_aceita_as_duas_formas(bruto, esperado):
+def test_data_nascimento_aceita_so_a_forma_medida(bruto, esperado):
     assert dmod._data_nascimento(bruto) == esperado
+
+
+def test_dd_mm_aaaa_vira_none_mas_forma_da_data_ainda_o_nomeia():
+    """O ramo dd/mm/aaaa saiu de _data_nascimento (nunca ocorreu no gate),
+    mas forma_da_data continua classificando-o — é o instrumento que
+    revelaria uma mudança futura da tela."""
+    assert dmod._data_nascimento("15/08/1960") is None
+    assert dmod.forma_da_data("15/08/1960") == "dd/mm/aaaa"
+
+
+def test_ler_campos_dd_mm_aaaa_vira_none_com_a_forma_registrada_em_debug(caplog):
+    import logging
+
+    valores = dict(VALORES, w_da_nascimento="15/08/1960")
+    with caplog.at_level(logging.DEBUG,
+                         logger="integra_gov.esiape.dados_pensionista"):
+        c = dmod.ler_campos(_DriverCampos(valores))
+    assert c["data_nascimento"] is None
+    linhas = [r.getMessage() for r in caplog.records
+              if r.levelno == logging.DEBUG]
+    assert any("dd/mm/aaaa" in linha for linha in linhas)
 
 
 @pytest.mark.parametrize("bruto, esperado", [
@@ -305,6 +326,11 @@ class _DriverConsulta:
         self._esiape_relogin_pendente = False
         self.switch_to = _SwitchToFake()
         self.popups: list[_Popup] = []
+        self.window_handles = ["principal"]
+        self.cdp_chamadas: list[tuple] = []
+
+    def execute_cdp_cmd(self, comando, params):
+        self.cdp_chamadas.append((comando, params))
 
     def find_element(self, by, valor):
         if valor in self.el:
@@ -695,9 +721,13 @@ def test_timeout_download_e_repassado_a_imprimir_via_popup(ambiente):
 
 def test_impressao_sem_pdf_lista_conteudo_da_pasta_download(ambiente):
     """No timeout de download, a mensagem diz QUANTOS arquivos há na pasta e
-    de que EXTENSÕES — nunca o nome, que pode carregar a matrícula."""
-    _, servidor, _ = ambiente
+    de que EXTENSÕES — nunca o nome, que pode carregar a matrícula — e
+    também QUANTAS janelas estão abertas: um popup ainda aberto com a
+    pasta vazia é sinal de que o Chrome está segurando o arquivo atrás da
+    própria UI; nenhum popup é sinal de que o clique nunca abriu nada."""
+    driver, servidor, _ = ambiente
     (servidor.pasta_download / "dados_pensionista_1234567.crdownload").write_bytes(b"")
+    driver.window_handles = ["principal", "popup"]
 
     def imprimir(*a, **k):
         raise TimeoutError("o PDF nao apareceu em 120s")
@@ -708,8 +738,65 @@ def test_impressao_sem_pdf_lista_conteudo_da_pasta_download(ambiente):
     msg = str(exc.value)
     assert ".crdownload" in msg
     assert "1 arquivo(s) na pasta" in msg
+    assert "2 janela(s) aberta(s)" in msg
     assert "dados_pensionista_1234567" not in msg
     assert "1234567" not in msg
+
+
+def test_forca_pasta_download_por_cdp_antes_de_imprimir(ambiente, monkeypatch):
+    """O PDF desta transação chega como download de uma janela popup, que
+    não respeita de forma confiável download.default_directory do perfil
+    (medido no gate de 16/09: pasta vazia enquanto o Chrome mostrava seu
+    próprio 'Abrir'). O módulo fixa a pasta via CDP, em melhor esforço,
+    imediatamente antes de cada impressão."""
+    driver, servidor, _ = ambiente
+    ordem = []
+
+    def cdp(comando, params):
+        ordem.append("cdp")
+        driver.cdp_chamadas.append((comando, params))
+
+    def imprimir(d, clicar, pasta_download, **kw):
+        ordem.append("imprimir")
+        clicar()
+        bruto = Path(pasta_download) / "cis_bruto.pdf"
+        bruto.write_bytes(pdf_bytes([["RELATORIO CDCOPSBENE"]]))
+        return bruto
+
+    monkeypatch.setattr(driver, "execute_cdp_cmd", cdp)
+    monkeypatch.setattr(dmod, "imprimir_via_popup", imprimir)
+
+    servidor.consultar("0000000")
+
+    assert ordem == ["cdp", "imprimir"]
+    assert driver.cdp_chamadas == [
+        ("Browser.setDownloadBehavior",
+         {"behavior": "allow", "downloadPath": str(servidor.pasta_download),
+          "eventsEnabled": True})]
+
+
+def test_forca_pasta_download_cdp_falhando_nao_impede_a_consulta(ambiente,
+                                                                   monkeypatch,
+                                                                   caplog):
+    """Nem todo driver suporta CDP; a falha aqui nunca pode ser a razão de
+    uma consulta falhar — só um aviso, e a impressão segue dependendo da
+    configuração do perfil."""
+    import logging
+
+    driver, servidor, _ = ambiente
+
+    def cdp_explode(comando, params):
+        raise RuntimeError("cdp indisponivel")
+
+    monkeypatch.setattr(driver, "execute_cdp_cmd", cdp_explode)
+    with caplog.at_level(logging.WARNING,
+                         logger="integra_gov.esiape.dados_pensionista"):
+        d = servidor.consultar("0000000")
+    assert d.nome == "FULANO DE TAL"
+    assert any(r.levelno == logging.WARNING
+               and "download" in r.getMessage().lower()
+               and "cdp indisponivel" in r.getMessage()
+               for r in caplog.records)
 
 
 def test_impressao_sem_pdf_mascara_matricula_do_exc_do_driver(ambiente):

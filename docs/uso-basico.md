@@ -1225,6 +1225,15 @@ O Chrome precisa das prefs de impressão da seção "Configuração do Chrome"
 (acima), e `pasta_download` (default `cadastrais/_download_esiape`) tem de
 ser **dedicada**: a impressão apaga todos os PDFs dela antes de começar.
 
+Diferente do módulo de servidor, o PDF desta transação chega como
+**download** de uma janela **popup**, não como impressão de relatório HTML.
+Por isso o módulo aponta o download do Chrome para `pasta_download` por
+conta própria, via DevTools Protocol (`Browser.setDownloadBehavior`),
+imediatamente antes de cada impressão — um popup não respeita de forma
+confiável a preferência `download.default_directory` do perfil, e o CDP a
+sobrescreve. Um driver sem suporte a CDP loga um aviso e o download passa a
+depender só da configuração do perfil, como nos demais módulos.
+
 Regras de honestidade do módulo:
 
 - campo vazio fica `None`; não é erro;
