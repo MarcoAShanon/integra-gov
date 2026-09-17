@@ -139,6 +139,21 @@ pasta de download DEVE ser dedicada: a impressão apaga todos os PDFs dela.
    CDP, em melhor esforço, imediatamente antes de cada impressão
    (`_forcar_pasta_de_download`, chamada de `_imprimir`).)*
 
+   *(Medição do gate ao vivo de 16/09, quinta rodada: as duas matrículas
+   reais falharam de novo, e da mesma forma — popup aberto (2 janelas), pasta
+   de download vazia depois de 120s — e fixar a pasta via CDP não mudou
+   NADA. A causa não era a pasta: é o cartão "Abrir" do próprio Chrome para
+   `StartDynamicContent.pdf`, que é interface do navegador, não DOM da
+   página, e espera um clique humano que o Selenium não pode dar. A máquina
+   de downloads é a estrada errada para esta transação. Como o popup
+   NAVEGA para uma URL que DEVOLVE o PDF, o módulo passa a buscar esse
+   arquivo pela própria sessão — `baixar_pdf_do_popup`, em
+   `integra_gov.esiape.impressao`, com o mesmo mecanismo que
+   `integra_gov.sei.download_documento` já usa para documentos do SEI:
+   `fetch` com `credentials: 'include'`, checando que os bytes começam em
+   `%PDF` antes de gravar. `imprimir_via_popup` continua intacta para as
+   telas de RELATÓRIO, que dependem de verdade da máquina de downloads.)*
+
    *(Medido no gate ao vivo de 16/09: as duas matrículas reais chegaram até
    aqui com sucesso — leitura dos campos ok — e falharam esperando o botão
    `w_report.onGeneratePrintVersion`, que nunca aparece nesta tela. O clique

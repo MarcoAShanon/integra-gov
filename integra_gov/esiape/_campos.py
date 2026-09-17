@@ -30,13 +30,17 @@ def mascarar_matricula(matricula: str) -> str:
 
 
 def mascarar_digitos(texto: str) -> str:
-    """Todo grupo de 3+ dígitos vira ``*****`` + os 2 últimos dígitos do
+    """Todo grupo de 4+ dígitos vira ``*****`` + os 2 últimos dígitos do
     grupo — cobre tanto uma sequência corrida (``1234567``) quanto uma
     pontuada por ``.``, ``-``, ``/`` ou um único espaço entre dígitos
-    (matrícula ``000.000-0``, CPF ``123.456.789-00``). Um grupo de 1 ou 2
-    dígitos (ex.: ``UF: 12``) não é matrícula nem CPF e fica intocado."""
+    (matrícula ``000.000-0``, CPF ``123.456.789-00``). O piso é 4, não 3:
+    nada que identifica alguém tem 3 dígitos (matrícula tem 7 ou 8, CPF 11,
+    CEP 8) — mas um número de 3 dígitos aparece o tempo todo em mensagem
+    honesta, como um timeout (``em 120s``), e mascará-lo sem necessidade
+    torna a mensagem ilegível. Um grupo de 1 ou 2 dígitos (ex.: ``UF: 12``)
+    já não era tocado e continua não sendo."""
     return re.sub(
-        r"\d(?:[.\-/ ]?\d){2,}",
+        r"\d(?:[.\-/ ]?\d){3,}",
         lambda m: "*****" + re.sub(r"\D", "", m.group(0))[-2:],
         texto,
     )

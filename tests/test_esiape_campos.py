@@ -30,6 +30,10 @@ def test_mascarar_matricula_comum():
     ("1234", "*****34"),
     ("UF 12", "UF 12"),
     ("ORGAO 40806 - X", "ORGAO *****06 - X"),
+    # piso subiu de 3 para 4 dígitos: nada que identifica alguém tem 3
+    # dígitos, e "120s" (timeout) precisa continuar legível.
+    ("em 120s", "em 120s"),
+    ("timeout de 999 segundos", "timeout de 999 segundos"),
 ])
 def test_mascarar_digitos(bruto, esperado):
     assert mascarar_digitos(bruto) == esperado
