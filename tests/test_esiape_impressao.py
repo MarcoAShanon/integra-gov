@@ -3,7 +3,6 @@ de ``ficha_anual`` sem mudar comportamento."""
 
 from __future__ import annotations
 
-import base64
 import os
 import time as _time
 from pathlib import Path
@@ -14,7 +13,6 @@ from integra_gov.esiape import impressao as mod
 from integra_gov.esiape.impressao import (
     aguardar_pdf_estavel,
     aguardar_popup,
-    baixar_pdf_do_popup,
     fechar_popup,
     imprimir_via_popup,
     limpar_downloads_orfaos,
@@ -228,91 +226,3 @@ def test_imprimir_via_popup_sem_popup_ainda_devolve_o_pdf(tmp_path):
 
     pdf = imprimir_via_popup(d, clicar, tmp_path, timeout_popup=0.01, timeout_download=1)
     assert pdf.exists() and d.fechadas == [] and d.refreshes == 1
-
-
-# ------------------------------------------------------ baixar_pdf_do_popup
-#: URL fictícia com um "id de sessão" — nenhuma mensagem levantada pode
-#: conter esta string.
-URL_COM_SESSAO = "https://esiape.exemplo.gov.br/popup?sessao=SEGREDO-123456"
-
-
-class DriverBusca(DriverImpressao):
-    """DriverImpressao + o que baixar_pdf_do_popup usa: current_url,
-    set_script_timeout, execute_async_script (resultado programável)."""
-
-    def __init__(self, resultado):
-        super().__init__()
-        self.current_url = URL_COM_SESSAO
-        self._resultado = resultado
-        self.script_timeouts: list[float] = []
-        self.urls_buscadas: list[str] = []
-
-    def set_script_timeout(self, timeout):
-        self.script_timeouts.append(timeout)
-
-    def execute_async_script(self, script, url):
-        self.urls_buscadas.append(url)
-        return self._resultado
-
-
-def _b64(conteudo: bytes) -> str:
-    return base64.b64encode(conteudo).decode("ascii")
-
-
-def _abrir_popup(driver):
-    """clicar_imprimir de teste: abre a janela popup (como o CIS faz)."""
-    driver.window_handles = ["principal", "popup"]
-
-
-def test_baixar_pdf_do_popup_caminho_feliz(tmp_path):
-    conteudo = b"%PDF-1.4 conteudo ficticio"
-    d = DriverBusca({"ok": True, "b64": _b64(conteudo), "tipo": "application/pdf"})
-    destino = tmp_path / "saida" / "documento.pdf"
-
-    resultado = baixar_pdf_do_popup(d, lambda: _abrir_popup(d), destino,
-                                    timeout_popup=0.5, timeout_fetch=5)
-
-    assert resultado == destino
-    assert destino.read_bytes() == conteudo
-    assert d.fechadas == ["popup"]                    # popup fechado
-    assert d.janela_atual == "principal" and d.refreshes == 1  # volta à principal
-    assert d.script_timeouts == [5]
-    assert d.urls_buscadas == [URL_COM_SESSAO]
-    assert URL_COM_SESSAO not in repr(resultado)
-
-
-def test_baixar_pdf_do_popup_sem_popup_levanta(tmp_path):
-    d = DriverBusca({"ok": True, "b64": _b64(b"%PDF-x"), "tipo": "application/pdf"})
-    destino = tmp_path / "documento.pdf"
-
-    with pytest.raises(RuntimeError) as exc:
-        baixar_pdf_do_popup(d, lambda: None, destino, timeout_popup=0.01)
-    assert URL_COM_SESSAO not in str(exc.value)
-    assert not destino.exists()
-
-
-def test_baixar_pdf_do_popup_script_reporta_falha_levanta_com_o_erro(tmp_path):
-    d = DriverBusca({"ok": False, "erro": "HTTP 500 Internal Server Error",
-                     "tipo": "text/html"})
-    destino = tmp_path / "documento.pdf"
-
-    with pytest.raises(RuntimeError) as exc:
-        baixar_pdf_do_popup(d, lambda: _abrir_popup(d), destino, timeout_popup=0.5)
-    assert "HTTP 500 Internal Server Error" in str(exc.value)
-    assert "text/html" in str(exc.value)
-    assert URL_COM_SESSAO not in str(exc.value)
-    assert not destino.exists()
-
-
-def test_baixar_pdf_do_popup_conteudo_sem_prefixo_pdf_levanta_com_content_type(tmp_path):
-    conteudo = b"<html>erro de sessao</html>"
-    d = DriverBusca({"ok": True, "b64": _b64(conteudo), "tipo": "text/html; charset=utf-8"})
-    destino = tmp_path / "documento.pdf"
-
-    with pytest.raises(RuntimeError) as exc:
-        baixar_pdf_do_popup(d, lambda: _abrir_popup(d), destino, timeout_popup=0.5)
-    msg = str(exc.value)
-    assert "text/html" in msg
-    assert conteudo[:8].hex() in msg
-    assert URL_COM_SESSAO not in msg
-    assert not destino.exists()

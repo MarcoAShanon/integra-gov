@@ -145,14 +145,36 @@ pasta de download DEVE ser dedicada: a impressão apaga todos os PDFs dela.
    NADA. A causa não era a pasta: é o cartão "Abrir" do próprio Chrome para
    `StartDynamicContent.pdf`, que é interface do navegador, não DOM da
    página, e espera um clique humano que o Selenium não pode dar. A máquina
-   de downloads é a estrada errada para esta transação. Como o popup
-   NAVEGA para uma URL que DEVOLVE o PDF, o módulo passa a buscar esse
-   arquivo pela própria sessão — `baixar_pdf_do_popup`, em
-   `integra_gov.esiape.impressao`, com o mesmo mecanismo que
-   `integra_gov.sei.download_documento` já usa para documentos do SEI:
-   `fetch` com `credentials: 'include'`, checando que os bytes começam em
-   `%PDF` antes de gravar. `imprimir_via_popup` continua intacta para as
-   telas de RELATÓRIO, que dependem de verdade da máquina de downloads.)*
+   de downloads parecia a estrada errada para esta transação — o módulo
+   chegou a trocar de mecânica, buscando o PDF pela própria sessão
+   (`baixar_pdf_do_popup`, com `fetch` e `credentials: 'include'`, como
+   `integra_gov.sei.download_documento` já faz para documentos do SEI).)*
+
+   *(Sondagem ao vivo de 17/09, porta 9222 do Chrome do usuário, que
+   corrigiu a rota acima: a URL para a qual o popup navega devolve a CASCA
+   do CIS em HTML — `text/html; charset=UTF-8`, ~2646 bytes começando em
+   `<!DOCTYPE`, um iframe apontando para `aboutBlank.html` mais o script do
+   framework — nunca o PDF; `baixar_pdf_do_popup` estava fadada a falhar
+   nesta tela. Observando TODAS as janelas e TODOS os frames por dois
+   minutos enquanto a impressão era disparada, nenhuma URL de PDF jamais
+   apareceu — consistente, porque um DOWNLOAD não navega frame nenhum. A
+   prova decisiva veio do sistema de arquivos: `StartDynamicContent (1).pdf`
+   estava na pasta `Downloads` padrão do perfil. O Chrome da porta 9222 é um
+   perfil recém-criado SEM `plugins.always_open_pdf_externally`, e nele o
+   download do CIS caiu normalmente na pasta padrão do perfil; o Chrome da
+   automação seta essa preferência como `True`, o que entrega o PDF ao
+   sistema operacional em vez de gravá-lo em `download.default_directory` —
+   é o cartão "Abrir" visto no popup, e a pasta vazia medida pelo gate. A
+   rota de download sempre esteve certa; a configuração do Chrome para esta
+   transação é que estava errada. `baixar_pdf_do_popup` saiu do módulo
+   (estrada sem consumidor, comprovadamente errada para esta tela); o
+   módulo volta a usar `imprimir_via_popup`, e a exigência passa a estar
+   documentada na configuração do Chrome — `docs/uso-basico.md`, seção do
+   módulo: NÃO setar `plugins.always_open_pdf_externally` nesta transação
+   (o oposto do que o módulo de servidor e a ficha anual pedem, que produzem
+   o PDF por impressão), com `download.default_directory` apontando para
+   `pasta_download`. `imprimir_via_popup` continua intacta para as telas de
+   RELATÓRIO, que sempre dependeram de verdade da máquina de downloads.)*
 
    *(Medido no gate ao vivo de 16/09: as duas matrículas reais chegaram até
    aqui com sucesso — leitura dos campos ok — e falharam esperando o botão

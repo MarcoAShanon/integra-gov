@@ -1225,19 +1225,24 @@ O Chrome precisa das prefs de impressão da seção "Configuração do Chrome"
 (acima), e `pasta_download` (default `cadastrais/_download_esiape`) tem de
 ser **dedicada**: a impressão apaga todos os PDFs dela antes de começar.
 
-Diferente do módulo de servidor, o PDF desta transação chega como **arquivo
-na resposta HTTP** de uma janela **popup**, não como impressão de relatório
-HTML: o Chrome mostra o próprio cartão de download ("Abrir" para
-`StartDynamicContent.pdf`), que é interface do navegador, não DOM da
-página, e não grava nada sozinho — medido ao vivo, em duas matrículas
-reais, mesmo com a pasta de download fixada por CDP. Por isso o módulo
-**busca o PDF pela própria sessão**, lendo a URL do popup e refazendo a
-requisição com as credenciais já autenticadas (`baixar_pdf_do_popup`), em
-vez de esperar por um download que o Chrome nunca dispara sozinho. A pasta
-dedicada `pasta_download` (default `cadastrais/_download_esiape`) continua
-em uso: é onde o PDF buscado é gravado antes de ser conferido (camada de
-texto) e renomeado para `pasta_saida` — não recebe nenhum download do
-Chrome, e por isso este fluxo não depende da máquina de downloads.
+Diferente do módulo de servidor, o PDF desta transação chega como
+**download** disparado por uma janela **popup**, não como impressão de
+relatório HTML — e isso exige o CONTRÁRIO da preferência documentada na
+seção "Configuração do Chrome" (acima). O `driver` usado nesta transação
+NÃO PODE ter `plugins.always_open_pdf_externally: True` nas prefs: essa
+preferência entrega o PDF ao sistema operacional (o cartão "Abrir" do
+próprio Chrome) em vez de gravá-lo em `download.default_directory`, e a
+pasta de download fica vazia — é exatamente esse desfecho, medido ao vivo
+em duas matrículas reais, que levou à correção. `download.default_directory`
+continua tendo de apontar para `pasta_download`. O módulo de servidor e a
+ficha anual produzem o PDF por **impressão** e por isso pedem
+`plugins.always_open_pdf_externally: True` de propósito (para a impressora
+virtual não abrir o visualizador embutido do Chrome) — uma sessão que usa
+os dois módulos precisa de dois `driver`s com prefs diferentes, ou trocar a
+preferência entre as chamadas. Como reforço (não substituto da preferência
+do Chrome), o módulo também fixa `pasta_download` via
+`Browser.setDownloadBehavior` do DevTools Protocol imediatamente antes de
+cada impressão.
 
 Regras de honestidade do módulo:
 

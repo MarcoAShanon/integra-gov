@@ -31,7 +31,7 @@ from .exceptions import (
     PdfImpressoIlegivel,
     TransacaoNaoAbriu,
 )
-from .impressao import baixar_pdf_do_popup
+from .impressao import imprimir_via_popup
 from .navegacao import (
     esperar_seletor,
     fechar_janelas_extras,
@@ -221,28 +221,16 @@ def atravessar_procuracao(driver) -> bool:
 
 # --------------------------------------------------------- com navegador
 class DadosPessoaisPensionista:
-    """Consulta a CDCOPSBENE, lê o formulário e busca o PDF da tela.
-
-    Diferente do módulo de servidor (que imprime um RELATÓRIO em HTML por
-    *kiosk printing*), a CDCOPSBENE devolve o PDF como ARQUIVO na resposta do
-    popup: o Chrome mostra o próprio cartão de download e nunca grava nada
-    sozinho (medido no gate ao vivo de 16/09, quinta rodada: popup aberto,
-    pasta de download vazia depois de 120s, inalterada por fixar a pasta via
-    CDP). Por isso este módulo usa
-    :func:`~integra_gov.esiape.impressao.baixar_pdf_do_popup`, que lê a URL
-    do popup e busca o PDF com as credenciais da própria sessão — ver o
-    contraste com :func:`~integra_gov.esiape.impressao.imprimir_via_popup`
-    no docstring dessa função.
+    """Consulta a CDCOPSBENE, lê o formulário e imprime o PDF da tela.
 
     Args:
-        driver: WebDriver com a sessão do e-SIAPE autenticada.
+        driver: WebDriver com a sessão do e-SIAPE autenticada e o Chrome
+            configurado para "Salvar como PDF" (``docs/uso-basico.md``).
         pasta_saida: onde fica ``dados_pensionista_<matricula>.pdf``.
-        pasta_download: pasta onde o PDF buscado é gravado antes de ser
-            renomeado para ``pasta_saida`` (default: subpasta
-            ``_download_esiape`` de ``pasta_saida``). Não recebe nenhum
-            download do Chrome — o nome é mantido igual ao do módulo de
-            servidor por convenção, e porque uma tela futura desta família
-            pode voltar a depender de download de verdade.
+        pasta_download: pasta de download do Chrome (default: subpasta
+            ``_download_esiape`` de ``pasta_saida``). Tem de ser DEDICADA:
+            :func:`~integra_gov.esiape.impressao.imprimir_via_popup` apaga
+            todos os PDFs dela antes de imprimir.
     """
 
     TRANSACAO = TRANSACAO
@@ -421,27 +409,19 @@ class DadosPessoaisPensionista:
                 "perfil", self.TRANSACAO, mascarar_digitos(str(exc)))
 
     def _imprimir(self, matricula: str) -> Path:
-        """Busca o PDF da tela pela SESSÃO — não pela máquina de downloads
-        do Chrome — e devolve o PDF BRUTO, ainda em pasta_download.
+        """Imprime a tela e devolve o PDF BRUTO, ainda em pasta_download.
 
-        A CDCOPSBENE devolve o PDF como ARQUIVO na resposta HTTP do popup,
-        não como um download que o Chrome dispara sozinho: o clique em
-        Imprimir É o disparo da abertura do popup (ver o comentário em
-        ``SEL_IMPRIMIR``), por isso ele entra como o próprio
-        ``clicar_imprimir`` de :func:`baixar_pdf_do_popup`, que lê a URL do
-        popup e busca o conteúdo com as credenciais da sessão — ver o
-        contraste entre as duas mecânicas no docstring dessa função.
-        ``_forcar_pasta_de_download`` continua chamada antes: custa nada e
-        segue correta se uma tela futura desta família voltar a depender de
-        download de verdade.
+        O clique em Imprimir É o disparo da impressão nesta tela (ver o
+        comentário em ``SEL_IMPRIMIR``): por isso ele entra como o próprio
+        ``clicar_imprimir`` de :func:`imprimir_via_popup`, em vez de um
+        clique solto seguido de um segundo botão que não existe aqui.
         """
         self._forcar_pasta_de_download()
-        destino = self.pasta_download / f"cdcopsbene_{matricula}.pdf"
         try:
-            bruto = baixar_pdf_do_popup(
+            bruto = imprimir_via_popup(
                 self.driver,
                 lambda: self._clicar(self.SEL_IMPRIMIR, matricula, "Imprimir"),
-                destino, timeout_fetch=self.TIMEOUT_DOWNLOAD)
+                self.pasta_download, timeout_download=self.TIMEOUT_DOWNLOAD)
         except DadosPessoaisIndisponiveis:
             raise
         except Exception as exc:  # noqa: BLE001 — timeout de popup/download
