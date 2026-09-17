@@ -106,6 +106,29 @@ def test_data_nascimento_aceita_as_duas_formas(bruto, esperado):
     assert dmod._data_nascimento(bruto) == esperado
 
 
+@pytest.mark.parametrize("bruto, esperado", [
+    ("15AGO1960", "DDMMMAAAA"),
+    ("15/08/1960", "dd/mm/aaaa"),
+    ("1960-08-15", "outra"),
+    ("", "ausente"),
+    (None, "ausente"),
+])
+def test_forma_da_data_classifica_a_forma_da_tela(bruto, esperado):
+    assert dmod.forma_da_data(bruto) == esperado
+
+
+def test_ler_campos_registra_em_debug_a_forma_da_data_sem_o_valor(caplog):
+    import logging
+
+    with caplog.at_level(logging.DEBUG,
+                         logger="integra_gov.esiape.dados_pensionista"):
+        dmod.ler_campos(_DriverCampos())
+    linhas = [r.getMessage() for r in caplog.records
+              if r.levelno == logging.DEBUG]
+    assert any("forma" in linha and "DDMMMAAAA" in linha for linha in linhas)
+    assert not any("1960" in linha or "15AGO" in linha for linha in linhas)
+
+
 # --------------------------------------------------------- procuração
 class _Corpo:
     def __init__(self):

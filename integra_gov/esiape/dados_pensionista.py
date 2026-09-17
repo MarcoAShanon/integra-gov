@@ -115,17 +115,32 @@ class DadosPensionista:
 
 
 # ------------------------------------------------------------- leitura
+def forma_da_data(bruto: str | None) -> str:
+    """Qual forma a tela usou para a data: ``DDMMMAAAA``, ``dd/mm/aaaa``,
+    ``outra`` ou ``ausente``. Serve à medição do gate — o nome da forma não
+    é dado pessoal, o valor é."""
+    texto = (bruto or "").strip()
+    if not texto:
+        return "ausente"
+    if re.fullmatch(r"\d{2}[A-Z]{3}\d{4}", texto.upper()):
+        return "DDMMMAAAA"
+    if re.fullmatch(r"\d{2}/\d{2}/\d{4}", texto):
+        return "dd/mm/aaaa"
+    return "outra"
+
+
 def _data_nascimento(bruto: str | None) -> str | None:
     """``15AGO1960`` → ``15/08/1960``; ``15/08/1960`` mantido; resto ``None``.
 
     PENDÊNCIA (gate ao vivo): qual das duas formas a CDCOPSBENE devolve não
     foi medido. Depois do gate, a que não ocorrer sai daqui.
     """
-    convertida = data_siape(bruto)
-    if convertida is not None:
-        return convertida
-    texto = (bruto or "").strip()
-    return texto if re.fullmatch(r"\d{2}/\d{2}/\d{4}", texto) else None
+    forma = forma_da_data(bruto)
+    if forma == "DDMMMAAAA":
+        return data_siape(bruto)
+    if forma == "dd/mm/aaaa":
+        return (bruto or "").strip()
+    return None
 
 
 def _valor(driver, testtoolid: str) -> str | None:
@@ -150,6 +165,8 @@ def ler_campos(driver) -> dict[str, str | None]:
     """
     cru = {chave: _valor(driver, tid)
            for chave, tid in CAMPOS_FORMULARIO.items()}
+    _log.debug("%s: data de nascimento na forma %s", TRANSACAO,
+               forma_da_data(cru["data_nascimento"]))
     return {
         "nome": cru["nome"],
         "cpf": cru["cpf"],
