@@ -217,8 +217,17 @@ class DadosPessoaisPensionista:
     TRANSACAO = TRANSACAO
     SEL_MATRICULA = '[data-testtoolid="w_matr_infor_alfa"]'
     SEL_NOME = f'input[data-testtoolid="{CAMPOS_FORMULARIO["nome"]}"]'
+    #: Na CDCOPSBENE este ÚNICO clique já abre a janela que traz o PDF —
+    #: medido no gate ao vivo de 16/09: o clique em onPrintPDF tinha sucesso
+    #: e a consulta SEGUINTE fechava "1 janela extra", prova de que uma
+    #: janela nova havia sido aberta ali. Não existe aqui um segundo passo
+    #: "gerar versão para impressão"; esse botão
+    #: (``w_report.onGeneratePrintVersion``) é das telas de RELATÓRIO
+    #: (CDCOINDPES, FPEMFICHAF), que oferecem um link "versão para
+    #: impressão" — a CDCOPSBENE é formulário, não relatório. Consistente
+    #: com o módulo privado, validado em produção, que também clica só este
+    #: botão e passa a trabalhar sobre a janela que ele abre.
     SEL_IMPRIMIR = '[data-testtoolid="onPrintPDF"]'
-    SEL_GERAR_PDF = '[data-testtoolid="w_report.onGeneratePrintVersion"]'
     SEL_SAIR = '[data-testtoolid="onClickBtnSair"]'
 
     TIMEOUT_TELA = 30
@@ -304,13 +313,21 @@ class DadosPessoaisPensionista:
         ``find_element`` direto arriscaria degradar a conferência para
         "impossível" em TODA consulta caso os dois frames sejam diferentes.
 
-        PENDÊNCIA (gate ao vivo): não se sabe se o campo ecoa o valor depois
-        da consulta. Eco vazio registra um aviso e a consulta segue; eco
-        divergente levanta. Medido o comportamento real, a tolerância sai.
+        MEDIDO no gate ao vivo de 16/09, nas duas matrículas reais: depois da
+        consulta, ``w_matr_infor_alfa`` não está em NENHUM frame visível —
+        não é um caso raro, é o comportamento normal desta tela. Na prática,
+        hoje, a única proteção é a estrutural (cada ``consultar`` navega para
+        a transação do zero, com o formulário em branco); por isso os
+        caminhos "impossível" logam em ``debug``, não em ``warning`` — uma
+        condição que ocorre em toda consulta não pode gritar toda consulta.
+        O caminho de eco DIVERGENTE continua levantando, sem mudança: se o
+        campo por acaso vier preenchido com outra matrícula, isso ainda é
+        sinal forte de erro. Uma conferência real pode voltar a existir se o
+        PDF impresso carregar a matrícula — o que o gate mede à parte.
         """
         try:
             if procurar_em_frames(self.driver, self.SEL_MATRICULA) is None:
-                _log.warning(
+                _log.debug(
                     "%s: conferência de identidade impossível (o campo de "
                     "busca não foi encontrado em nenhum frame visível)",
                     self.TRANSACAO)
@@ -319,13 +336,13 @@ class DadosPessoaisPensionista:
                 By.CSS_SELECTOR, self.SEL_MATRICULA).get_attribute("value")
             eco = re.sub(r"\D", "", eco or "")
         except Exception as exc:  # noqa: BLE001
-            _log.warning("%s: conferência de identidade impossível (%s)",
-                         self.TRANSACAO, mascarar_digitos(str(exc)))
+            _log.debug("%s: conferência de identidade impossível (%s)",
+                       self.TRANSACAO, mascarar_digitos(str(exc)))
             return
         if not eco:
-            _log.warning("%s: conferência de identidade impossível (o campo "
-                         "de busca ficou vazio após a consulta)",
-                         self.TRANSACAO)
+            _log.debug("%s: conferência de identidade impossível (o campo "
+                       "de busca ficou vazio após a consulta)",
+                       self.TRANSACAO)
             return
         if eco != matricula:
             raise DadosPessoaisIndisponiveis(
@@ -333,12 +350,17 @@ class DadosPessoaisPensionista:
                            f"{mascarar_matricula(eco)}, não a pedida")
 
     def _imprimir(self, matricula: str) -> Path:
-        """Imprime a tela e devolve o PDF BRUTO, ainda em pasta_download."""
-        self._clicar(self.SEL_IMPRIMIR, matricula, "Imprimir")
+        """Imprime a tela e devolve o PDF BRUTO, ainda em pasta_download.
+
+        O clique em Imprimir É o disparo da impressão nesta tela (ver o
+        comentário em ``SEL_IMPRIMIR``): por isso ele entra como o próprio
+        ``clicar_imprimir`` de :func:`imprimir_via_popup`, em vez de um
+        clique solto seguido de um segundo botão que não existe aqui.
+        """
         try:
             bruto = imprimir_via_popup(
                 self.driver,
-                lambda: self._clicar(self.SEL_GERAR_PDF, matricula, "Gerar PDF"),
+                lambda: self._clicar(self.SEL_IMPRIMIR, matricula, "Imprimir"),
                 self.pasta_download)
         except DadosPessoaisIndisponiveis:
             raise

@@ -1241,10 +1241,14 @@ Regras de honestidade do módulo:
 Duas limitações declaradas, e as duas diferem do módulo de servidor:
 
 1. **A conferência de identidade é mais fraca.** A tela não devolve a
-   matrícula junto dos dados, então o módulo compara apenas o que ficou no
-   campo de busca. Se esse campo vier vazio, um aviso registra que a
-   conferência não foi possível e a consulta segue. A proteção estrutural é
-   que cada consulta navega para a transação do zero.
+   matrícula junto dos dados. Medido no gate ao vivo de 16/09, em duas
+   matrículas reais: o campo de busca não está presente em nenhum frame
+   visível depois da consulta, então não há eco a conferir nesta tela — não
+   é um caso raro, é o comportamento normal. Na prática, hoje, a única
+   proteção é a estrutural: cada consulta navega para a transação do zero,
+   com o formulário em branco. Se o campo de busca por acaso vier
+   preenchido com outra matrícula, isso ainda levanta
+   `DadosPessoaisIndisponiveis`.
 2. **Não há releitura sem navegador.** Os campos vêm do DOM, não do PDF, de
    modo que um PDF de pensionista já no disco não pode ser relido como
    dados. Para servidor isso existe, em `ler_dados_pessoais`.

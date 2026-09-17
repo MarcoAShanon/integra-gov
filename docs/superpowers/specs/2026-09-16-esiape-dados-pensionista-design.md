@@ -114,9 +114,19 @@ pasta de download DEVE ser dedicada: a impressão apaga todos os PDFs dela.
 7. Conferência de identidade (§ própria abaixo).
 8. Se **todos** os 11 campos vierem vazios → `DadosPessoaisIndisponiveis`
    com motivo "a consulta não trouxe dados".
-9. `imprimir_via_popup` com `onPrintPDF` e depois
-   `w_report.onGeneratePrintVersion`; guarda de camada de texto; renomeia
-   para `pasta_saida / f"dados_pensionista_{matricula}.pdf"`, sobrescrevendo.
+9. `imprimir_via_popup` com um único clique em `onPrintPDF` como
+   `clicar_imprimir`; guarda de camada de texto; renomeia para
+   `pasta_saida / f"dados_pensionista_{matricula}.pdf"`, sobrescrevendo.
+
+   *(Medido no gate ao vivo de 16/09: as duas matrículas reais chegaram até
+   aqui com sucesso — leitura dos campos ok — e falharam esperando o botão
+   `w_report.onGeneratePrintVersion`, que nunca aparece nesta tela. O clique
+   em `onPrintPDF` já abre a janela que carrega o PDF; a prova é que a
+   consulta SEGUINTE, ao limpar janelas extras, fechou "1 janela(s) extra(s)
+   fechada(s)". Esse botão de "gerar versão para impressão" é das telas de
+   RELATÓRIO (CDCOINDPES, FPEMFICHAF); a CDCOPSBENE é formulário e não o
+   tem. Consistente com o módulo privado, validado em produção, que também
+   clica só `onPrintPDF`.)*
 10. Botão Sair, falha ignorada com `warning`.
 11. Em falha dentro da transação (passos 4 a 9): `_recuperar_tela` (fechar
     popups, limpar cortina, Sair), best effort, que **nunca** mascara a
@@ -130,8 +140,7 @@ servidor tem exatamente a mesma cláusula estreita; os dois se corrigem juntos
 ou nenhum, para não divergirem. Fica para depois do gate.)*
 
 Seletores (do privado, validados em produção): `w_matr_infor_alfa`,
-`onPrintPDF`, `w_report.onGeneratePrintVersion`, `onClickBtnSair`, todos por
-`data-testtoolid`.
+`onPrintPDF`, `onClickBtnSair`, todos por `data-testtoolid`.
 
 **A impressão NÃO é portada do privado.** O privado envia dez tabulações e um
 ENTER, depois procura `StartDynamicContent.pdf` em três pastas (temporária,
@@ -168,6 +177,22 @@ O gate mede qual dos dois casos é o real. Se o eco existir sempre, a
 tolerância do caso vazio sai do código na sequência, e a spec registra a
 medição. Enquanto a medição não existe, o comportamento tolerante fica
 declarado aqui e na documentação, em vez de prometido como conferência.
+
+### Medição do gate de 16/09: o campo não ecoa, ele SOME
+
+*Nas duas matrículas reais, depois da consulta, `w_matr_infor_alfa` não
+estava em nenhum frame visível — não em alguns casos, nos dois. A pergunta
+2 do gate está respondida: não há eco a conferir nesta tela, então a
+conferência por eco é estruturalmente impossível aqui, não apenas
+eventualmente vazia. A única proteção hoje é a estrutural (item 1 acima:
+cada `consultar` navega para a transação do zero). Por isso os logs dos
+caminhos "impossível" (campo ausente dos frames; campo vazio) passam de
+`warning` para `debug` — uma condição que ocorre em toda consulta não pode
+soar como alerta em toda consulta. O caminho de eco DIVERGENTE continua
+levantando `DadosPessoaisIndisponiveis`, sem mudança: se o campo vier
+preenchido com outra matrícula, é sinal forte de erro. Uma conferência real
+pode voltar a existir se o PDF impresso carregar a matrícula — o que a
+pergunta 4 do gate mede à parte.*
 
 ## Erros
 
@@ -237,12 +262,22 @@ inexistente por último.
 
 Perguntas que o gate responde, e que entram nesta spec como medição:
 
-1. formato da data de nascimento no formulário;
-2. se `w_matr_infor_alfa` ecoa a matrícula depois da consulta;
+1. formato da data de nascimento no formulário — **em aberto**: a impressão
+   nunca completou nas duas matrículas reais (falhava antes, no botão
+   inexistente), então o formulário foi lido mas a forma da data não foi
+   registrada separadamente da leitura geral. Fica para o próximo gate, já
+   com a impressão corrigida.
+2. se `w_matr_infor_alfa` ecoa a matrícula depois da consulta —
+   **respondida**: não ecoa, o campo SOME de todos os frames visíveis
+   depois da consulta, nas duas matrículas reais (ver §Identidade).
 3. o que a tela faz com matrícula inexistente (campos vazios? popup? outra
-   coisa?);
+   coisa?) — **respondida**: os campos do formulário simplesmente não
+   aparecem; a sonda de popup do CIS (`[id^='IPO_']`) não capturou nenhum
+   popup.
 4. se o PDF impresso tem camada de texto e carrega os mesmos campos, o que
-   decide se vale uma leitura pura numa fatia futura.
+   decide se vale uma leitura pura numa fatia futura — **em aberto**: a
+   impressão nunca completou (defeito 1 deste gate), então não há PDF para
+   examinar ainda.
 
 Se uma das matrículas reais for de pessoa **com procurador**, a tela
 intermediária é exercitada ao vivo. Se não houver uma à mão, esse caminho

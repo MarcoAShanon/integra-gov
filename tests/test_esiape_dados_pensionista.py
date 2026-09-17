@@ -220,7 +220,13 @@ from integra_gov.esiape.exceptions import (  # noqa: E402
 from tests._pdf_sintetico import pdf_bytes  # noqa: E402
 
 P = dmod.DadosPessoaisPensionista
-BOTOES = (P.SEL_MATRICULA, P.SEL_IMPRIMIR, P.SEL_GERAR_PDF, P.SEL_SAIR)
+BOTOES = (P.SEL_MATRICULA, P.SEL_IMPRIMIR, P.SEL_SAIR)
+
+
+def test_sem_botao_gerar_pdf():
+    # a CDCOPSBENE nao tem um segundo passo "gerar versao para impressao"
+    # (isso e das telas de RELATORIO); o clique em Imprimir ja abre o PDF.
+    assert not hasattr(P, "SEL_GERAR_PDF")
 
 
 class _Botao:
@@ -362,7 +368,7 @@ def test_consultar_caminho_feliz(ambiente):
     d = servidor.consultar(" 000.000-0 ")
     assert chamadas["navegar"] == ["CDCOPSBENE"]
     assert driver.el[P.SEL_MATRICULA].teclas == ["0000000", Keys.ENTER]
-    assert driver.ordem == [P.SEL_IMPRIMIR, P.SEL_GERAR_PDF, P.SEL_SAIR]
+    assert driver.ordem == [P.SEL_IMPRIMIR, P.SEL_SAIR]
     assert chamadas["fechar_janelas_extras"] == 1
     assert chamadas["fechar_popups"] == 1
     assert chamadas["limpar_overlay"] == 1
@@ -510,14 +516,38 @@ def test_campo_ausente_menciona_procuracao_mesmo_sem_deteccao(ambiente,
     assert "procuração" in str(exc.value)
 
 
+def test_clique_em_imprimir_e_o_proprio_callback_de_impressao(ambiente,
+                                                                monkeypatch):
+    """onPrintPDF nao e clicado solto e depois de novo por um segundo botao:
+    o clique EM SI e o clicar_imprimir passado a imprimir_via_popup — provado
+    aqui chamando o callback capturado e conferindo que so ele clicou."""
+    driver, servidor, _ = ambiente
+    capturado = {}
+
+    def imprimir(d, clicar, pasta_download, **kw):
+        capturado["clicar"] = clicar
+        assert driver.el[P.SEL_IMPRIMIR].cliques == 0   # nada clicou antes
+        clicar()
+        assert driver.el[P.SEL_IMPRIMIR].cliques == 1   # o callback clicou
+        bruto = Path(pasta_download) / "cis_bruto.pdf"
+        bruto.write_bytes(pdf_bytes([["RELATORIO CDCOPSBENE"]]))
+        return bruto
+
+    monkeypatch.setattr(dmod, "imprimir_via_popup", imprimir)
+    servidor.consultar("0000000")
+    assert "clicar" in capturado
+    assert driver.el[P.SEL_IMPRIMIR].cliques == 1   # so o callback, uma vez
+
+
 def test_eco_procurado_entre_frames(ambiente):
     driver, servidor, chamadas = ambiente
     servidor.consultar("0000000")
     assert P.SEL_MATRICULA in chamadas["procurar_em_frames"]
 
 
-def test_eco_em_frame_nao_encontrado_apenas_avisa(ambiente, monkeypatch,
-                                                   caplog):
+def test_eco_em_frame_nao_encontrado_apenas_registra_debug(ambiente,
+                                                            monkeypatch,
+                                                            caplog):
     import logging
 
     driver, servidor, chamadas = ambiente
@@ -527,11 +557,16 @@ def test_eco_em_frame_nao_encontrado_apenas_avisa(ambiente, monkeypatch,
         return None if s == P.SEL_MATRICULA else (0,)
 
     monkeypatch.setattr(dmod, "procurar_em_frames", procurar_em_frames)
-    with caplog.at_level(logging.WARNING,
+    with caplog.at_level(logging.DEBUG,
                          logger="integra_gov.esiape.dados_pensionista"):
         d = servidor.consultar("0000000")
     assert d.nome == "FULANO DE TAL"
     assert any("nenhum frame" in r.getMessage() for r in caplog.records)
+    # medido no gate: essa condicao ocorre em TODA consulta, entao nao pode
+    # gritar warning em toda consulta.
+    assert not any(r.levelno >= logging.WARNING
+                   and "conferência de identidade" in r.getMessage()
+                   for r in caplog.records)
 
 
 def test_eco_divergente_levanta(ambiente):
@@ -544,17 +579,20 @@ def test_eco_divergente_levanta(ambiente):
     assert chamadas["imprimir"] == 0
 
 
-def test_eco_vazio_apenas_avisa(ambiente, caplog):
+def test_eco_vazio_apenas_registra_debug(ambiente, caplog):
     import logging
 
     driver, servidor, _ = ambiente
     driver.el[P.SEL_MATRICULA].eco_forcado = ""      # o CIS nao ecoa
-    with caplog.at_level(logging.WARNING,
+    with caplog.at_level(logging.DEBUG,
                          logger="integra_gov.esiape.dados_pensionista"):
         d = servidor.consultar("0000000")
     assert d.nome == "FULANO DE TAL"
     assert any("conferência de identidade" in r.getMessage()
                for r in caplog.records)
+    assert not any(r.levelno >= logging.WARNING
+                   and "conferência de identidade" in r.getMessage()
+                   for r in caplog.records)
 
 
 def test_relogin_atravessado_repete_uma_vez(ambiente):
