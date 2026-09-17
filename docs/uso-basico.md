@@ -1221,28 +1221,22 @@ dados.municipio, dados.uf, dados.cep
 dados.com_procuracao      # True quando há procurador cadastrado
 ```
 
-O Chrome precisa das prefs de impressão da seção "Configuração do Chrome"
-(acima), e `pasta_download` (default `cadastrais/_download_esiape`) tem de
-ser **dedicada**: a impressão apaga todos os PDFs dela antes de começar.
+`pasta_download` (default `cadastrais/_download_esiape`) é onde o PDF é
+escrito antes de ser conferido e renomeado para `pasta_saida`.
 
-Diferente do módulo de servidor, o PDF desta transação chega como
-**download** disparado por uma janela **popup**, não como impressão de
-relatório HTML — e isso exige o CONTRÁRIO da preferência documentada na
-seção "Configuração do Chrome" (acima). O `driver` usado nesta transação
-NÃO PODE ter `plugins.always_open_pdf_externally: True` nas prefs: essa
-preferência entrega o PDF ao sistema operacional (o cartão "Abrir" do
-próprio Chrome) em vez de gravá-lo em `download.default_directory`, e a
-pasta de download fica vazia — é exatamente esse desfecho, medido ao vivo
-em duas matrículas reais, que levou à correção. `download.default_directory`
-continua tendo de apontar para `pasta_download`. O módulo de servidor e a
-ficha anual produzem o PDF por **impressão** e por isso pedem
-`plugins.always_open_pdf_externally: True` de propósito (para a impressora
-virtual não abrir o visualizador embutido do Chrome) — uma sessão que usa
-os dois módulos precisa de dois `driver`s com prefs diferentes, ou trocar a
-preferência entre as chamadas. Como reforço (não substituto da preferência
-do Chrome), o módulo também fixa `pasta_download` via
-`Browser.setDownloadBehavior` do DevTools Protocol imediatamente antes de
-cada impressão.
+O PDF desta transação é produzido pedindo ao Chrome que imprima a própria
+tela via DevTools (`Page.printToPDF`), não por um download disparado por
+janela popup: essa transação **não precisa de nenhuma configuração de
+download nem de preferência de PDF do Chrome**. Chegou-se a essa mecânica
+depois de cinco descartes medidos ao vivo — esperar o download cair na pasta
+configurada, forçar a pasta via `Browser.setDownloadBehavior` do CDP, buscar
+a URL do popup pela própria sessão, vigiar toda janela e todo frame por dois
+minutos, e por fim remover `plugins.always_open_pdf_externally` do perfil
+(a hipótese mais forte, que falhou de novo, identicamente) — nenhum
+capturou o arquivo que o CIS gera para a CDCOPSBENE. Por isso é preciso
+dizer com todas as letras: **o PDF resultante é a impressão da tela que o
+operador vê, não o relatório próprio do CIS** — uma diferença real para
+quem anexa o documento a um processo.
 
 Regras de honestidade do módulo:
 

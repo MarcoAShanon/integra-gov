@@ -114,9 +114,11 @@ pasta de download DEVE ser dedicada: a impressão apaga todos os PDFs dela.
 7. Conferência de identidade (§ própria abaixo).
 8. Se **todos** os 11 campos vierem vazios → `DadosPessoaisIndisponiveis`
    com motivo "a consulta não trouxe dados".
-9. `imprimir_via_popup` com um único clique em `onPrintPDF` como
-   `clicar_imprimir`; guarda de camada de texto; renomeia para
-   `pasta_saida / f"dados_pensionista_{matricula}.pdf"`, sobrescrevendo.
+9. `imprimir_pagina_para_pdf` imprime a TELA atual via DevTools
+   (`Page.printToPDF`), sem clicar em nada; guarda de camada de texto;
+   renomeia para `pasta_saida / f"dados_pensionista_{matricula}.pdf"`,
+   sobrescrevendo. (Sexta rodada, 17/09 — ver a nota ao final desta lista:
+   o clique em `onPrintPDF` e a máquina de downloads saíram do módulo.)
 
    *(Medição do gate ao vivo de 16/09, terceira rodada: a primeira impressão
    real da sessão excedeu os 60s default de `imprimir_via_popup` — a
@@ -185,6 +187,35 @@ pasta de download DEVE ser dedicada: a impressão apaga todos os PDFs dela.
    RELATÓRIO (CDCOINDPES, FPEMFICHAF); a CDCOPSBENE é formulário e não o
    tem. Consistente com o módulo privado, validado em produção, que também
    clica só `onPrintPDF`.)*
+
+   *(Medição do gate ao vivo de 17/09, sexta rodada: com a rota de download
+   corrigida (quinta rodada), a hipótese mais forte — remover
+   `plugins.always_open_pdf_externally` do perfil — foi testada e FALHOU de
+   novo, identicamente: pasta vazia, popup aberto (2 janelas). Com isso
+   ficam descartadas, cada uma por uma medição ao vivo própria:
+   - esperar o download na pasta configurada — pasta vazia após 120s, com o
+     popup aberto (duas janelas);
+   - forçar a pasta via `Browser.setDownloadBehavior` do CDP — o comando
+     teve sucesso e não mudou nada;
+   - buscar a URL do popup pela própria sessão — devolve a casca do CIS em
+     HTML, ~2646 bytes, nunca o PDF;
+   - vigiar toda janela e todo frame por dois minutos — nenhuma URL de PDF
+     jamais aparece, consistente com o fato de que um download não navega;
+   - remover `plugins.always_open_pdf_externally` do perfil — a hipótese
+     mais forte (o arquivo já havia sido encontrado assim num perfil sem
+     essa preferência) — falhou de novo, identicamente.
+
+   Decisão: o módulo para de perseguir o arquivo que o CIS gera para a
+   CDCOPSBENE e passa a imprimir a própria TELA via DevTools
+   (`Page.printToPDF`, verificado ao vivo no Chrome do usuário: devolve um
+   PDF real, com camada de texto, num Chrome headful anexado). Isso dispensa
+   qualquer configuração de download ou preferência de PDF para esta
+   transação. `imprimir_via_popup` e o clique em `onPrintPDF` saem do
+   módulo; `_forcar_pasta_de_download` e `TIMEOUT_DOWNLOAD` também, porque
+   não há mais download nenhum a esperar. O resultado é a impressão da tela
+   que o operador vê, não o relatório próprio do CIS — diferença real para
+   quem anexa o documento a um processo, registrada aqui e em
+   `docs/uso-basico.md` com todas as letras.)*
 10. Botão Sair, falha ignorada com `warning`.
 11. Em falha dentro da transação (passos 4 a 9): `_recuperar_tela` (fechar
     popups, limpar cortina, Sair), best effort, que **nunca** mascara a
@@ -198,7 +229,9 @@ servidor tem exatamente a mesma cláusula estreita; os dois se corrigem juntos
 ou nenhum, para não divergirem. Fica para depois do gate.)*
 
 Seletores (do privado, validados em produção): `w_matr_infor_alfa`,
-`onPrintPDF`, `onClickBtnSair`, todos por `data-testtoolid`.
+`onClickBtnSair`, todos por `data-testtoolid`. `onPrintPDF` era clicado até a
+sexta rodada do gate (17/09); saiu do módulo junto com o clique de imprimir
+(ver a nota logo acima do passo 10).
 
 **A impressão NÃO é portada do privado.** O privado envia dez tabulações e um
 ENTER, depois procura `StartDynamicContent.pdf` em três pastas (temporária,

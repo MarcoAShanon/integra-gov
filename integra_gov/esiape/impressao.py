@@ -19,10 +19,16 @@ que a extração de dados cadastrais (e qualquer outra tela que imprime) não
 duplique um trecho tão sensível. :func:`imprimir_via_popup` é a composição;
 as funções soltas ficam para quem precisa intercalar algo (a ficha anual
 confere a camada de texto ANTES de fechar o popup).
+
+Uma segunda mecânica vive aqui também: :func:`imprimir_pagina_para_pdf`, para
+telas cujo próprio arquivo a automação não consegue capturar (medido no
+pensionista/CDCOPSBENE) — em vez de perseguir um download, pede ao Chrome
+que imprima a página atual via DevTools e recebe os bytes direto.
 """
 
 from __future__ import annotations
 
+import base64
 import logging
 import time
 from collections.abc import Callable
@@ -149,3 +155,74 @@ def imprimir_via_popup(driver, clicar_imprimir: Callable[[], None],
         fechar_popup(driver, popup)
     retornar_apos_impressao(driver, handle_principal, delay=delay)
     return pdf
+
+
+def imprimir_pagina_para_pdf(driver, destino: Path, *,
+                             paisagem: bool = False) -> Path:
+    """Imprime a página ATUAL via DevTools e devolve os bytes direto.
+
+    Ao lado de :func:`imprimir_via_popup` (que captura o PDF que uma tela de
+    RELATÓRIO produz via kiosk printing, pousando na pasta de download), esta
+    função pede ao próprio navegador que imprima a página corrente, pelo
+    comando do DevTools ``Page.printToPDF``, e recebe os bytes de volta sem
+    tocar a máquina de downloads nem depender de popup nenhum.
+
+    Use-a quando a tela entrega o próprio arquivo de um jeito que a automação
+    não consegue capturar — o caso medido é a CDCOPSBENE, depois de cinco
+    descartes ao vivo: esperar o download na pasta configurada (pasta vazia
+    em 120s, com o popup aberto); forçar a pasta via
+    ``Browser.setDownloadBehavior`` do CDP (o comando teve sucesso e não
+    mudou nada); buscar a URL do popup pela sessão (devolve a casca do CIS em
+    HTML, ~2646 bytes, nunca o PDF); vigiar toda janela e todo frame por dois
+    minutos (nenhum jamais carrega uma URL de PDF, o que é consistente,
+    porque um download não navega); e remover
+    ``plugins.always_open_pdf_externally`` do perfil, a hipótese mais forte
+    (o arquivo já havia sido encontrado assim num perfil sem essa preferência)
+    — o gate falhou de novo, identicamente.
+
+    O resultado é a impressão da TELA que o operador vê, não o relatório
+    próprio do CIS — uma diferença real para quem anexa o documento a um
+    processo, e por isso não pode ficar implícita em lugar nenhum que usa
+    esta função.
+
+    Papel A4 em polegadas (``paperWidth`` 8.27, ``paperHeight`` 11.69),
+    dimensões trocadas com ``paisagem=True``; margens de 0.4 polegada nos
+    quatro lados; ``printBackground=True``.
+
+    Raises:
+        RuntimeError: o driver não tem ``execute_cdp_cmd`` (não suporta
+            DevTools), o comando falha (a causa original fica em
+            ``__cause__``), ou o conteúdo devolvido não começa em ``%PDF``
+            (o motivo cita o prefixo em hexadecimal, nunca o conteúdo).
+    """
+    destino = Path(destino)
+    largura, altura = (11.69, 8.27) if paisagem else (8.27, 11.69)
+    params = {
+        "printBackground": True,
+        "paperWidth": largura,
+        "paperHeight": altura,
+        "marginTop": 0.4,
+        "marginBottom": 0.4,
+        "marginLeft": 0.4,
+        "marginRight": 0.4,
+    }
+    executar = getattr(driver, "execute_cdp_cmd", None)
+    if executar is None:
+        raise RuntimeError(
+            "impressão via DevTools indisponível: o driver não tem "
+            "execute_cdp_cmd")
+    try:
+        resultado = executar("Page.printToPDF", params)
+    except Exception as exc:
+        raise RuntimeError(
+            "impressão via DevTools indisponível: Page.printToPDF "
+            "falhou") from exc
+    bruto = base64.b64decode(resultado["data"])
+    if not bruto.startswith(b"%PDF"):
+        prefixo = bruto[:8].hex()
+        raise RuntimeError(
+            f"o conteúdo devolvido pela impressão via DevTools não é um "
+            f"PDF (começa em {prefixo})")
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    destino.write_bytes(bruto)
+    return destino

@@ -264,13 +264,19 @@ from integra_gov.esiape.exceptions import (  # noqa: E402
 from tests._pdf_sintetico import pdf_bytes  # noqa: E402
 
 P = dmod.DadosPessoaisPensionista
-BOTOES = (P.SEL_MATRICULA, P.SEL_IMPRIMIR, P.SEL_SAIR)
+BOTOES = (P.SEL_MATRICULA, P.SEL_SAIR)
 
 
 def test_sem_botao_gerar_pdf():
     # a CDCOPSBENE nao tem um segundo passo "gerar versao para impressao"
-    # (isso e das telas de RELATORIO); o clique em Imprimir ja abre o PDF.
+    # (isso e das telas de RELATORIO).
     assert not hasattr(P, "SEL_GERAR_PDF")
+
+
+def test_sem_botao_imprimir():
+    # o PDF passa a ser a impressao da propria tela via DevTools
+    # (Page.printToPDF); nao existe mais um botao Imprimir a clicar.
+    assert not hasattr(P, "SEL_IMPRIMIR")
 
 
 class _Botao:
@@ -327,10 +333,6 @@ class _DriverConsulta:
         self.switch_to = _SwitchToFake()
         self.popups: list[_Popup] = []
         self.window_handles = ["principal"]
-        self.cdp_chamadas: list[tuple] = []
-
-    def execute_cdp_cmd(self, comando, params):
-        self.cdp_chamadas.append((comando, params))
 
     def find_element(self, by, valor):
         if valor in self.el:
@@ -363,12 +365,12 @@ def ambiente(tmp_path, monkeypatch):
         chamadas["navegar"].append(transacao)
         return True
 
-    def imprimir(d, clicar, pasta_download, **kw):
+    def imprimir(d, destino, **kw):
         chamadas["imprimir"] += 1
-        clicar()
-        bruto = Path(pasta_download) / "cis_bruto.pdf"
-        bruto.write_bytes(pdf_bytes([["RELATORIO CDCOPSBENE"]]))
-        return bruto
+        destino = Path(destino)
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        destino.write_bytes(pdf_bytes([["RELATORIO CDCOPSBENE"]]))
+        return destino
 
     def conta(chave, retorno):
         def _f(*_a, **_k):
@@ -394,7 +396,7 @@ def ambiente(tmp_path, monkeypatch):
     monkeypatch.setattr(dmod, "limpar_flag_relogin",
                         lambda d: chamadas.__setitem__(
                             "limpar_flag", chamadas["limpar_flag"] + 1))
-    monkeypatch.setattr(dmod, "imprimir_via_popup", imprimir)
+    monkeypatch.setattr(dmod, "imprimir_pagina_para_pdf", imprimir)
     servidor = P(driver, pasta_saida=tmp_path / "saida")
     return driver, servidor, chamadas
 
@@ -417,7 +419,7 @@ def test_consultar_caminho_feliz(ambiente):
     d = servidor.consultar(" 000.000-0 ")
     assert chamadas["navegar"] == ["CDCOPSBENE"]
     assert driver.el[P.SEL_MATRICULA].teclas == ["0000000", Keys.ENTER]
-    assert driver.ordem == [P.SEL_IMPRIMIR, P.SEL_SAIR]
+    assert driver.ordem == [P.SEL_SAIR]
     assert chamadas["fechar_janelas_extras"] == 1
     assert chamadas["fechar_popups"] == 1
     assert chamadas["limpar_overlay"] == 1
@@ -428,7 +430,7 @@ def test_consultar_caminho_feliz(ambiente):
     assert d.com_procuracao is False
     assert d.pdf == servidor.pasta_saida / "dados_pensionista_0000000.pdf"
     assert d.pdf.exists()
-    assert not (servidor.pasta_download / "cis_bruto.pdf").exists()
+    assert not (servidor.pasta_download / "cdcopsbene_0000000.pdf").exists()
 
 
 def test_com_procuracao_vai_para_o_resultado(ambiente, monkeypatch):
@@ -565,27 +567,35 @@ def test_campo_ausente_menciona_procuracao_mesmo_sem_deteccao(ambiente,
     assert "procuração" in str(exc.value)
 
 
-def test_clique_em_imprimir_e_o_proprio_callback_de_impressao(ambiente,
-                                                                monkeypatch):
-    """onPrintPDF nao e clicado solto e depois de novo por um segundo botao:
-    o clique EM SI e o clicar_imprimir passado a imprimir_via_popup — provado
-    aqui chamando o callback capturado e conferindo que so ele clicou."""
+def test_imprimir_nao_clica_em_nada(ambiente, monkeypatch):
+    """A impressão passou a ser a tela via DevTools: nenhum botão é clicado
+    para produzir o PDF — a prova é que, depois de consultar, a única
+    entrada em ``driver.ordem`` é o Sair."""
+    driver, servidor, _ = ambiente
+    servidor.consultar("0000000")
+    assert driver.ordem == [P.SEL_SAIR]
+
+
+def test_imprimir_pagina_para_pdf_recebe_o_destino_dedicado(ambiente,
+                                                              monkeypatch):
+    """``_imprimir`` chama ``imprimir_pagina_para_pdf`` com o caminho
+    ``cdcopsbene_<matricula>.pdf`` dentro de ``pasta_download``, sem
+    callback de clique nenhum."""
     driver, servidor, _ = ambiente
     capturado = {}
 
-    def imprimir(d, clicar, pasta_download, **kw):
-        capturado["clicar"] = clicar
-        assert driver.el[P.SEL_IMPRIMIR].cliques == 0   # nada clicou antes
-        clicar()
-        assert driver.el[P.SEL_IMPRIMIR].cliques == 1   # o callback clicou
-        bruto = Path(pasta_download) / "cis_bruto.pdf"
-        bruto.write_bytes(pdf_bytes([["RELATORIO CDCOPSBENE"]]))
-        return bruto
+    def imprimir(d, destino, **kw):
+        capturado["driver"] = d
+        capturado["destino"] = Path(destino)
+        destino = Path(destino)
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        destino.write_bytes(pdf_bytes([["RELATORIO CDCOPSBENE"]]))
+        return destino
 
-    monkeypatch.setattr(dmod, "imprimir_via_popup", imprimir)
+    monkeypatch.setattr(dmod, "imprimir_pagina_para_pdf", imprimir)
     servidor.consultar("0000000")
-    assert "clicar" in capturado
-    assert driver.el[P.SEL_IMPRIMIR].cliques == 1   # so o callback, uma vez
+    assert capturado["driver"] is driver
+    assert capturado["destino"] == servidor.pasta_download / "cdcopsbene_0000000.pdf"
 
 
 def test_eco_procurado_entre_frames(ambiente):
@@ -678,137 +688,27 @@ def test_submissao_e_so_enter_sem_botao_consultar(ambiente):
     assert not hasattr(P, "SEL_CONSULTAR")
 
 
-def test_botao_imprimir_ausente_com_popup_mostra_a_tela_mascarada(ambiente,
-                                                                    monkeypatch):
-    driver, servidor, _ = ambiente
-    driver.popups.append(_Popup("MATRICULA 1234567 NAO CADASTRADA"))
-    monkeypatch.setattr(
-        dmod, "esperar_seletor",
-        lambda d, s, timeout=20: None if s == P.SEL_IMPRIMIR else (0,))
-    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
-        servidor.consultar("0000000")
-    assert "a tela mostrou: MATRICULA *****67 NAO CADASTRADA" in str(exc.value)
-    assert "1234567" not in str(exc.value)
-
-
 def test_impressao_sem_pdf_levanta(ambiente):
     _, servidor, _ = ambiente
 
     def imprimir(*a, **k):
-        raise TimeoutError("nenhum PDF apareceu")
+        raise RuntimeError("impressão via DevTools indisponível: Page.printToPDF falhou")
 
-    with patch.object(dmod, "imprimir_via_popup", imprimir):
+    with patch.object(dmod, "imprimir_pagina_para_pdf", imprimir):
         with pytest.raises(DadosPessoaisIndisponiveis) as exc:
             servidor.consultar("0000000")
-    assert "nenhum PDF apareceu" in str(exc.value)
-
-
-def test_timeout_download_e_repassado_a_imprimir_via_popup(ambiente):
-    driver, servidor, _ = ambiente
-    capturado = {}
-
-    def imprimir(d, clicar, pasta_download, **kw):
-        capturado.update(kw)
-        clicar()
-        bruto = Path(pasta_download) / "cis_bruto.pdf"
-        bruto.write_bytes(pdf_bytes([["RELATORIO CDCOPSBENE"]]))
-        return bruto
-
-    with patch.object(dmod, "imprimir_via_popup", imprimir):
-        servidor.consultar("0000000")
-    assert capturado.get("timeout_download") == P.TIMEOUT_DOWNLOAD == 120
-
-
-def test_impressao_sem_pdf_lista_conteudo_da_pasta_download(ambiente):
-    """No timeout de download, a mensagem diz QUANTOS arquivos há na pasta e
-    de que EXTENSÕES — nunca o nome, que pode carregar a matrícula — e
-    também QUANTAS janelas estão abertas: um popup ainda aberto com a
-    pasta vazia é sinal de que o Chrome está segurando o arquivo atrás da
-    própria UI; nenhum popup é sinal de que o clique nunca abriu nada."""
-    driver, servidor, _ = ambiente
-    (servidor.pasta_download / "dados_pensionista_1234567.crdownload").write_bytes(b"")
-    driver.window_handles = ["principal", "popup"]
-
-    def imprimir(*a, **k):
-        raise TimeoutError("o PDF nao apareceu em 120s")
-
-    with patch.object(dmod, "imprimir_via_popup", imprimir):
-        with pytest.raises(DadosPessoaisIndisponiveis) as exc:
-            servidor.consultar("0000000")
-    msg = str(exc.value)
-    assert ".crdownload" in msg
-    assert "1 arquivo(s) na pasta" in msg
-    assert "2 janela(s) aberta(s)" in msg
-    assert "dados_pensionista_1234567" not in msg
-    assert "1234567" not in msg
-
-
-def test_forca_pasta_download_por_cdp_antes_de_imprimir(ambiente, monkeypatch):
-    """O PDF desta transação chega como download de uma janela popup, que
-    não respeita de forma confiável download.default_directory do perfil
-    (medido no gate de 16/09: pasta vazia enquanto o Chrome mostrava seu
-    próprio 'Abrir'). O módulo fixa a pasta via CDP, em melhor esforço,
-    imediatamente antes de cada impressão."""
-    driver, servidor, _ = ambiente
-    ordem = []
-
-    def cdp(comando, params):
-        ordem.append("cdp")
-        driver.cdp_chamadas.append((comando, params))
-
-    def imprimir(d, clicar, pasta_download, **kw):
-        ordem.append("imprimir")
-        clicar()
-        bruto = Path(pasta_download) / "cis_bruto.pdf"
-        bruto.write_bytes(pdf_bytes([["RELATORIO CDCOPSBENE"]]))
-        return bruto
-
-    monkeypatch.setattr(driver, "execute_cdp_cmd", cdp)
-    monkeypatch.setattr(dmod, "imprimir_via_popup", imprimir)
-
-    servidor.consultar("0000000")
-
-    assert ordem == ["cdp", "imprimir"]
-    assert driver.cdp_chamadas == [
-        ("Browser.setDownloadBehavior",
-         {"behavior": "allow", "downloadPath": str(servidor.pasta_download),
-          "eventsEnabled": True})]
-
-
-def test_forca_pasta_download_cdp_falhando_nao_impede_a_consulta(ambiente,
-                                                                   monkeypatch,
-                                                                   caplog):
-    """Nem todo driver suporta CDP; a falha aqui nunca pode ser a razão de
-    uma consulta falhar — só um aviso, e a impressão segue dependendo da
-    configuração do perfil."""
-    import logging
-
-    driver, servidor, _ = ambiente
-
-    def cdp_explode(comando, params):
-        raise RuntimeError("cdp indisponivel")
-
-    monkeypatch.setattr(driver, "execute_cdp_cmd", cdp_explode)
-    with caplog.at_level(logging.WARNING,
-                         logger="integra_gov.esiape.dados_pensionista"):
-        d = servidor.consultar("0000000")
-    assert d.nome == "FULANO DE TAL"
-    assert any(r.levelno == logging.WARNING
-               and "download" in r.getMessage().lower()
-               and "cdp indisponivel" in r.getMessage()
-               for r in caplog.records)
+    assert "Page.printToPDF" in str(exc.value)
 
 
 def test_impressao_sem_pdf_mascara_matricula_do_exc_do_driver(ambiente):
     """Um alerta do CIS pode carregar a matrícula inteira dentro da exceção
-    do WebDriver (ex.: UnexpectedAlertPresentException) — ela tem de sair
-    mascarada da mensagem final."""
+    do WebDriver — ela tem de sair mascarada da mensagem final."""
     _, servidor, _ = ambiente
 
     def imprimir(*a, **k):
-        raise TimeoutError("MATRICULA 1234567 NAO CADASTRADA")
+        raise RuntimeError("MATRICULA 1234567 NAO CADASTRADA")
 
-    with patch.object(dmod, "imprimir_via_popup", imprimir):
+    with patch.object(dmod, "imprimir_pagina_para_pdf", imprimir):
         with pytest.raises(DadosPessoaisIndisponiveis) as exc:
             servidor.consultar("0000000")
     assert "*****67" in str(exc.value)
@@ -818,12 +718,13 @@ def test_impressao_sem_pdf_mascara_matricula_do_exc_do_driver(ambiente):
 def test_pdf_sem_camada_de_texto_levanta_e_mantem_arquivo(ambiente):
     _, servidor, chamadas = ambiente
 
-    def imprimir(d, clicar, pasta_download, **kw):
-        bruto = Path(pasta_download) / "cis_bruto.pdf"
-        bruto.write_bytes(pdf_bytes([None], com_fonte=False))
-        return bruto
+    def imprimir(d, destino, **kw):
+        destino = Path(destino)
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        destino.write_bytes(pdf_bytes([None], com_fonte=False))
+        return destino
 
-    with patch.object(dmod, "imprimir_via_popup", imprimir):
+    with patch.object(dmod, "imprimir_pagina_para_pdf", imprimir):
         with pytest.raises(PdfImpressoIlegivel) as exc:
             servidor.consultar("0000000")
     assert Path(exc.value.caminho).exists()

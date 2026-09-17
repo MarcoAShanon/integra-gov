@@ -528,9 +528,9 @@ Campo cujo rótulo não aparece no PDF fica `None`; o texto inteiro do PDF vem
 em `dados.texto` para quem precisar de outro rótulo.
 
 **Pensionista** tem transação própria (`CDCOPSBENE`), que é um formulário e
-não um relatório: os campos saem da tela, e o PDF impresso vai junto como
-documento. Além dos dados da pessoa, o resultado diz se há procuração
-cadastrada:
+não um relatório: os campos saem da tela, e o PDF é a impressão dessa tela
+via DevTools, não o relatório próprio do CIS. Além dos dados da pessoa, o
+resultado diz se há procuração cadastrada:
 
 ```python
 from pathlib import Path
@@ -657,7 +657,7 @@ Detalhes em [Ler uma ficha financeira](docs/uso-basico.md#ler-uma-ficha-financei
 | `integra_gov.esiape.impressao` | imprimir via popup (Save as PDF): a sequência estabilizada, reutilizável por qualquer tela que imprime | ✅ |
 | `integra_gov.esiape.dados_funcionais` | `CDCOINDFUN`: descobre o órgão anterior e o ano de ingresso do servidor | ✅ |
 | `integra_gov.esiape.dados_pessoais` | `CDCOINDPES`: PDF dos dados pessoais + 9 campos lidos dele (`ler_dados_pessoais` funciona sem navegador); confere a matrícula do PDF | ✅ |
-| `integra_gov.esiape.dados_pensionista` | `CDCOPSBENE`: 12 campos do pensionista lidos do formulário + PDF da tela; atravessa e registra a tela de procuração (pendente de verificação ao vivo) | 🚧 |
+| `integra_gov.esiape.dados_pensionista` | `CDCOPSBENE`: 12 campos do pensionista lidos do formulário + PDF da tela impressa via DevTools (não o relatório do CIS); atravessa e registra a tela de procuração (pendente de verificação ao vivo) | 🚧 |
 | `integra_gov.esiape.ficha_multi_orgao` | Encadeia `ficha_anual` por todos os órgãos do servidor (via `dados_funcionais`), com lacunas sempre declaradas | ✅ |
 | `integra_gov.esiape.exceptions` | Exceções tipadas | ✅ |
 

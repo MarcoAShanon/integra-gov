@@ -31,7 +31,7 @@ from .exceptions import (
     PdfImpressoIlegivel,
     TransacaoNaoAbriu,
 )
-from .impressao import imprimir_via_popup
+from .impressao import imprimir_pagina_para_pdf
 from .navegacao import (
     esperar_seletor,
     fechar_janelas_extras,
@@ -221,44 +221,34 @@ def atravessar_procuracao(driver) -> bool:
 
 # --------------------------------------------------------- com navegador
 class DadosPessoaisPensionista:
-    """Consulta a CDCOPSBENE, lê o formulário e imprime o PDF da tela.
+    """Consulta a CDCOPSBENE, lê o formulário e imprime a TELA em PDF.
+
+    O PDF não é o relatório próprio do CIS: cinco descartes ao vivo (o mais
+    recente removendo ``plugins.always_open_pdf_externally``, a hipótese mais
+    forte, que falhou de novo, identicamente) mostraram que o arquivo desta
+    transação não pode ser capturado pela automação. O módulo imprime a
+    própria tela via DevTools (:func:`~integra_gov.esiape.impressao.imprimir_pagina_para_pdf`),
+    o que dispensa qualquer configuração de download ou preferência de PDF do
+    Chrome para esta transação — ver o docstring dessa função para a lista
+    completa das rotas descartadas.
 
     Args:
-        driver: WebDriver com a sessão do e-SIAPE autenticada e o Chrome
-            configurado para "Salvar como PDF" (``docs/uso-basico.md``).
+        driver: WebDriver com a sessão do e-SIAPE autenticada.
         pasta_saida: onde fica ``dados_pensionista_<matricula>.pdf``.
-        pasta_download: pasta de download do Chrome (default: subpasta
-            ``_download_esiape`` de ``pasta_saida``). Tem de ser DEDICADA:
-            :func:`~integra_gov.esiape.impressao.imprimir_via_popup` apaga
-            todos os PDFs dela antes de imprimir.
+        pasta_download: pasta onde o PDF é escrito antes de ser conferido e
+            renomeado para ``pasta_saida`` (default: subpasta
+            ``_download_esiape`` de ``pasta_saida``).
     """
 
     TRANSACAO = TRANSACAO
     SEL_MATRICULA = '[data-testtoolid="w_matr_infor_alfa"]'
     SEL_NOME = f'input[data-testtoolid="{CAMPOS_FORMULARIO["nome"]}"]'
-    #: Na CDCOPSBENE este ÚNICO clique já abre a janela que traz o PDF —
-    #: medido no gate ao vivo de 16/09: o clique em onPrintPDF tinha sucesso
-    #: e a consulta SEGUINTE fechava "1 janela extra", prova de que uma
-    #: janela nova havia sido aberta ali. Não existe aqui um segundo passo
-    #: "gerar versão para impressão"; esse botão
-    #: (``w_report.onGeneratePrintVersion``) é das telas de RELATÓRIO
-    #: (CDCOINDPES, FPEMFICHAF), que oferecem um link "versão para
-    #: impressão" — a CDCOPSBENE é formulário, não relatório. Consistente
-    #: com o módulo privado, validado em produção, que também clica só este
-    #: botão e passa a trabalhar sobre a janela que ele abre.
-    SEL_IMPRIMIR = '[data-testtoolid="onPrintPDF"]'
     SEL_SAIR = '[data-testtoolid="onClickBtnSair"]'
 
     TIMEOUT_TELA = 30
     #: Os campos já vêm renderizados com a consulta; esperar 30s por eles
     #: atrasaria toda matrícula inexistente em meio minuto.
     TIMEOUT_CAMPOS = 10
-    #: Medido no gate ao vivo de 16/09: a primeira impressão da sessão
-    #: excedeu os 60s default de ``imprimir_via_popup`` enquanto as duas
-    #: seguintes, na mesma sessão, não excederam. A causa não foi
-    #: estabelecida, então o orçamento fica generoso, e a falha por timeout
-    #: passa a listar o que há na pasta de download (ver ``_imprimir``).
-    TIMEOUT_DOWNLOAD = 120
     DELAY_APOS_CONSULTA = 1.5
     DELAY_APOS_SAIR = 1.0
 
@@ -374,77 +364,21 @@ class DadosPessoaisPensionista:
                 matricula, f"o campo de busca traz a matrícula "
                            f"{mascarar_matricula(eco)}, não a pedida")
 
-    def _forcar_pasta_de_download(self) -> None:
-        """Fixa a pasta de download via CDP antes de cada impressão.
-
-        O PDF desta transação chega como DOWNLOAD disparado a partir de uma
-        janela POPUP — diferente do módulo de servidor (CDCOINDPES), que
-        imprime um relatório HTML via kiosk printing e nunca depende de um
-        download. Medido no gate ao vivo de 16/09: nas duas matrículas
-        reais a pasta de download ficou VAZIA — não por tempo, o orçamento
-        de 120s (``TIMEOUT_DOWNLOAD``) não mudou nada — enquanto um
-        screenshot da rodada anterior mostrava o popup exibindo o
-        placeholder do próprio Chrome para ``StartDynamicContent.pdf``, com
-        um botão "Abrir": isso é UI do Chrome, não DOM da página, e o
-        Selenium não consegue clicá-lo. Uma janela popup não respeita de
-        forma confiável a preferência ``download.default_directory`` do
-        perfil; ``Browser.setDownloadBehavior`` do CDP a sobrescreve e vale
-        também para popups.
-
-        Best effort: nem todo driver suporta CDP (ex.: um Remote WebDriver
-        sem esse endpoint), e essa falha nunca pode ser a razão de uma
-        consulta falhar — só um aviso mascarado; a impressão segue
-        dependendo da configuração do perfil.
-        """
-        try:
-            self.driver.execute_cdp_cmd(
-                "Browser.setDownloadBehavior",
-                {"behavior": "allow",
-                 "downloadPath": str(self.pasta_download),
-                 "eventsEnabled": True})
-        except Exception as exc:  # noqa: BLE001 — CDP é best-effort
-            _log.warning(
-                "%s: não foi possível fixar a pasta de download via CDP "
-                "(%s); a impressão segue dependendo da configuração do "
-                "perfil", self.TRANSACAO, mascarar_digitos(str(exc)))
-
     def _imprimir(self, matricula: str) -> Path:
-        """Imprime a tela e devolve o PDF BRUTO, ainda em pasta_download.
+        """Imprime a TELA e devolve o PDF, ainda em pasta_download.
 
-        O clique em Imprimir É o disparo da impressão nesta tela (ver o
-        comentário em ``SEL_IMPRIMIR``): por isso ele entra como o próprio
-        ``clicar_imprimir`` de :func:`imprimir_via_popup`, em vez de um
-        clique solto seguido de um segundo botão que não existe aqui.
+        Não clica em nada: a CDCOPSBENE não entrega o próprio arquivo de um
+        jeito que a automação consiga capturar (cinco descartes ao vivo, ver
+        a classe e o docstring de
+        :func:`~integra_gov.esiape.impressao.imprimir_pagina_para_pdf`), então
+        o módulo pede ao Chrome que imprima a página atual via DevTools.
         """
-        self._forcar_pasta_de_download()
+        destino = self.pasta_download / f"cdcopsbene_{matricula}.pdf"
         try:
-            bruto = imprimir_via_popup(
-                self.driver,
-                lambda: self._clicar(self.SEL_IMPRIMIR, matricula, "Imprimir"),
-                self.pasta_download, timeout_download=self.TIMEOUT_DOWNLOAD)
-        except DadosPessoaisIndisponiveis:
-            raise
-        except Exception as exc:  # noqa: BLE001 — timeout de popup/download
+            bruto = imprimir_pagina_para_pdf(self.driver, destino)
+        except Exception as exc:  # noqa: BLE001 — impressão via DevTools falhou
             motivo = ("a impressão não produziu PDF: "
                       f"{mascarar_digitos(str(exc))}")
-            try:
-                arquivos = list(self.pasta_download.iterdir())
-                sufixos = sorted({p.suffix or "(sem extensão)"
-                                  for p in arquivos})
-                motivo += (f"; {len(arquivos)} arquivo(s) na pasta: "
-                           f"{', '.join(sufixos)}")
-            except Exception:  # noqa: BLE001 — listar a pasta é best-effort
-                motivo += "; a pasta de download não pôde ser listada"
-            try:
-                # Um popup ainda ABERTO com a pasta vazia é sinal de que o
-                # Chrome está segurando o PDF atrás da própria UI (ver
-                # _forcar_pasta_de_download); nenhum popup é sinal de que o
-                # clique nunca abriu nada. Nem URL nem título — só a
-                # contagem.
-                motivo += (f"; {len(self.driver.window_handles)} "
-                           f"janela(s) aberta(s)")
-            except Exception:  # noqa: BLE001 — contar janelas é best-effort
-                pass
             raise DadosPessoaisIndisponiveis(matricula, motivo) from exc
 
         try:

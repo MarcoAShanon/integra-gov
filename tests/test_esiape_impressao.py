@@ -1,8 +1,11 @@
 """``integra_gov.esiape.impressao`` — a mecânica de imprimir via popup, movida
-de ``ficha_anual`` sem mudar comportamento."""
+de ``ficha_anual`` sem mudar comportamento; e a impressão da própria página
+via DevTools, para telas cujo arquivo não pode ser capturado pela
+automação."""
 
 from __future__ import annotations
 
+import base64
 import os
 import time as _time
 from pathlib import Path
@@ -14,6 +17,7 @@ from integra_gov.esiape.impressao import (
     aguardar_pdf_estavel,
     aguardar_popup,
     fechar_popup,
+    imprimir_pagina_para_pdf,
     imprimir_via_popup,
     limpar_downloads_orfaos,
     retornar_apos_impressao,
@@ -226,3 +230,75 @@ def test_imprimir_via_popup_sem_popup_ainda_devolve_o_pdf(tmp_path):
 
     pdf = imprimir_via_popup(d, clicar, tmp_path, timeout_popup=0.01, timeout_download=1)
     assert pdf.exists() and d.fechadas == [] and d.refreshes == 1
+
+
+# ----------------------------------------------- impressão da própria página
+_PDF_B64 = base64.b64encode(b"%PDF-1.4\nconteudo ficticio").decode()
+
+
+class DriverCdp:
+    """Só o que a impressão via DevTools usa: ``execute_cdp_cmd``."""
+
+    def __init__(self, dados_b64: str = _PDF_B64):
+        self.dados_b64 = dados_b64
+        self.chamadas: list[tuple[str, dict]] = []
+
+    def execute_cdp_cmd(self, comando, params):
+        self.chamadas.append((comando, params))
+        return {"data": self.dados_b64}
+
+
+def test_imprimir_pagina_para_pdf_escreve_os_bytes_decodificados(tmp_path):
+    d = DriverCdp()
+    destino = tmp_path / "saida" / "tela.pdf"
+    resultado = imprimir_pagina_para_pdf(d, destino)
+    assert resultado == destino
+    assert destino.read_bytes() == base64.b64decode(_PDF_B64)
+
+
+def test_imprimir_pagina_para_pdf_manda_a4_retrato_por_padrao(tmp_path):
+    d = DriverCdp()
+    imprimir_pagina_para_pdf(d, tmp_path / "tela.pdf")
+    comando, params = d.chamadas[0]
+    assert comando == "Page.printToPDF"
+    assert params["printBackground"] is True
+    assert params["paperWidth"] == pytest.approx(8.27)
+    assert params["paperHeight"] == pytest.approx(11.69)
+    for margem in ("marginTop", "marginBottom", "marginLeft", "marginRight"):
+        assert params[margem] == pytest.approx(0.4)
+
+
+def test_imprimir_pagina_para_pdf_paisagem_troca_as_dimensoes(tmp_path):
+    d = DriverCdp()
+    imprimir_pagina_para_pdf(d, tmp_path / "tela.pdf", paisagem=True)
+    _comando, params = d.chamadas[0]
+    assert params["paperWidth"] == pytest.approx(11.69)
+    assert params["paperHeight"] == pytest.approx(8.27)
+
+
+def test_imprimir_pagina_para_pdf_driver_sem_cdp_levanta():
+    class SemCdp:
+        pass
+
+    with pytest.raises(RuntimeError, match="DevTools"):
+        imprimir_pagina_para_pdf(SemCdp(), Path("qualquer.pdf"))
+
+
+def test_imprimir_pagina_para_pdf_comando_falhando_propaga_com_causa(tmp_path):
+    class DriverQueExplode:
+        def execute_cdp_cmd(self, comando, params):
+            raise RuntimeError("devtools indisponível")
+
+    with pytest.raises(RuntimeError, match="DevTools") as exc:
+        imprimir_pagina_para_pdf(DriverQueExplode(), tmp_path / "tela.pdf")
+    assert isinstance(exc.value.__cause__, RuntimeError)
+    assert "devtools indisponível" in str(exc.value.__cause__)
+
+
+def test_imprimir_pagina_para_pdf_conteudo_nao_pdf_levanta_com_o_prefixo(tmp_path):
+    dados_b64 = base64.b64encode(b"<!DOCTYPE html><html>").decode()
+    d = DriverCdp(dados_b64)
+    with pytest.raises(RuntimeError) as exc:
+        imprimir_pagina_para_pdf(d, tmp_path / "tela.pdf")
+    prefixo_esperado = b"<!DOCTYPE html><html>"[:8].hex()
+    assert prefixo_esperado in str(exc.value)
