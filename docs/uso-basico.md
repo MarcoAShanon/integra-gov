@@ -1204,50 +1204,38 @@ e-mail nunca são logados.
 
 A `CDCOPSBENE` é a transação do pensionista. Ela é um **formulário**, não um
 relatório: os valores chegam dentro dos campos da tela, e é de lá que o
-módulo os lê. O PDF impresso continua sendo gerado, porque é o documento que
-se anexa ao processo.
+módulo os lê.
 
 ```python
-from pathlib import Path
 from integra_gov.esiape import AcessoEsiape, DadosPessoaisPensionista
 
 AcessoEsiape(driver).executar()                  # você confirma no app
-cad = DadosPessoaisPensionista(driver, pasta_saida=Path("cadastrais/"))
+cad = DadosPessoaisPensionista(driver)
 dados = cad.consultar("0000000")                 # matrícula fictícia
-dados.pdf                 # cadastrais/dados_pensionista_0000000.pdf
 dados.nome, dados.cpf, dados.data_nascimento, dados.email
 dados.logradouro, dados.numero, dados.complemento, dados.bairro
 dados.municipio, dados.uf, dados.cep
 dados.com_procuracao      # True quando há procurador cadastrado
 ```
 
-`pasta_download` (default `cadastrais/_download_esiape`) é onde o PDF é
-escrito antes de ser conferido e renomeado para `pasta_saida`.
-
-O PDF desta transação é produzido pedindo ao Chrome que imprima a própria
-tela via DevTools (`Page.printToPDF`), não por um download disparado por
-janela popup: essa transação **não precisa de nenhuma configuração de
-download nem de preferência de PDF do Chrome**. Chegou-se a essa mecânica
-depois de cinco descartes medidos ao vivo — esperar o download cair na pasta
-configurada, forçar a pasta via `Browser.setDownloadBehavior` do CDP, buscar
-a URL do popup pela própria sessão, vigiar toda janela e todo frame por dois
-minutos, e por fim remover `plugins.always_open_pdf_externally` do perfil
-(a hipótese mais forte, que falhou de novo, identicamente) — nenhum
-capturou o arquivo que o CIS gera para a CDCOPSBENE. Por isso é preciso
-dizer com todas as letras: **o PDF resultante é a impressão da tela que o
-operador vê, não o relatório próprio do CIS** — uma diferença real para
-quem anexa o documento a um processo.
+**Este módulo não produz um documento.** Sete rodadas de gate ao vivo (16 e
+17/09) mostraram que o arquivo que o próprio CIS gera para a CDCOPSBENE não
+é capturável por esta automação (o download nunca cai na pasta configurada,
+forçar a pasta via CDP não muda nada, e a URL do popup devolve só a casca do
+CIS em HTML). A alternativa — imprimir a própria tela via DevTools — produz
+um PDF válido, mas só da região visível: a última tentativa saiu com uma
+página e 429 caracteres, faltando matrícula, nome, CPF e nascimento. Um
+documento cadastral sem nome e CPF é pior do que nenhum documento, então o
+módulo para de prometer um; o que ele entrega, com verificação ao vivo, é a
+leitura dos 12 campos.
 
 Regras de honestidade do módulo:
 
 - campo vazio fica `None`; não é erro;
 - formulário que não aparece, ou que vem todo vazio, é o sinal provável de
-  matrícula inexistente e levanta `DadosPessoaisIndisponiveis` **antes de
-  imprimir** (nenhum PDF é produzido);
+  matrícula inexistente e levanta `DadosPessoaisIndisponiveis`;
 - a tela de procuração é atravessada quando existe, e o resultado registra
   isso em `com_procuracao`;
-- PDF sem camada de texto levanta `PdfImpressoIlegivel`, com o arquivo
-  mantido na pasta de download, sob o nome bruto, até a próxima impressão;
 - se um relogin do SERPRO atravessar entre duas consultas, a navegação é
   repetida uma vez; persistindo, `TransacaoNaoAbriu`.
 

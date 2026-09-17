@@ -103,17 +103,22 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ### Adicionado
 - **`integra_gov.esiape.dados_pensionista`** (`CDCOPSBENE`): `DadosPessoaisPensionista.consultar(matricula)`
   devolve `DadosPensionista` com doze campos (matrícula, nome, CPF,
-  nascimento, e-mail e o endereço completo) mais `com_procuracao`, e o PDF
-  impresso da tela como documento. Os campos saem do **formulário**, não do
-  PDF: a CDCOPSBENE é uma tela de entrada, ao contrário da CDCOINDPES, que é
-  relatório. Campo vazio vira `None`, nunca exceção. A tela intermediária de
-  procuração é atravessada e registrada no resultado. Formulário ausente ou
-  todo vazio levanta `DadosPessoaisIndisponiveis` **antes de imprimir**.
-  `repr(DadosPensionista)` omite nome, CPF, nascimento, e-mail e endereço.
-  Porte do módulo privado, com a impressão trocada pela mecânica de
-  `esiape.impressao`. **Ainda não verificado ao vivo** (o gate está
-  planejado); até lá a data de nascimento aceita as duas formas plausíveis e
-  a conferência de identidade tolera o campo de busca vazio.
+  nascimento, e-mail e o endereço completo) mais `com_procuracao`. Os campos
+  saem do **formulário**, não de um PDF: a CDCOPSBENE é uma tela de entrada,
+  ao contrário da CDCOINDPES, que é relatório. Campo vazio vira `None`, nunca
+  exceção. A tela intermediária de procuração é atravessada e registrada no
+  resultado. Formulário ausente ou todo vazio levanta
+  `DadosPessoaisIndisponiveis`. `repr(DadosPensionista)` omite nome, CPF,
+  nascimento, e-mail e endereço. Porte do módulo privado. **O módulo NÃO
+  produz documento** — decisão de 17/09, depois de sete rodadas de gate ao
+  vivo: o PDF que o próprio CIS gera para a CDCOPSBENE não é capturável por
+  esta automação, e a alternativa (imprimir a tela via DevTools) só traz a
+  região visível, insuficiente para um cadastro (a última tentativa saiu com
+  uma página e 429 caracteres, sem matrícula, nome, CPF nem nascimento).
+  **Verificado ao vivo em 17/09**: a leitura dos 12 campos foi testada em
+  duas matrículas reais de pensionista, 9 de 11 campos do formulário em cada
+  uma, com todas as checagens de forma passando (`complemento` e `numero`
+  legitimamente ausentes das duas telas).
 - **`integra_gov.esiape._campos`** (interno): a máscara de dígitos, a máscara
   de matrícula e a conversão de data do SIAPE saíram de `dados_pessoais` para
   serem compartilhadas com o módulo de pensionista. Sem mudança de

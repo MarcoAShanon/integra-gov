@@ -185,6 +185,12 @@ def imprimir_pagina_para_pdf(driver, destino: Path, *,
     processo, e por isso não pode ficar implícita em lugar nenhum que usa
     esta função.
 
+    LIMITAÇÃO MEDIDA (gate do pensionista, 17/09): a impressão só cobre a
+    região VISÍVEL da tela. Uma tela cujo conteúdo relevante rola dentro de
+    um frame sai incompleta — a CDCOPSBENE mediu isso ao vivo (uma página,
+    429 caracteres, com endereço e telefone mas sem matrícula, nome, CPF nem
+    nascimento) e por isso o módulo `dados_pensionista` não usa esta função.
+
     Papel A4 em polegadas (``paperWidth`` 8.27, ``paperHeight`` 11.69),
     dimensões trocadas com ``paisagem=True``; margens de 0.4 polegada nos
     quatro lados; ``printBackground=True``.

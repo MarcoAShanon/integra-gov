@@ -1,4 +1,4 @@
-"""Dados pessoais do pensionista (CDCOPSBENE): campos do formulário + PDF.
+"""Dados pessoais do pensionista (CDCOPSBENE): campos do formulário.
 
 A CDCOPSBENE é um **formulário**: os valores chegam dentro de elementos de
 entrada, e é de lá que saem os campos. Diferente da CDCOINDPES
@@ -7,8 +7,12 @@ campos saem da camada de texto do PDF impresso. Cada leitura casa com a
 natureza da sua tela: ler este formulário pelo impresso seria apostar que o
 PDF carrega os valores digitados, o que ninguém mediu.
 
-Campo vazio vira ``None``: ausência é informação, não falha. O PDF continua
-sendo gerado, porque é o documento que se anexa ao processo.
+Campo vazio vira ``None``: ausência é informação, não falha. Este módulo NÃO
+produz um documento — decisão de 17/09/2026, depois de sete rodadas de gate
+ao vivo (o motivo completo está no docstring de
+:class:`DadosPessoaisPensionista` e na spec,
+``docs/superpowers/specs/2026-09-16-esiape-dados-pensionista-design.md``,
+seção "Decisão de 17/09: sem documento").
 
 Nada pessoal neste arquivo — matrícula, nome e CPF são sempre parâmetro.
 """
@@ -19,19 +23,15 @@ import logging
 import re
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
-from ..ficha_financeira import PdfIlegivelError, tem_camada_de_texto
 from ._campos import data_siape, mascarar_digitos, mascarar_matricula
 from .exceptions import (
     DadosPessoaisIndisponiveis,
-    PdfImpressoIlegivel,
     TransacaoNaoAbriu,
 )
-from .impressao import imprimir_pagina_para_pdf
 from .navegacao import (
     esperar_seletor,
     fechar_janelas_extras,
@@ -80,6 +80,9 @@ class DadosPensionista:
     município, UF, ``com_procuracao`` e a matrícula mascarada aparecem, para
     não vazar dados pessoais em log ou traceback. Os ``field(repr=False)``
     documentam a intenção; quem a garante é o ``__repr__`` abaixo.
+
+    Este módulo NÃO produz um documento (PDF) — ver o docstring de
+    :class:`DadosPessoaisPensionista` para o porquê.
     """
 
     matricula: str | None
@@ -95,22 +98,13 @@ class DadosPensionista:
     uf: str | None
     cep: str | None = field(repr=False)
     com_procuracao: bool = False
-    pdf: Path | None = None
 
     def __repr__(self) -> str:
-        if self.pdf is not None:
-            # mascarar_digitos roda no CAMINHO INTEIRO, não só no nome do
-            # arquivo: quem organiza a saída por matrícula (ex.:
-            # cadastrais/<matricula>/) não pode ver a matrícula vazar pela
-            # pasta. str(Path) já usa o separador correto do SO.
-            pdf_repr = repr(mascarar_digitos(str(self.pdf)))
-        else:
-            pdf_repr = "None"
         return (
             f"DadosPensionista("
             f"matricula={mascarar_matricula(self.matricula or '')!r}, "
             f"municipio={self.municipio!r}, uf={self.uf!r}, "
-            f"com_procuracao={self.com_procuracao!r}, pdf={pdf_repr})"
+            f"com_procuracao={self.com_procuracao!r})"
         )
 
 
@@ -221,23 +215,27 @@ def atravessar_procuracao(driver) -> bool:
 
 # --------------------------------------------------------- com navegador
 class DadosPessoaisPensionista:
-    """Consulta a CDCOPSBENE, lê o formulário e imprime a TELA em PDF.
+    """Consulta a CDCOPSBENE e lê os 12 campos cadastrais do formulário.
 
-    O PDF não é o relatório próprio do CIS: cinco descartes ao vivo (o mais
-    recente removendo ``plugins.always_open_pdf_externally``, a hipótese mais
-    forte, que falhou de novo, identicamente) mostraram que o arquivo desta
-    transação não pode ser capturado pela automação. O módulo imprime a
-    própria tela via DevTools (:func:`~integra_gov.esiape.impressao.imprimir_pagina_para_pdf`),
-    o que dispensa qualquer configuração de download ou preferência de PDF do
-    Chrome para esta transação — ver o docstring dessa função para a lista
-    completa das rotas descartadas.
+    Este módulo NÃO produz um documento. Sete rodadas de gate ao vivo (16 e
+    17/09/2026) estabeleceram que o PDF próprio do CIS para esta transação
+    não é capturável por esta automação: o download nunca cai na pasta
+    configurada, forçar a pasta via ``Browser.setDownloadBehavior`` do CDP
+    não muda nada, a URL do popup devolve a casca do CIS em HTML, e nenhum
+    frame jamais carrega uma URL de PDF (um download não navega). A
+    alternativa — imprimir a própria TELA via DevTools
+    (:func:`~integra_gov.esiape.impressao.imprimir_pagina_para_pdf`) —
+    produz um PDF válido, com camada de texto, mas só da região VISÍVEL: a
+    última tentativa saiu com uma página e 429 caracteres, trazendo
+    identidade, endereço, telefone e e-mail, mas sem matrícula, nome, CPF
+    nem nascimento. Um documento cadastral sem nome e CPF é pior do que
+    nenhum documento, então o módulo para de prometer um; ver a seção
+    "Decisão de 17/09: sem documento" da spec
+    (``docs/superpowers/specs/2026-09-16-esiape-dados-pensionista-design.md``)
+    para a lista completa das rotas descartadas.
 
     Args:
         driver: WebDriver com a sessão do e-SIAPE autenticada.
-        pasta_saida: onde fica ``dados_pensionista_<matricula>.pdf``.
-        pasta_download: pasta onde o PDF é escrito antes de ser conferido e
-            renomeado para ``pasta_saida`` (default: subpasta
-            ``_download_esiape`` de ``pasta_saida``).
     """
 
     TRANSACAO = TRANSACAO
@@ -252,14 +250,8 @@ class DadosPessoaisPensionista:
     DELAY_APOS_CONSULTA = 1.5
     DELAY_APOS_SAIR = 1.0
 
-    def __init__(self, driver, pasta_saida: Path,
-                 pasta_download: Path | None = None):
+    def __init__(self, driver):
         self.driver = driver
-        self.pasta_saida = Path(pasta_saida)
-        self.pasta_saida.mkdir(parents=True, exist_ok=True)
-        self.pasta_download = (Path(pasta_download) if pasta_download
-                               else self.pasta_saida / "_download_esiape")
-        self.pasta_download.mkdir(parents=True, exist_ok=True)
 
     # ----- passos -----
 
@@ -364,38 +356,10 @@ class DadosPessoaisPensionista:
                 matricula, f"o campo de busca traz a matrícula "
                            f"{mascarar_matricula(eco)}, não a pedida")
 
-    def _imprimir(self, matricula: str) -> Path:
-        """Imprime a TELA e devolve o PDF, ainda em pasta_download.
-
-        Não clica em nada: a CDCOPSBENE não entrega o próprio arquivo de um
-        jeito que a automação consiga capturar (cinco descartes ao vivo, ver
-        a classe e o docstring de
-        :func:`~integra_gov.esiape.impressao.imprimir_pagina_para_pdf`), então
-        o módulo pede ao Chrome que imprima a página atual via DevTools.
-        """
-        destino = self.pasta_download / f"cdcopsbene_{matricula}.pdf"
-        try:
-            bruto = imprimir_pagina_para_pdf(self.driver, destino)
-        except Exception as exc:  # noqa: BLE001 — impressão via DevTools falhou
-            motivo = ("a impressão não produziu PDF: "
-                      f"{mascarar_digitos(str(exc))}")
-            raise DadosPessoaisIndisponiveis(matricula, motivo) from exc
-
-        try:
-            legivel = tem_camada_de_texto(bruto)
-        except PdfIlegivelError as exc:
-            raise PdfImpressoIlegivel(
-                bruto, None, "o PDF não abriu") from exc
-        if not legivel:
-            # fica com o nome bruto, na pasta de download, para inspeção
-            raise PdfImpressoIlegivel(
-                bruto, None, "o PDF não tem camada de texto")
-        return bruto
-
     # ----- API -----
 
     def consultar(self, matricula: str) -> DadosPensionista:
-        """Lê os dados do pensionista e imprime o PDF da tela.
+        """Lê os dados do pensionista.
 
         Raises:
             ValueError: matrícula vazia depois de normalizada a dígitos.
@@ -404,15 +368,11 @@ class DadosPessoaisPensionista:
             DadosPessoaisIndisponiveis: botão ausente no prazo; os campos do
                 formulário não apareceram ou vieram todos vazios (o sinal
                 provável de matrícula inexistente); eco de matrícula
-                divergente; a impressão não produziu PDF.
-            PdfImpressoIlegivel: o impresso saiu sem camada de texto; o
-                arquivo fica na pasta de download, sob o nome bruto, até a
-                próxima impressão.
+                divergente.
 
         Em falha dentro da transação, o módulo fecha popups, limpa a cortina
         e clica Sair (melhor esforço) antes de propagar, para a PRÓXIMA
-        consulta começar com a tela limpa. Nada é impresso antes de os
-        campos serem lidos e conferidos.
+        consulta começar com a tela limpa.
         """
         matricula = re.sub(r"\D", "", str(matricula).strip())
         if not matricula:
@@ -479,20 +439,14 @@ class DadosPessoaisPensionista:
                 if texto_popup is not None:
                     motivo += f"; a tela mostrou: {texto_popup}"
                 raise DadosPessoaisIndisponiveis(matricula, motivo)
-
-            bruto = self._imprimir(matricula)
-        except (DadosPessoaisIndisponiveis, PdfImpressoIlegivel):
+        except DadosPessoaisIndisponiveis:
             self._recuperar_tela()
             raise
 
-        destino = self.pasta_saida / f"dados_pensionista_{matricula}.pdf"
-        if destino.exists():
-            destino.unlink()
-        bruto.rename(destino)
         self._sair()
 
         dados = DadosPensionista(matricula=matricula, **campos,
-                                 com_procuracao=com_procuracao, pdf=destino)
+                                 com_procuracao=com_procuracao)
         _log.info("%s: %s lida, %d/11 campos%s", self.TRANSACAO, mascarada,
                   sum(1 for v in campos.values() if v),
                   " (com procuração)" if com_procuracao else "")

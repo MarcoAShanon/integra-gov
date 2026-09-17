@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 from selenium.webdriver.common.keys import Keys
 
@@ -222,18 +220,13 @@ def test_procuracao_com_enter_falhando_ainda_devolve_true(frames, caplog):
 
 
 # ------------------------------------------------------------- dataclass
-def test_repr_nao_expoe_dados_pessoais(tmp_path):
-    # a pasta de saída, aqui, é organizada por matrícula (ex.: cadastrais/
-    # <matricula>/) — o repr não pode vazar a matrícula pelo PARENT do pdf.
-    pasta = tmp_path / "0000000"
-    pasta.mkdir()
+def test_repr_nao_expoe_dados_pessoais():
     d = dmod.DadosPensionista(
         matricula="0000000", nome="FULANO DE TAL", cpf="000.000.000-00",
         data_nascimento="15/08/1960", email="fulano@exemplo.gov.br",
         logradouro="RUA EXEMPLO", numero="100", complemento="APTO 1",
         bairro="BAIRRO EXEMPLO", municipio="Cidade Exemplo", uf="XX",
-        cep="00000-000", com_procuracao=True,
-        pdf=pasta / "dados_pensionista_0000000.pdf")
+        cep="00000-000", com_procuracao=True)
     r = repr(d)
     for proibido in ("FULANO", "000.000.000-00", "15/08/1960",
                      "fulano@exemplo", "RUA EXEMPLO", "BAIRRO", "00000-000",
@@ -244,13 +237,24 @@ def test_repr_nao_expoe_dados_pessoais(tmp_path):
     assert "Cidade Exemplo" in r and "XX" in r
 
 
-def test_repr_sem_pdf():
+def test_repr_sem_pdf_no_atributo():
     d = dmod.DadosPensionista(
         matricula="0000000", nome=None, cpf=None, data_nascimento=None,
         email=None, logradouro=None, numero=None, complemento=None,
         bairro=None, municipio=None, uf=None, cep=None)
-    assert "pdf=None" in repr(d)
+    assert not hasattr(d, "pdf")
+    assert "pdf" not in repr(d)
     assert d.com_procuracao is False
+
+
+def test_dados_pessoais_pensionista_init_so_o_driver():
+    """A decisão de 17/09 tira o documento do escopo: o construtor deixa de
+    receber pasta_saida/pasta_download, porque nada é escrito em disco."""
+    import inspect
+
+    parametros = list(inspect.signature(dmod.DadosPessoaisPensionista.__init__)
+                       .parameters)
+    assert parametros == ["self", "driver"]
 
 
 # ------------------------------------------------ DadosPessoaisPensionista
@@ -258,10 +262,8 @@ from unittest.mock import patch  # noqa: E402
 
 from integra_gov.esiape.exceptions import (  # noqa: E402
     DadosPessoaisIndisponiveis,
-    PdfImpressoIlegivel,
     TransacaoNaoAbriu,
 )
-from tests._pdf_sintetico import pdf_bytes  # noqa: E402
 
 P = dmod.DadosPessoaisPensionista
 BOTOES = (P.SEL_MATRICULA, P.SEL_SAIR)
@@ -349,14 +351,14 @@ class _DriverConsulta:
 
 
 @pytest.fixture
-def ambiente(tmp_path, monkeypatch):
-    """Navegação, procuração e impressão substituídas.
+def ambiente(monkeypatch):
+    """Navegação e procuração substituídas.
 
     Devolve ``(driver, servidor, chamadas)``.
     """
     monkeypatch.setattr(dmod.time, "sleep", lambda *_a, **_k: None)
     driver = _DriverConsulta()
-    chamadas = {"navegar": [], "limpar_flag": 0, "imprimir": 0,
+    chamadas = {"navegar": [], "limpar_flag": 0,
                 "fechar_popups": 0, "limpar_overlay": 0,
                 "fechar_janelas_extras": 0, "procuracao": 0,
                 "procurar_em_frames": []}
@@ -364,13 +366,6 @@ def ambiente(tmp_path, monkeypatch):
     def navegar(d, transacao, seletor, timeout=30):
         chamadas["navegar"].append(transacao)
         return True
-
-    def imprimir(d, destino, **kw):
-        chamadas["imprimir"] += 1
-        destino = Path(destino)
-        destino.parent.mkdir(parents=True, exist_ok=True)
-        destino.write_bytes(pdf_bytes([["RELATORIO CDCOPSBENE"]]))
-        return destino
 
     def conta(chave, retorno):
         def _f(*_a, **_k):
@@ -396,16 +391,8 @@ def ambiente(tmp_path, monkeypatch):
     monkeypatch.setattr(dmod, "limpar_flag_relogin",
                         lambda d: chamadas.__setitem__(
                             "limpar_flag", chamadas["limpar_flag"] + 1))
-    monkeypatch.setattr(dmod, "imprimir_pagina_para_pdf", imprimir)
-    servidor = P(driver, pasta_saida=tmp_path / "saida")
+    servidor = P(driver)
     return driver, servidor, chamadas
-
-
-def test_pastas_default_como_o_modulo_de_servidor(tmp_path):
-    s = P(object(), pasta_saida=tmp_path / "s")
-    assert s.pasta_saida == tmp_path / "s"
-    assert s.pasta_download == tmp_path / "s" / "_download_esiape"
-    assert s.pasta_saida.is_dir() and s.pasta_download.is_dir()
 
 
 def test_matricula_vazia_levanta_value_error(ambiente):
@@ -424,13 +411,10 @@ def test_consultar_caminho_feliz(ambiente):
     assert chamadas["fechar_popups"] == 1
     assert chamadas["limpar_overlay"] == 1
     assert chamadas["procuracao"] == 1
-    assert chamadas["imprimir"] == 1
     assert d.matricula == "0000000"
     assert d.nome == "FULANO DE TAL" and d.cep == "00000-000"
     assert d.com_procuracao is False
-    assert d.pdf == servidor.pasta_saida / "dados_pensionista_0000000.pdf"
-    assert d.pdf.exists()
-    assert not (servidor.pasta_download / "cdcopsbene_0000000.pdf").exists()
+    assert not hasattr(d, "pdf")
 
 
 def test_com_procuracao_vai_para_o_resultado(ambiente, monkeypatch):
@@ -446,17 +430,15 @@ def test_campos_do_formulario_nao_aparecem_levanta(ambiente, monkeypatch):
     with pytest.raises(DadosPessoaisIndisponiveis) as exc:
         servidor.consultar("0000000")
     assert "não trouxe dados" in str(exc.value)
-    assert chamadas["imprimir"] == 0            # nada foi impresso
     assert chamadas["fechar_popups"] == 2       # início + recuperação
 
 
-def test_todos_os_campos_vazios_levanta_sem_imprimir(ambiente, monkeypatch):
+def test_todos_os_campos_vazios_levanta(ambiente, monkeypatch):
     driver, servidor, chamadas = ambiente
     driver.valores = {tid: "" for tid in VALORES}
     with pytest.raises(DadosPessoaisIndisponiveis) as exc:
         servidor.consultar("0000000")
     assert "todos os campos vazios" in str(exc.value)
-    assert chamadas["imprimir"] == 0
     assert chamadas["limpar_overlay"] == 2      # início + recuperação
 
 
@@ -576,28 +558,6 @@ def test_imprimir_nao_clica_em_nada(ambiente, monkeypatch):
     assert driver.ordem == [P.SEL_SAIR]
 
 
-def test_imprimir_pagina_para_pdf_recebe_o_destino_dedicado(ambiente,
-                                                              monkeypatch):
-    """``_imprimir`` chama ``imprimir_pagina_para_pdf`` com o caminho
-    ``cdcopsbene_<matricula>.pdf`` dentro de ``pasta_download``, sem
-    callback de clique nenhum."""
-    driver, servidor, _ = ambiente
-    capturado = {}
-
-    def imprimir(d, destino, **kw):
-        capturado["driver"] = d
-        capturado["destino"] = Path(destino)
-        destino = Path(destino)
-        destino.parent.mkdir(parents=True, exist_ok=True)
-        destino.write_bytes(pdf_bytes([["RELATORIO CDCOPSBENE"]]))
-        return destino
-
-    monkeypatch.setattr(dmod, "imprimir_pagina_para_pdf", imprimir)
-    servidor.consultar("0000000")
-    assert capturado["driver"] is driver
-    assert capturado["destino"] == servidor.pasta_download / "cdcopsbene_0000000.pdf"
-
-
 def test_eco_procurado_entre_frames(ambiente):
     driver, servidor, chamadas = ambiente
     servidor.consultar("0000000")
@@ -629,13 +589,12 @@ def test_eco_em_frame_nao_encontrado_apenas_registra_debug(ambiente,
 
 
 def test_eco_divergente_levanta(ambiente):
-    driver, servidor, chamadas = ambiente
+    driver, servidor, _ = ambiente
     driver.el[P.SEL_MATRICULA].eco_forcado = "1111111"
     with pytest.raises(DadosPessoaisIndisponiveis) as exc:
         servidor.consultar("0000000")
     assert "*****11" in str(exc.value) and "*****00" in str(exc.value)
     assert "1111111" not in str(exc.value)
-    assert chamadas["imprimir"] == 0
 
 
 def test_eco_vazio_apenas_registra_debug(ambiente, caplog):
@@ -686,57 +645,6 @@ def test_submissao_e_so_enter_sem_botao_consultar(ambiente):
     servidor.consultar("0000000")
     assert driver.el[P.SEL_MATRICULA].teclas == ["0000000", Keys.ENTER]
     assert not hasattr(P, "SEL_CONSULTAR")
-
-
-def test_impressao_sem_pdf_levanta(ambiente):
-    _, servidor, _ = ambiente
-
-    def imprimir(*a, **k):
-        raise RuntimeError("impressão via DevTools indisponível: Page.printToPDF falhou")
-
-    with patch.object(dmod, "imprimir_pagina_para_pdf", imprimir):
-        with pytest.raises(DadosPessoaisIndisponiveis) as exc:
-            servidor.consultar("0000000")
-    assert "Page.printToPDF" in str(exc.value)
-
-
-def test_impressao_sem_pdf_mascara_matricula_do_exc_do_driver(ambiente):
-    """Um alerta do CIS pode carregar a matrícula inteira dentro da exceção
-    do WebDriver — ela tem de sair mascarada da mensagem final."""
-    _, servidor, _ = ambiente
-
-    def imprimir(*a, **k):
-        raise RuntimeError("MATRICULA 1234567 NAO CADASTRADA")
-
-    with patch.object(dmod, "imprimir_pagina_para_pdf", imprimir):
-        with pytest.raises(DadosPessoaisIndisponiveis) as exc:
-            servidor.consultar("0000000")
-    assert "*****67" in str(exc.value)
-    assert "1234567" not in str(exc.value)
-
-
-def test_pdf_sem_camada_de_texto_levanta_e_mantem_arquivo(ambiente):
-    _, servidor, chamadas = ambiente
-
-    def imprimir(d, destino, **kw):
-        destino = Path(destino)
-        destino.parent.mkdir(parents=True, exist_ok=True)
-        destino.write_bytes(pdf_bytes([None], com_fonte=False))
-        return destino
-
-    with patch.object(dmod, "imprimir_pagina_para_pdf", imprimir):
-        with pytest.raises(PdfImpressoIlegivel) as exc:
-            servidor.consultar("0000000")
-    assert Path(exc.value.caminho).exists()
-    assert chamadas["fechar_popups"] == 2
-
-
-def test_sobrescreve_pdf_anterior(ambiente):
-    _, servidor, _ = ambiente
-    destino = servidor.pasta_saida / "dados_pensionista_0000000.pdf"
-    destino.write_bytes(b"velho")
-    d = servidor.consultar("0000000")
-    assert d.pdf == destino and destino.read_bytes() != b"velho"
 
 
 def test_recuperacao_falhando_nao_mascara_a_excecao_original(ambiente,

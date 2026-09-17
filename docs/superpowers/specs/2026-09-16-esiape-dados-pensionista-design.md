@@ -36,24 +36,33 @@ que hoje dependem de consulta manual.
 README + CHANGELOG + uso-basico no mesmo commit, gate ao vivo.
 
 **Fica fora:**
+- **Documento (PDF) do pensionista.** Decisão de 17/09, depois de sete
+  rodadas de gate ao vivo: o arquivo que o próprio CIS gera para a
+  CDCOPSBENE não é capturável por esta automação, e a alternativa —
+  imprimir a tela via DevTools — só produz a região visível, insuficiente
+  para um cadastro (medido: uma página, 429 caracteres, sem matrícula,
+  nome, CPF nem nascimento). Ver "Decisão de 17/09: sem documento" adiante.
 - Dados do **benefício** (instituidor, tipo e início da pensão): o privado
   tem isso em módulo à parte, provavelmente outra transação. Fatia própria.
 - Nome do procurador: o resultado diz apenas que **existe** procuração. Ler
   quem é acrescenta dado pessoal de terceiro sem finalidade declarada.
-- Leitura pura de um PDF de pensionista já no disco: não se sabe se o
-  impresso carrega os campos. O gate mede; se carregar, vira fatia futura.
+- Leitura pura de um PDF de pensionista já no disco: sem PDF produzido por
+  este módulo, essa fatia perde a base de comparação que a motivava; fica
+  descartada, não apenas adiada.
 - Lote, checkpoint e "só faltantes" → orquestrador (B-5 do flow).
 
 ## API pública
 
 ```python
-from pathlib import Path
 from integra_gov.esiape import DadosPessoaisPensionista
 
-cad = DadosPessoaisPensionista(driver, pasta_saida=Path("cadastrais/"))
+cad = DadosPessoaisPensionista(driver)
 dados = cad.consultar("0000000")          # matrícula fictícia
-dados.nome, dados.cep, dados.com_procuracao, dados.pdf
+dados.nome, dados.cep, dados.com_procuracao
 ```
+
+**Este módulo não produz documento.** Ver "Decisão de 17/09: sem documento"
+logo adiante para o motivo completo.
 
 ### `DadosPensionista` (dataclass)
 
@@ -72,7 +81,6 @@ dados.nome, dados.cep, dados.com_procuracao, dados.pdf
 | `uf` | `w_tl_uf_end` | `strip` |
 | `cep` | `w_co_cep` | `strip` |
 | `com_procuracao` | tela intermediária | `bool`, default `False` |
-| `pdf` | — | caminho do PDF renomeado |
 
 Campo vazio vira `None`, sem levantar: ausência é informação, não falha
 (mesma regra do módulo de servidor). O valor de cada campo sai de
@@ -87,11 +95,11 @@ ocorrer sai do código, com o registro do que foi medido.
 e-mail e o endereço inteiro; mostra município, UF, `com_procuracao` e a
 matrícula mascarada. Logs trazem só os dois últimos dígitos da matrícula.
 
-### `DadosPessoaisPensionista(driver, pasta_saida, pasta_download=None)`
+### `DadosPessoaisPensionista(driver)`
 
-Mesma assinatura e mesmos defaults de `DadosPessoaisServidor`
-(`pasta_download` = `pasta_saida / "_download_esiape"`, ambas criadas). A
-pasta de download DEVE ser dedicada: a impressão apaga todos os PDFs dela.
+Diferente de `DadosPessoaisServidor`: não recebe `pasta_saida` nem
+`pasta_download`, porque o módulo não escreve nada em disco (decisão de
+17/09, ver a seção própria logo adiante).
 
 `consultar(matricula) -> DadosPensionista`, sequência:
 
@@ -114,11 +122,13 @@ pasta de download DEVE ser dedicada: a impressão apaga todos os PDFs dela.
 7. Conferência de identidade (§ própria abaixo).
 8. Se **todos** os 11 campos vierem vazios → `DadosPessoaisIndisponiveis`
    com motivo "a consulta não trouxe dados".
-9. `imprimir_pagina_para_pdf` imprime a TELA atual via DevTools
-   (`Page.printToPDF`), sem clicar em nada; guarda de camada de texto;
-   renomeia para `pasta_saida / f"dados_pensionista_{matricula}.pdf"`,
-   sobrescrevendo. (Sexta rodada, 17/09 — ver a nota ao final desta lista:
-   o clique em `onPrintPDF` e a máquina de downloads saíram do módulo.)
+9. ~~Imprimia a TELA atual via DevTools (`Page.printToPDF`)~~ — REMOVIDO em
+   17/09: o módulo deixou de produzir documento algum. As notas abaixo
+   registram as seis rodadas de gate que levaram, primeiro, à impressão da
+   tela como substituta do PDF do CIS, e depois, numa sétima medição, à
+   decisão de abandonar também essa saída — ver "Decisão de 17/09: sem
+   documento" logo adiante para o motivo completo e a lista do que foi
+   descartado.
 
    *(Medição do gate ao vivo de 16/09, terceira rodada: a primeira impressão
    real da sessão excedeu os 60s default de `imprimir_via_popup` — a
@@ -217,7 +227,7 @@ pasta de download DEVE ser dedicada: a impressão apaga todos os PDFs dela.
    quem anexa o documento a um processo, registrada aqui e em
    `docs/uso-basico.md` com todas as letras.)*
 10. Botão Sair, falha ignorada com `warning`.
-11. Em falha dentro da transação (passos 4 a 9): `_recuperar_tela` (fechar
+11. Em falha dentro da transação (passos 4 a 8): `_recuperar_tela` (fechar
     popups, limpar cortina, Sair), best effort, que **nunca** mascara a
     exceção original.
 
@@ -231,12 +241,59 @@ ou nenhum, para não divergirem. Fica para depois do gate.)*
 Seletores (do privado, validados em produção): `w_matr_infor_alfa`,
 `onClickBtnSair`, todos por `data-testtoolid`. `onPrintPDF` era clicado até a
 sexta rodada do gate (17/09); saiu do módulo junto com o clique de imprimir
-(ver a nota logo acima do passo 10).
+(ver a nota logo acima do passo 9).
 
 **A impressão NÃO é portada do privado.** O privado envia dez tabulações e um
 ENTER, depois procura `StartDynamicContent.pdf` em três pastas (temporária,
 Downloads e Área de Trabalho). Isso é anterior a `esiape.impressao`, que
 estabilizou a sequência e já rendeu quatro defeitos de gate até ficar assim.
+
+## Decisão de 17/09: sem documento
+
+Sete rodadas de gate ao vivo (16 e 17/09) mostraram que este módulo não
+consegue produzir um documento usável para a CDCOPSBENE, e a decisão do
+usuário foi tirar o documento do escopo em vez de continuar tentando.
+
+**O que foi descartado, cada item com sua própria medição ao vivo:**
+
+- esperar o download na pasta configurada — pasta vazia após 120s, com o
+  popup de impressão aberto (duas janelas);
+- forçar a pasta via `Browser.setDownloadBehavior` do CDP — o comando teve
+  sucesso e não mudou nada;
+- buscar a URL do popup pela própria sessão (como
+  `integra_gov.sei.download_documento` faz para o SEI) — devolve a casca do
+  CIS em HTML, ~2646 bytes, nunca o PDF;
+- vigiar toda janela e todo frame por dois minutos enquanto a impressão era
+  disparada — nenhuma URL de PDF jamais aparece, consistente com o fato de
+  que um download não navega;
+- remover `plugins.always_open_pdf_externally` do perfil do Chrome — a
+  hipótese mais forte, porque o arquivo já havia sido encontrado assim num
+  perfil sem essa preferência — falhou de novo, identicamente (sétima
+  rodada, 17/09);
+- **por fim, imprimir a própria TELA via DevTools (`Page.printToPDF`)** —
+  esta rota FUNCIONA no sentido técnico (devolve um PDF real, com camada de
+  texto, `%PDF` no início dos bytes), mas só cobre a região VISÍVEL da tela.
+  O último arquivo produzido por essa rota tinha uma página e 429
+  caracteres, carregando os rótulos de identidade, endereço, telefone e
+  e-mail — e **sem** matrícula, nome, CPF nem data de nascimento. Um
+  documento cadastral sem o nome e o CPF da pessoa é pior do que nenhum
+  documento: ele parece um registro válido e não é.
+
+**Decisão:** o módulo para de prometer um documento para a CDCOPSBENE.
+`DadosPessoaisPensionista` não recebe mais `pasta_saida`/`pasta_download`,
+`DadosPensionista` não tem mais o campo `pdf`, e `consultar` não imprime
+nada. O que os sete descartes junto provaram confiável — e que o módulo
+continua entregando — é a **leitura dos 12 campos do formulário**, com
+verificação ao vivo própria (ver "Verificado ao vivo (gate de 17/09/2026)"
+ao final desta spec).
+
+`imprimir_pagina_para_pdf` (em `integra_gov/esiape/impressao.py`) **não sai
+da lib**: é uma mecânica verificada e testada (`Page.printToPDF`), só que
+com uma limitação agora documentada no seu próprio docstring — imprime
+apenas a região visível da tela, o que a torna inadequada para uma tela cujo
+conteúdo relevante rola dentro de um frame, como a CDCOPSBENE. Uma tela
+futura cujo conteúdo caiba inteiro na área visível pode usá-la sem essa
+ressalva.
 
 ## Tela de procuração
 
@@ -293,8 +350,11 @@ pergunta 4 do gate mede à parte.*
 |---|---|
 | `ValueError` | matrícula vazia depois de normalizada |
 | `TransacaoNaoAbriu` (existente) | a tela não montou, mesmo após a repetição por relogin |
-| `DadosPessoaisIndisponiveis` (existente, reaproveitada) | nenhum campo preenchido; eco de matrícula divergente; a impressão não produziu PDF |
-| `PdfImpressoIlegivel` (existente) | o impresso saiu sem camada de texto; o arquivo fica na pasta de download, com o nome bruto, até a próxima impressão |
+| `DadosPessoaisIndisponiveis` (existente, reaproveitada) | nenhum campo preenchido; eco de matrícula divergente |
+
+Desde a decisão de 17/09, `PdfImpressoIlegivel` não é mais levantada por este
+módulo: sem impressão, não há PDF a verificar. A classe continua existindo
+para `dados_pessoais` (servidor) e `ficha_anual`, que ainda imprimem.
 
 `DadosPessoaisIndisponiveis` é reaproveitada de propósito: o significado é o
 mesmo e quem consome trata servidor e pensionista com um `except` só.
@@ -392,9 +452,10 @@ prometer verificação que não houve.
 
 README: linha na tabela do e-SIAPE + exemplo curto. CHANGELOG: "Adicionado",
 com a nota de verificação ao vivo preenchida só depois do gate.
-`docs/uso-basico.md`: seção do módulo com a pasta de download dedicada, a
-lista dos 12 campos, a semântica de `com_procuracao` e as duas limitações
-declaradas (conferência de identidade mais fraca; sem releitura offline).
+`docs/uso-basico.md`: seção do módulo com a lista dos 12 campos, a semântica
+de `com_procuracao`, a explicação de por que não há documento (decisão de
+17/09) e as duas limitações declaradas (conferência de identidade mais
+fraca; sem releitura offline).
 
 ## Riscos e mitigação
 
@@ -405,7 +466,32 @@ declaradas (conferência de identidade mais fraca; sem releitura offline).
   com o motivo apontando essa hipótese.
 - **Dados da pessoa anterior** → navegação nova por consulta, mais o eco do
   campo de busca quando existir.
-- **Pasta de download compartilhada** → a impressão apagaria PDFs alheios;
-  default dedicado e aviso na documentação.
 - **Formato de data desconhecido** → duas formas aceitas, resto `None`, e a
   medição do gate reduz o código depois.
+
+*(Risco retirado em 17/09: "pasta de download compartilhada" não se aplica
+mais — o módulo não escreve nada em disco, ver "Decisão de 17/09: sem
+documento".)*
+
+## Verificado ao vivo (gate de 17/09/2026)
+
+Script gitignored `dados_reais/esiape_dados_pensionista_gate.py`, Chrome da
+automação sem exigência nenhuma de preferência de PDF (o módulo não imprime
+mais nada), SERPRO ID confirmado pelo usuário. Saída mascarada; nenhum valor
+foi registrado.
+
+| matrícula | resultado |
+|---|---|
+| real 1 | 9/11 campos, todas as checagens de forma OK — `cpf` (`ddd.ddd.ddd-dd`), `data_nascimento` (forma da tela `DDMMMAAAA`, convertida para `dd/mm/aaaa`), `uf` (2 letras), `cep` (8 dígitos), `email` (um `@`, minúsculo), `nome`/`logradouro`/`bairro`/`municipio` (texto livre, sem `:`), `matricula` batendo com a pedida; `complemento` e `numero` ausentes da tela (legítimo, não afeta o veredito); `com_procuracao` `False`; `repr` sem sequência de 3+ dígitos |
+| real 2 | idem: 9/11 campos, mesmas checagens OK, `complemento` e `numero` ausentes, `com_procuracao` `False` |
+| inexistente | "os campos do formulário não apareceram" → `DadosPessoaisIndisponiveis`, exatamente o esperado |
+
+A conferência de identidade por eco continua estruturalmente impossível: nas
+duas matrículas reais, `w_matr_infor_alfa` não está em nenhum frame visível
+depois da consulta (medição repetida do gate de 16/09, ver "Identidade: a
+conferência é mais fraca que no servidor"). A proteção que resta é a
+estrutural — cada `consultar` navega para a transação do zero.
+
+Com a leitura dos 12 campos verificada ao vivo nas duas matrículas reais, o
+gate anterior de PDF (camada de texto, presença de campo no impresso) sai da
+suíte: não há mais PDF nenhum para medir.
