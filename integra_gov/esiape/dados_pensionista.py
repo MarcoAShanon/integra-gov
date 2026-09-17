@@ -216,7 +216,6 @@ class DadosPessoaisPensionista:
 
     TRANSACAO = TRANSACAO
     SEL_MATRICULA = '[data-testtoolid="w_matr_infor_alfa"]'
-    SEL_CONSULTAR = '[data-testtoolid="onClickbtnConsulta"]'
     SEL_NOME = f'input[data-testtoolid="{CAMPOS_FORMULARIO["nome"]}"]'
     SEL_IMPRIMIR = '[data-testtoolid="onPrintPDF"]'
     SEL_GERAR_PDF = '[data-testtoolid="w_report.onGeneratePrintVersion"]'
@@ -226,8 +225,8 @@ class DadosPessoaisPensionista:
     #: Os campos já vêm renderizados com a consulta; esperar 30s por eles
     #: atrasaria toda matrícula inexistente em meio minuto.
     TIMEOUT_CAMPOS = 10
-    DELAY_APOS_ENTER = 1.0
-    DELAY_APOS_CONSULTAR = 1.5
+    DELAY_APOS_CONSULTA = 1.5
+    DELAY_APOS_SAIR = 1.0
 
     def __init__(self, driver, pasta_saida: Path,
                  pasta_download: Path | None = None):
@@ -272,7 +271,7 @@ class DadosPessoaisPensionista:
         try:
             if procurar_em_frames(self.driver, self.SEL_SAIR) is not None:
                 self.driver.find_element(By.CSS_SELECTOR, self.SEL_SAIR).click()
-                time.sleep(self.DELAY_APOS_ENTER)
+                time.sleep(self.DELAY_APOS_SAIR)
         except Exception as exc:  # noqa: BLE001 — Sair é cortesia, não etapa
             _log.warning("%s: Sair falhou (ignorado): %s", self.TRANSACAO,
                          mascarar_digitos(str(exc)))
@@ -396,14 +395,17 @@ class DadosPessoaisPensionista:
             campo = self.driver.find_element(By.CSS_SELECTOR, self.SEL_MATRICULA)
             campo.clear()
             campo.send_keys(matricula)
+            # A CDCOPSBENE não tem botão Consultar (medido no gate ao vivo de
+            # 16/09: as duas matrículas falharam porque o módulo esperava um
+            # botão que não existe nesta tela; o módulo privado, validado em
+            # produção, declara o seletor onClickbtnConsulta mas nunca o
+            # clica). O ENTER no campo da matrícula envia a consulta sozinho.
             campo.send_keys(Keys.ENTER)
-            time.sleep(self.DELAY_APOS_ENTER)
-            self._clicar(self.SEL_CONSULTAR, matricula, "Consultar")
-            time.sleep(self.DELAY_APOS_CONSULTAR)
+            time.sleep(self.DELAY_APOS_CONSULTA)
 
             com_procuracao = atravessar_procuracao(self.driver)
             if com_procuracao:
-                time.sleep(self.DELAY_APOS_CONSULTAR)
+                time.sleep(self.DELAY_APOS_CONSULTA)
 
             if esperar_seletor(self.driver, self.SEL_NOME,
                                timeout=self.TIMEOUT_CAMPOS) is None:
@@ -412,7 +414,7 @@ class DadosPessoaisPensionista:
                 achou = False
                 if atravessar_procuracao(self.driver):
                     com_procuracao = True
-                    time.sleep(self.DELAY_APOS_CONSULTAR)
+                    time.sleep(self.DELAY_APOS_CONSULTA)
                     achou = esperar_seletor(
                         self.driver, self.SEL_NOME,
                         timeout=self.TIMEOUT_CAMPOS) is not None

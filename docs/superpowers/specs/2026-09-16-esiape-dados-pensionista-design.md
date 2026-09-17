@@ -100,7 +100,14 @@ pasta de download DEVE ser dedicada: a impressão apaga todos os PDFs dela.
 3. `navegar_para_transacao(driver, "CDCOPSBENE", SEL_MATRICULA)`, com **uma**
    repetição quando falha e `relogin_pendente` (limpa a flag antes). Falha de
    novo → `TransacaoNaoAbriu`.
-4. Matrícula no campo de busca + ENTER; botão Consultar.
+4. Matrícula no campo de busca + ENTER, que envia a consulta sozinho.
+
+   *(Medido no gate ao vivo de 16/09: as duas matrículas falharam com "o
+   botão Consultar não apareceu em 30s" depois de a tela já ter aberto — a
+   CDCOPSBENE não tem botão Consultar, diferente da tela de servidor, de
+   onde o passo veio por engano. O módulo privado, validado em produção,
+   declara o seletor `onClickbtnConsulta` no seu dicionário de seletores mas
+   nunca o clica; o envio é só o ENTER.)*
 5. **Tela de procuração** (§ própria abaixo): se presente, atravessa e marca
    `com_procuracao = True`.
 6. Lê os 11 campos do formulário.
@@ -123,8 +130,8 @@ servidor tem exatamente a mesma cláusula estreita; os dois se corrigem juntos
 ou nenhum, para não divergirem. Fica para depois do gate.)*
 
 Seletores (do privado, validados em produção): `w_matr_infor_alfa`,
-`onClickbtnConsulta`, `onPrintPDF`, `w_report.onGeneratePrintVersion`,
-`onClickBtnSair`, todos por `data-testtoolid`.
+`onPrintPDF`, `w_report.onGeneratePrintVersion`, `onClickBtnSair`, todos por
+`data-testtoolid`.
 
 **A impressão NÃO é portada do privado.** O privado envia dez tabulações e um
 ENTER, depois procura `StartDynamicContent.pdf` em três pastas (temporária,

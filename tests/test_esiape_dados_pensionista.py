@@ -220,8 +220,7 @@ from integra_gov.esiape.exceptions import (  # noqa: E402
 from tests._pdf_sintetico import pdf_bytes  # noqa: E402
 
 P = dmod.DadosPessoaisPensionista
-BOTOES = (P.SEL_MATRICULA, P.SEL_CONSULTAR, P.SEL_IMPRIMIR, P.SEL_GERAR_PDF,
-          P.SEL_SAIR)
+BOTOES = (P.SEL_MATRICULA, P.SEL_IMPRIMIR, P.SEL_GERAR_PDF, P.SEL_SAIR)
 
 
 class _Botao:
@@ -363,8 +362,7 @@ def test_consultar_caminho_feliz(ambiente):
     d = servidor.consultar(" 000.000-0 ")
     assert chamadas["navegar"] == ["CDCOPSBENE"]
     assert driver.el[P.SEL_MATRICULA].teclas == ["0000000", Keys.ENTER]
-    assert driver.ordem == [P.SEL_CONSULTAR, P.SEL_IMPRIMIR, P.SEL_GERAR_PDF,
-                            P.SEL_SAIR]
+    assert driver.ordem == [P.SEL_IMPRIMIR, P.SEL_GERAR_PDF, P.SEL_SAIR]
     assert chamadas["fechar_janelas_extras"] == 1
     assert chamadas["fechar_popups"] == 1
     assert chamadas["limpar_overlay"] == 1
@@ -584,23 +582,22 @@ def test_falha_sem_relogin_nao_repete(ambiente):
     assert chamadas["limpar_flag"] == 0
 
 
-def test_botao_consultar_ausente_levanta(ambiente, monkeypatch):
-    _, servidor, _ = ambiente
-    monkeypatch.setattr(
-        dmod, "esperar_seletor",
-        lambda d, s, timeout=20: None if s == P.SEL_CONSULTAR else (0,))
-    with pytest.raises(DadosPessoaisIndisponiveis) as exc:
-        servidor.consultar("0000000")
-    assert "Consultar" in str(exc.value)
+def test_submissao_e_so_enter_sem_botao_consultar(ambiente):
+    """A CDCOPSBENE não tem botão Consultar: o ENTER no campo da matrícula
+    envia a consulta sozinho — não existe seletor de Consultar na classe."""
+    driver, servidor, _ = ambiente
+    servidor.consultar("0000000")
+    assert driver.el[P.SEL_MATRICULA].teclas == ["0000000", Keys.ENTER]
+    assert not hasattr(P, "SEL_CONSULTAR")
 
 
-def test_botao_consultar_ausente_com_popup_mostra_a_tela_mascarada(ambiente,
+def test_botao_imprimir_ausente_com_popup_mostra_a_tela_mascarada(ambiente,
                                                                     monkeypatch):
     driver, servidor, _ = ambiente
     driver.popups.append(_Popup("MATRICULA 1234567 NAO CADASTRADA"))
     monkeypatch.setattr(
         dmod, "esperar_seletor",
-        lambda d, s, timeout=20: None if s == P.SEL_CONSULTAR else (0,))
+        lambda d, s, timeout=20: None if s == P.SEL_IMPRIMIR else (0,))
     with pytest.raises(DadosPessoaisIndisponiveis) as exc:
         servidor.consultar("0000000")
     assert "a tela mostrou: MATRICULA *****67 NAO CADASTRADA" in str(exc.value)
