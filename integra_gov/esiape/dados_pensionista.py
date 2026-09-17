@@ -234,6 +234,12 @@ class DadosPessoaisPensionista:
     #: Os campos já vêm renderizados com a consulta; esperar 30s por eles
     #: atrasaria toda matrícula inexistente em meio minuto.
     TIMEOUT_CAMPOS = 10
+    #: Medido no gate ao vivo de 16/09: a primeira impressão da sessão
+    #: excedeu os 60s default de ``imprimir_via_popup`` enquanto as duas
+    #: seguintes, na mesma sessão, não excederam. A causa não foi
+    #: estabelecida, então o orçamento fica generoso, e a falha por timeout
+    #: passa a listar o que há na pasta de download (ver ``_imprimir``).
+    TIMEOUT_DOWNLOAD = 120
     DELAY_APOS_CONSULTA = 1.5
     DELAY_APOS_SAIR = 1.0
 
@@ -361,13 +367,21 @@ class DadosPessoaisPensionista:
             bruto = imprimir_via_popup(
                 self.driver,
                 lambda: self._clicar(self.SEL_IMPRIMIR, matricula, "Imprimir"),
-                self.pasta_download)
+                self.pasta_download, timeout_download=self.TIMEOUT_DOWNLOAD)
         except DadosPessoaisIndisponiveis:
             raise
         except Exception as exc:  # noqa: BLE001 — timeout de popup/download
-            raise DadosPessoaisIndisponiveis(
-                matricula, "a impressão não produziu PDF: "
-                           f"{mascarar_digitos(str(exc))}") from exc
+            motivo = ("a impressão não produziu PDF: "
+                      f"{mascarar_digitos(str(exc))}")
+            try:
+                arquivos = list(self.pasta_download.iterdir())
+                sufixos = sorted({p.suffix or "(sem extensão)"
+                                  for p in arquivos})
+                motivo += (f"; {len(arquivos)} arquivo(s) na pasta: "
+                           f"{', '.join(sufixos)}")
+            except Exception:  # noqa: BLE001 — listar a pasta é best-effort
+                motivo += "; a pasta de download não pôde ser listada"
+            raise DadosPessoaisIndisponiveis(matricula, motivo) from exc
 
         try:
             legivel = tem_camada_de_texto(bruto)

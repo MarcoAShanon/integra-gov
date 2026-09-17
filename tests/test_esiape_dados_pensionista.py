@@ -654,6 +654,41 @@ def test_impressao_sem_pdf_levanta(ambiente):
     assert "nenhum PDF apareceu" in str(exc.value)
 
 
+def test_timeout_download_e_repassado_a_imprimir_via_popup(ambiente):
+    driver, servidor, _ = ambiente
+    capturado = {}
+
+    def imprimir(d, clicar, pasta_download, **kw):
+        capturado.update(kw)
+        clicar()
+        bruto = Path(pasta_download) / "cis_bruto.pdf"
+        bruto.write_bytes(pdf_bytes([["RELATORIO CDCOPSBENE"]]))
+        return bruto
+
+    with patch.object(dmod, "imprimir_via_popup", imprimir):
+        servidor.consultar("0000000")
+    assert capturado.get("timeout_download") == P.TIMEOUT_DOWNLOAD == 120
+
+
+def test_impressao_sem_pdf_lista_conteudo_da_pasta_download(ambiente):
+    """No timeout de download, a mensagem diz QUANTOS arquivos há na pasta e
+    de que EXTENSÕES — nunca o nome, que pode carregar a matrícula."""
+    _, servidor, _ = ambiente
+    (servidor.pasta_download / "dados_pensionista_1234567.crdownload").write_bytes(b"")
+
+    def imprimir(*a, **k):
+        raise TimeoutError("o PDF nao apareceu em 120s")
+
+    with patch.object(dmod, "imprimir_via_popup", imprimir):
+        with pytest.raises(DadosPessoaisIndisponiveis) as exc:
+            servidor.consultar("0000000")
+    msg = str(exc.value)
+    assert ".crdownload" in msg
+    assert "1 arquivo(s) na pasta" in msg
+    assert "dados_pensionista_1234567" not in msg
+    assert "1234567" not in msg
+
+
 def test_impressao_sem_pdf_mascara_matricula_do_exc_do_driver(ambiente):
     """Um alerta do CIS pode carregar a matrícula inteira dentro da exceção
     do WebDriver (ex.: UnexpectedAlertPresentException) — ela tem de sair

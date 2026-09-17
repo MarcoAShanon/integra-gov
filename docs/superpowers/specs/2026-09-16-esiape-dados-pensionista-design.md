@@ -118,6 +118,14 @@ pasta de download DEVE ser dedicada: a impressão apaga todos os PDFs dela.
    `clicar_imprimir`; guarda de camada de texto; renomeia para
    `pasta_saida / f"dados_pensionista_{matricula}.pdf"`, sobrescrevendo.
 
+   *(Medição do gate ao vivo de 16/09, terceira rodada: a primeira impressão
+   real da sessão excedeu os 60s default de `imprimir_via_popup` — a
+   segunda e a terceira, na mesma sessão, não excederam. A causa não foi
+   estabelecida; o orçamento de download subiu para 120s
+   (`TIMEOUT_DOWNLOAD`), e a falha por timeout passou a listar quantos
+   arquivos há na pasta de download e de que extensões, sem nome nenhum,
+   para o próximo estouro vir com diagnóstico em vez de só um timeout mudo.)*
+
    *(Medido no gate ao vivo de 16/09: as duas matrículas reais chegaram até
    aqui com sucesso — leitura dos campos ok — e falharam esperando o botão
    `w_report.onGeneratePrintVersion`, que nunca aparece nesta tela. O clique
@@ -262,11 +270,14 @@ inexistente por último.
 
 Perguntas que o gate responde, e que entram nesta spec como medição:
 
-1. formato da data de nascimento no formulário — **em aberto**: a impressão
-   nunca completou nas duas matrículas reais (falhava antes, no botão
-   inexistente), então o formulário foi lido mas a forma da data não foi
-   registrada separadamente da leitura geral. Fica para o próximo gate, já
-   com a impressão corrigida.
+1. formato da data de nascimento no formulário — **em aberto**: na terceira
+   rodada (16/09), a única matrícula que passou inteira teve
+   `data_nascimento` convertida com sucesso pela função que já aceita as
+   duas formas, então o gate não isolou sozinho qual delas ocorreu na tela.
+   O instrumento para responder sem nunca imprimir o valor já existe no
+   gate (`_forma_da_data_na_tela`, que lê o campo bruto com o mesmo `_valor`
+   do módulo e classifica DDMMMAAAA / dd/mm/aaaa / outra / ausente): falta
+   rodar de novo e observar a saída.
 2. se `w_matr_infor_alfa` ecoa a matrícula depois da consulta —
    **respondida**: não ecoa, o campo SOME de todos os frames visíveis
    depois da consulta, nas duas matrículas reais (ver §Identidade).
@@ -275,9 +286,20 @@ Perguntas que o gate responde, e que entram nesta spec como medição:
    aparecem; a sonda de popup do CIS (`[id^='IPO_']`) não capturou nenhum
    popup.
 4. se o PDF impresso tem camada de texto e carrega os mesmos campos, o que
-   decide se vale uma leitura pura numa fatia futura — **em aberto**: a
-   impressão nunca completou (defeito 1 deste gate), então não há PDF para
-   examinar ainda.
+   decide se vale uma leitura pura numa fatia futura — **respondida** (gate
+   de 16/09, terceira rodada): o impresso da matrícula que passou inteira
+   tem camada de texto, e `nome`, `cpf`, `logradouro`, `bairro` e `uf`
+   apareceram verbatim na extração da camada. Uma fatia futura de leitura
+   offline **pode** avançar, com parser próprio sobre as formas cruas do
+   PDF. Os campos que a sonda reportou como não encontrados
+   (`data_nascimento`, `email`, `municipio`, `cep`, `numero`,
+   `complemento`) não são evidência de ausência no PDF: a sonda compara o
+   valor já NORMALIZADO pelo módulo (e-mail em minúsculas, município com
+   maiúsculas iniciais, data convertida) contra o texto bruto do PDF, e
+   `numero`/`complemento` estavam ausentes da própria tela, então não
+   tinham como aparecer em lugar nenhum. A conclusão honesta é que o PDF
+   carrega os dados e o método de comparação da sonda produziu os `False`,
+   não a ausência no PDF.
 
 Se uma das matrículas reais for de pessoa **com procurador**, a tela
 intermediária é exercitada ao vivo. Se não houver uma à mão, esse caminho
