@@ -316,7 +316,9 @@ def texto_popup_cis(driver) -> str | None:
 
     PENDÊNCIA (gate ao vivo): o seletor ``[id^='IPO_']`` é um PALPITE — o
     sinal real da tela para matrícula inexistente ainda não é conhecido (ver
-    ``MSG_NAO_ENCONTRADA``). Qualquer dígito mascarado (ver
+    ``MSG_NAO_ENCONTRADA`` em
+    :class:`~integra_gov.esiape.dados_pessoais.DadosPessoaisServidor`).
+    Qualquer dígito mascarado (ver
     :func:`~integra_gov.esiape._campos.mascarar_digitos`) ANTES do corte a
     200 caracteres: se o corte viesse primeiro, uma matrícula que caísse em
     cima da fronteira sobraria parcialmente em claro.

@@ -219,6 +219,23 @@ def test_procuracao_com_enter_falhando_ainda_devolve_true(frames, caplog):
     assert any("procuração" in r.getMessage() for r in caplog.records)
 
 
+def test_procuracao_com_enter_falhando_mascara_matricula_no_log(frames, caplog):
+    """Um alerta do CIS pode carregar a matrícula inteira dentro da exceção
+    do WebDriver (ex.: UnexpectedAlertPresentException) — ela tem de sair
+    mascarada do log, como já acontece no caminho de impressão do módulo
+    irmão de servidor."""
+    d = frames(_DriverFrames(["BENEFICIARIO COM PROCURACAO"]))
+
+    def explode(*_a, **_k):
+        raise RuntimeError("MATRICULA 1234567 NAO CADASTRADA")
+
+    d.find_element = explode
+    assert dmod.atravessar_procuracao(d) is True
+    texto = "\n".join(r.getMessage() for r in caplog.records)
+    assert "*****67" in texto
+    assert "1234567" not in texto
+
+
 # ------------------------------------------------------------- dataclass
 def test_repr_nao_expoe_dados_pessoais():
     d = dmod.DadosPensionista(
@@ -276,8 +293,8 @@ def test_sem_botao_gerar_pdf():
 
 
 def test_sem_botao_imprimir():
-    # o PDF passa a ser a impressao da propria tela via DevTools
-    # (Page.printToPDF); nao existe mais um botao Imprimir a clicar.
+    # decisao de 17/09: o modulo nao imprime nada (nem via popup do CIS, nem
+    # via DevTools); nao existe mais um botao Imprimir a clicar.
     assert not hasattr(P, "SEL_IMPRIMIR")
 
 
@@ -547,15 +564,6 @@ def test_campo_ausente_menciona_procuracao_mesmo_sem_deteccao(ambiente,
     with pytest.raises(DadosPessoaisIndisponiveis) as exc:
         servidor.consultar("0000000")
     assert "procuração" in str(exc.value)
-
-
-def test_imprimir_nao_clica_em_nada(ambiente, monkeypatch):
-    """A impressão passou a ser a tela via DevTools: nenhum botão é clicado
-    para produzir o PDF — a prova é que, depois de consultar, a única
-    entrada em ``driver.ordem`` é o Sair."""
-    driver, servidor, _ = ambiente
-    servidor.consultar("0000000")
-    assert driver.ordem == [P.SEL_SAIR]
 
 
 def test_eco_procurado_entre_frames(ambiente):

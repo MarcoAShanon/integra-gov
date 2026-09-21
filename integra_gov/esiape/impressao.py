@@ -168,7 +168,7 @@ def imprimir_pagina_para_pdf(driver, destino: Path, *,
     tocar a máquina de downloads nem depender de popup nenhum.
 
     Use-a quando a tela entrega o próprio arquivo de um jeito que a automação
-    não consegue capturar — o caso medido é a CDCOPSBENE, depois de cinco
+    não consegue capturar — o caso medido é a CDCOPSBENE, depois de seis
     descartes ao vivo: esperar o download na pasta configurada (pasta vazia
     em 120s, com o popup aberto); forçar a pasta via
     ``Browser.setDownloadBehavior`` do CDP (o comando teve sucesso e não

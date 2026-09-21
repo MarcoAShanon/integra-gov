@@ -101,6 +101,13 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   humana.
 
 ### Adicionado
+- **`integra_gov.esiape.impressao.imprimir_pagina_para_pdf`**: segunda mecânica
+  de impressão, ao lado de `imprimir_via_popup`. Em vez de perseguir um
+  download, pede ao Chrome que imprima a página ATUAL via DevTools
+  (`Page.printToPDF`) e recebe os bytes direto, sem popup nem pasta de
+  download. Limitação medida no gate do pensionista (17/09): só cobre a
+  região VISÍVEL da tela — incompleta numa tela cujo conteúdo relevante rola
+  dentro de um frame, o que a torna imprópria para a CDCOPSBENE.
 - **`integra_gov.esiape.dados_pensionista`** (`CDCOPSBENE`): `DadosPessoaisPensionista.consultar(matricula)`
   devolve `DadosPensionista` com doze campos (matrícula, nome, CPF,
   nascimento, e-mail e o endereço completo) mais `com_procuracao`. Os campos
@@ -121,8 +128,14 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   legitimamente ausentes das duas telas).
 - **`integra_gov.esiape._campos`** (interno): a máscara de dígitos, a máscara
   de matrícula e a conversão de data do SIAPE saíram de `dados_pessoais` para
-  serem compartilhadas com o módulo de pensionista. Sem mudança de
-  comportamento.
+  serem compartilhadas com o módulo de pensionista. A mudança traz duas
+  alterações de comportamento, deliberadas e testadas: o piso de
+  `mascarar_digitos` sobe de 3 para 4 dígitos (uma sequência de 3 dígitos,
+  como um timeout em mensagem honesta — `em 120s` —, deixa de ser mascarada;
+  nada que identifica alguém tem 3 dígitos), e `DadosPessoais.__repr__` passa
+  a mascarar o CAMINHO inteiro do PDF, não só o nome do arquivo (quem
+  organiza a saída por matrícula, ex.: `cadastrais/<matricula>/`, não pode
+  ver a matrícula vazar pela pasta).
 - **`integra_gov.esiape.dados_pessoais`** (`CDCOINDPES`): `DadosPessoaisServidor.consultar(matricula)`
   imprime o PDF dos dados pessoais e devolve `DadosPessoais` com nove campos
   lidos da camada de texto (matrícula, nome, situação, CPF, nascimento,

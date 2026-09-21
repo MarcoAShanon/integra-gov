@@ -124,8 +124,8 @@ class DadosPessoaisIndisponiveis(EsiapeError):
     - CDCOPSBENE (pensionista, :mod:`~integra_gov.esiape.dados_pensionista`):
       o formulário não apareceu ou veio com todos os campos vazios (o sinal
       provável de matrícula inexistente, inclusive quando há uma tela de
-      procuração de permeio), o eco da matrícula no campo de busca diverge
-      da pedida, ou a impressão não produziu PDF.
+      procuração de permeio), ou o eco da matrícula no campo de busca
+      diverge da pedida.
 
     Attributes:
         matricula: a matrícula pedida (na mensagem, só os 2 últimos dígitos).

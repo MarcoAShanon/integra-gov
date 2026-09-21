@@ -298,7 +298,9 @@ def test_imprimir_pagina_para_pdf_comando_falhando_propaga_com_causa(tmp_path):
 def test_imprimir_pagina_para_pdf_conteudo_nao_pdf_levanta_com_o_prefixo(tmp_path):
     dados_b64 = base64.b64encode(b"<!DOCTYPE html><html>").decode()
     d = DriverCdp(dados_b64)
+    destino = tmp_path / "tela.pdf"
     with pytest.raises(RuntimeError) as exc:
-        imprimir_pagina_para_pdf(d, tmp_path / "tela.pdf")
+        imprimir_pagina_para_pdf(d, destino)
     prefixo_esperado = b"<!DOCTYPE html><html>"[:8].hex()
     assert prefixo_esperado in str(exc.value)
+    assert not destino.exists()  # a checagem roda antes da escrita

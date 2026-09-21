@@ -1,5 +1,12 @@
 # e-SIAPE dados do pensionista (CDCOPSBENE) — plano de implementação
 
+> **SUPERADO.** Este plano foi escrito antes dos gates ao vivo. O que foi
+> entregue diverge dele: não há documento, não há clique em Consultar, e o
+> construtor de `DadosPessoaisPensionista` recebe só o `driver`. Toda
+> divergência está registrada nas notas medidas da spec e na sua seção
+> "Decisão de 17/09: sem documento". Não implemente este plano como está
+> escrito.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Entregar `integra_gov.esiape.dados_pensionista`: os 12 campos cadastrais do pensionista lidos do formulário da CDCOPSBENE, mais o PDF impresso da tela.

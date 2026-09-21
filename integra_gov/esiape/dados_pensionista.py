@@ -208,7 +208,7 @@ def atravessar_procuracao(driver) -> bool:
         except Exception as exc:  # noqa: BLE001 — a tela existia mesmo assim
             _log.warning("%s: tela de procuração não fechou (%s); os campos "
                          "seguintes vão acusar se ela ficou presa",
-                         TRANSACAO, exc)
+                         TRANSACAO, mascarar_digitos(str(exc)))
         return True
     return False
 
@@ -272,17 +272,6 @@ class DadosPessoaisPensionista:
             break
         raise TransacaoNaoAbriu(self.TRANSACAO, self.SEL_MATRICULA)
 
-    def _clicar(self, seletor: str, matricula: str, rotulo: str) -> None:
-        if esperar_seletor(self.driver, seletor,
-                           timeout=self.TIMEOUT_TELA) is None:
-            motivo = (f"o botão {rotulo} ({seletor}) não apareceu em "
-                      f"{self.TIMEOUT_TELA}s")
-            texto_popup = texto_popup_cis(self.driver)
-            if texto_popup is not None:
-                motivo += f"; a tela mostrou: {texto_popup}"
-            raise DadosPessoaisIndisponiveis(matricula, motivo)
-        self.driver.find_element(By.CSS_SELECTOR, seletor).click()
-
     def _sair(self) -> None:
         try:
             if procurar_em_frames(self.driver, self.SEL_SAIR) is not None:
@@ -329,8 +318,9 @@ class DadosPessoaisPensionista:
         condição que ocorre em toda consulta não pode gritar toda consulta.
         O caminho de eco DIVERGENTE continua levantando, sem mudança: se o
         campo por acaso vier preenchido com outra matrícula, isso ainda é
-        sinal forte de erro. Uma conferência real pode voltar a existir se o
-        PDF impresso carregar a matrícula — o que o gate mede à parte.
+        sinal forte de erro. Não há PDF impresso nesta tela (decisão de
+        17/09: sem documento) — o eco por impressão é estruturalmente
+        impossível aqui, e nenhuma alternativa de conferência está prevista.
         """
         try:
             if procurar_em_frames(self.driver, self.SEL_MATRICULA) is None:

@@ -374,8 +374,13 @@ módulo de pensionista também precisa da conversão de data, e duplicar a
 tabela de meses mais o regex seria duplicar lógica. O nome `_campos` cobre
 as duas famílias; `_mascara` cobriria só uma.)*
 
-Sem mudança de comportamento: os corpos são os mesmos e a suíte existente é
-a prova.
+A mudança traz duas alterações de comportamento, deliberadas e testadas: o
+piso de `mascarar_digitos` sobe de 3 para 4 dígitos (uma sequência de 3
+dígitos, como um timeout em mensagem honesta — `em 120s` —, deixa de ser
+mascarada; nada que identifica alguém tem 3 dígitos), e
+`DadosPessoais.__repr__` passa a mascarar o CAMINHO inteiro do PDF, não só o
+nome do arquivo (quem organiza a saída por matrícula, ex.:
+`cadastrais/<matricula>/`, não pode ver a matrícula vazar pela pasta).
 
 ## Testes (`tests/test_esiape_dados_pensionista.py`)
 
@@ -386,18 +391,23 @@ Sem navegador real. Driver falso que devolve elementos de entrada por
 - Os 12 campos do resultado (11 lidos do formulário, mais a matrícula pedida)
   a partir de um formulário completo; campo vazio vira `None`;
   e-mail em minúsculas; município em maiúsculas iniciais.
-- Data: `15AGO1960` → `15/08/1960`; `15/08/1960` mantido; `1960-08-15` e
-  lixo → `None`.
+- Data: `15AGO1960` → `15/08/1960` (única forma medida no gate); qualquer
+  outra forma, inclusive `dd/mm/aaaa`, → `None` (o ramo que a aceitava por
+  precaução nunca ocorreu nas duas medições reais e saiu do código —
+  `forma_da_data` continua classificando-o, para revelar uma mudança futura
+  da tela).
 - Procuração: tela presente → atravessada, ENTER enviado ao `body` do iframe
   e `com_procuracao is True`; tela ausente → `False` e nenhum ENTER.
-- Todos os campos vazios → `DadosPessoaisIndisponiveis`, e **nenhum PDF é
-  impresso** (a impressão só acontece depois da checagem).
+- Todos os campos vazios → `DadosPessoaisIndisponiveis`. Não há caso de falha
+  de impressão nem de `PdfImpressoIlegivel` nesta suíte: desde a decisão de
+  17/09, o módulo não imprime nada em nenhum ponto de `consultar` — não há
+  "antes" nem "depois" da checagem a distinguir.
 - Eco divergente → levanta, com as duas matrículas mascaradas na mensagem;
-  eco vazio → segue e registra `warning`.
+  eco vazio ou campo ausente de todos os frames (o caso medido no gate) →
+  segue e registra em `debug`, não em `warning` — uma condição que ocorre em
+  TODA consulta não pode soar como alerta em toda consulta.
 - Relogin atravessado → exatamente uma repetição; persistindo →
   `TransacaoNaoAbriu`.
-- Impressão levantando → `DadosPessoaisIndisponiveis`; PDF sem camada de
-  texto → `PdfImpressoIlegivel` com o arquivo mantido.
 - Recuperação de tela roda nas falhas e nunca mascara a exceção original
   (inclusive quando a própria recuperação levanta).
 - `repr` não expõe nome, CPF, e-mail, endereço nem a matrícula inteira.
@@ -466,8 +476,9 @@ fraca; sem releitura offline).
   com o motivo apontando essa hipótese.
 - **Dados da pessoa anterior** → navegação nova por consulta, mais o eco do
   campo de busca quando existir.
-- **Formato de data desconhecido** → duas formas aceitas, resto `None`, e a
-  medição do gate reduz o código depois.
+- **Formato de data desconhecido** → só a forma medida no gate (`DDMMMAAAA`)
+  é aceita, resto `None`; o ramo `dd/mm/aaaa`, aceito por precaução antes da
+  medição, nunca ocorreu nas duas matrículas reais e já saiu do código.
 
 *(Risco retirado em 17/09: "pasta de download compartilhada" não se aplica
 mais — o módulo não escreve nada em disco, ver "Decisão de 17/09: sem
