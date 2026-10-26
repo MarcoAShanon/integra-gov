@@ -203,7 +203,12 @@ class DocumentosArvore:
             )
         alvo = nos[indice if indice is not None else 0]
         doc = self._para_documento(alvo)
-        alvo.click()
+        # Rola até o nó e clica via JavaScript: o ifrArvore tem altura fixa e,
+        # numa árvore longa, o nó fica abaixo da área visível -- o clique
+        # nativo cai fora do iframe (ElementClickInterceptedException, SEI
+        # 5.0.4). O onclick do nó roda igual.
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'}); arguments[0].click();", alvo)
         self.driver.switch_to.default_content()
         _log.info("Documento selecionado: %r", doc.texto)
         return doc
