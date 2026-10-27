@@ -87,6 +87,18 @@ def test_caminho_feliz_clica_o_icone(selenium):
     assert driver.els[XPATH_ICONE].click.called
 
 
+def test_no_selecionado_e_clicado_via_javascript(selenium):
+    """Nó fora da área visível da árvore: o clique nativo dá "element click
+    intercepted" no SEI 5.0.4 -- rola até ele e clica via JavaScript."""
+    driver = _driver()
+    clicar_icone_barra(driver, "Enviar Processo")
+    no = driver.els[bi.CSS_NO_SELECIONADO]
+    assert not no.click.called
+    script, alvo = driver.execute_script.call_args.args
+    assert "scrollIntoView" in script and "arguments[0].click()" in script
+    assert alvo is no
+
+
 def test_no_ausente_com_sessao_viva_e_erro_de_navegacao(selenium):
     driver = _driver(ausentes={bi.CSS_NO_SELECIONADO})
     with pytest.raises(SeiNavegacaoError, match="nenhum nó selecionado"):

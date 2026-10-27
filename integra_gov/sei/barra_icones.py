@@ -93,7 +93,11 @@ def _selecionar_no_arvore(driver, timeout: float) -> None:
         raise SeiNavegacaoError(
             "nenhum nó selecionado na árvore — abra/selecione um processo antes"
         ) from exc
-    no.click()
+    # Rola até o nó e clica via JavaScript: com a árvore rolada até um
+    # documento lá embaixo, o nó fica fora da área visível e o clique nativo
+    # dá ElementClickInterceptedException (SEI 5.0.4).
+    driver.execute_script(
+        "arguments[0].scrollIntoView({block: 'center'}); arguments[0].click();", no)
     _log.debug("Nó da árvore selecionado")
 
 

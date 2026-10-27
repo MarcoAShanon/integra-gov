@@ -123,7 +123,11 @@ class ProcessoSei:
         except TimeoutException as exc:
             raise SeiNavegacaoError("nó raiz da árvore não encontrado") from exc
 
-        no_raiz.click()
+        # Rola até a raiz e clica via JavaScript: com a árvore rolada até um
+        # documento lá embaixo, a raiz fica fora da área visível e o clique
+        # nativo dá ElementClickInterceptedException (SEI 5.0.4).
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'}); arguments[0].click();", no_raiz)
         _log.info("Posicionado na raiz do processo")
 
     def _validar_acesso(self, numero: str) -> None:

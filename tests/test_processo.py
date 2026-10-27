@@ -99,7 +99,12 @@ def test_ir_para_raiz_sucesso(selenium):
     fake_iframes.ARVORE = "arvore"
     selenium.setattr(mod, "IframesSei", fake_iframes)
     ProcessoSei(driver, "19975.120202/2023-82").ir_para_raiz()
-    no_raiz.click.assert_called_once()
+    # Via JavaScript: com a árvore rolada até um documento lá embaixo, o
+    # clique nativo na raiz dá "element click intercepted" (SEI 5.0.4).
+    no_raiz.click.assert_not_called()
+    script, alvo = driver.execute_script.call_args.args
+    assert "scrollIntoView" in script and "arguments[0].click()" in script
+    assert alvo is no_raiz
     fake_iframes.return_value.navegar.assert_called_once()
 
 
