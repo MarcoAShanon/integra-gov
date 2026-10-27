@@ -29,6 +29,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from .barra_icones import clicar_icone_barra
 from .exceptions import SeiNavegacaoError
 from .iframes import IframesSei
+from .recarga import aguardar_pagina_nova, caminho_do_frame, marcar_pagina
 
 _log = logging.getLogger(__name__)
 
@@ -67,11 +68,15 @@ SETTLE_APOS_NO = 1.2
 TENTATIVAS_INCLUIR = 2
 
 
-def abrir_gerar_documento(driver, tipo: str, *, timeout: float = 10) -> None:
+def abrir_gerar_documento(driver, tipo: str, *, timeout: float = 10) -> list[str]:
     """Abre a tela "Gerar Documento" e seleciona o ``tipo`` pelo texto exato.
 
-    Ao retornar, o driver está no iframe de visualização, com o formulário do
-    tipo escolhido carregando — quem chama segue preenchendo os campos.
+    Ao retornar, o driver está no frame do formulário do tipo escolhido, já
+    **carregado** — quem chama segue preenchendo os campos.
+
+    Returns:
+        O caminho de nomes de frames até o formulário (ver
+        :func:`~integra_gov.sei.recarga.entrar_no_frame`).
 
     Args:
         driver: WebDriver com o SEI autenticado e um **processo aberto**.
@@ -84,7 +89,7 @@ def abrir_gerar_documento(driver, tipo: str, *, timeout: float = 10) -> None:
             lista (a mensagem inclui os tipos visíveis, quando houver).
     """
     filtro = _incluir_documento_e_abrir_form(driver, timeout)
-    _selecionar_tipo(driver, filtro, tipo, timeout)
+    return _selecionar_tipo(driver, filtro, tipo, timeout)
 
 
 def _incluir_documento_e_abrir_form(driver, timeout: float):
@@ -199,10 +204,15 @@ def _localizar_filtro(driver):
     return achado[0] if achado else None
 
 
-def _selecionar_tipo(driver, filtro, tipo: str, timeout: float) -> None:
+def _selecionar_tipo(driver, filtro, tipo: str, timeout: float) -> list[str]:
     filtro.clear()
     filtro.send_keys(tipo)
     time.sleep(INTERVALO_FILTRO)  # deixa a lista filtrar (AJAX)
+    # O clique no tipo troca a página do frame pelo formulário. No SEI 5.0.4 o
+    # ChromeDriver às vezes perde o frame nessa troca e o clique volta antes
+    # de o formulário carregar: anota o frame, marca a página e espera a nova.
+    caminho = caminho_do_frame(driver)
+    marcar_pagina(driver)
     # Tenta o link do tipo dentro da tabela de tipos e, se não achar (o
     # container pode variar por versão), o mesmo link em qualquer lugar.
     for xpath in (
@@ -213,10 +223,14 @@ def _selecionar_tipo(driver, filtro, tipo: str, timeout: float) -> None:
             WebDriverWait(driver, timeout).until(
                 EC.element_to_be_clickable((By.XPATH, xpath))
             ).click()
-            _log.info("Tipo de documento selecionado: %r", tipo)
-            return
         except TimeoutException:
             continue
+        _log.info("Tipo de documento selecionado: %r", tipo)
+        if not aguardar_pagina_nova(driver, caminho, TIMEOUT_FORM):
+            raise SeiNavegacaoError(
+                f"o formulário do tipo {tipo!r} não carregou após o clique"
+            )
+        return caminho
     raise SeiNavegacaoError(
         f"tipo de documento {tipo!r} não apareceu na lista após o filtro"
         f"{_dica_tipos_visiveis(driver)}"

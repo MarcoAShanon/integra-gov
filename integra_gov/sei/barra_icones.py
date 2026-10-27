@@ -18,13 +18,14 @@ from __future__ import annotations
 import logging
 import time
 
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from .exceptions import SeiNavegacaoError
 from .iframes import IframesSei
+from .recarga import aguardar_pagina_nova, caminho_do_frame, marcar_pagina
 from .sessao import levantar_se_sessao_expirada
 
 _log = logging.getLogger(__name__)
@@ -77,6 +78,7 @@ def clicar_icone_barra(
 
 
 def _selecionar_no_arvore(driver, timeout: float) -> None:
+    caminho_visualizacao = _marcar_visualizacao(driver)
     driver.switch_to.default_content()
     try:
         IframesSei(driver, IframesSei.ARVORE, timeout).navegar()
@@ -99,6 +101,29 @@ def _selecionar_no_arvore(driver, timeout: float) -> None:
     driver.execute_script(
         "arguments[0].scrollIntoView({block: 'center'}); arguments[0].click();", no)
     _log.debug("Nó da árvore selecionado")
+    # Clicar no nó SEMPRE recarrega a visualização (0,8–1,5s no SEI 5.0.4). Até
+    # a página nova chegar, a velha continua na tela: um ícone clicado nela se
+    # perde, e uma página velha sem a barra fazia a busca descer para o frame
+    # aninhado errado. Espera a página nova (ver integra_gov.sei.recarga).
+    if caminho_visualizacao is not None and not aguardar_pagina_nova(
+        driver, caminho_visualizacao, timeout
+    ):
+        _log.debug("Visualização não recarregou após o clique no nó; seguindo")
+
+
+def _marcar_visualizacao(driver):
+    """Marca a página hoje na visualização; devolve o caminho até o frame
+    (``None`` se não há visualização aberta)."""
+    try:
+        driver.switch_to.default_content()
+        IframesSei(driver, IframesSei.VISUALIZACAO, timeout=2).navegar()
+        caminho = caminho_do_frame(driver)
+        if not caminho:
+            return None  # sem frame de visualização: nada a esperar
+        marcar_pagina(driver)
+        return caminho
+    except WebDriverException:
+        return None
 
 
 def _ir_para_visualizacao(driver, timeout: float) -> None:

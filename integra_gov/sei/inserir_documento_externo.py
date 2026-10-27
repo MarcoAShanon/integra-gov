@@ -40,6 +40,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from .exceptions import DocumentoExternoError, SeiNavegacaoError
 from .gerar_documento import abrir_gerar_documento
 from .nivel_acesso import configurar_nivel_acesso, validar_nivel_acesso
+from .recarga import aguardar_pagina_nova, caminho_do_frame, marcar_pagina
 
 _log = logging.getLogger(__name__)
 
@@ -90,6 +91,10 @@ class InserirDocumentoExterno:
 
     # Espera máxima pela confirmação do upload (arquivos maiores demoram).
     TIMEOUT_UPLOAD = 60
+    # No SEI 5.0.4 trocar a série REENVIA o formulário (onchange="trocarSerie()"
+    # -> submit) e a página é substituída ~1s depois. Espera-se essa troca; se
+    # ela não vier neste prazo, o SEI não recarrega e segue-se na mesma página.
+    TIMEOUT_RECARGA_SERIE = 10
     # Após "Salvar", o SEI sinaliza campos faltando com um alerta JS; espera
     # curta por esse alerta (ausência = documento salvo).
     TIMEOUT_ALERTA = 2
@@ -175,15 +180,17 @@ class InserirDocumentoExterno:
     # ----- passos -----
 
     def _selecionar_serie(self) -> None:
-        try:
-            campo = WebDriverWait(self.driver, self.timeout).until(
-                EC.presence_of_element_located((By.ID, self.ID_SERIE))
-            )
-        except TimeoutException as exc:
-            raise DocumentoExternoError(
-                "campo de série (tipo do documento) não encontrado — o "
-                "formulário de documento externo carregou?"
-            ) from exc
+        # O clique em "Externo" volta antes de o formulário terminar de
+        # carregar: o selSerie já existe com a página em 'loading'. Escolher a
+        # série aí deixava a página parada, sem os campos de baixo — espera o
+        # carregamento completo (o onload do SEI também prepara o nível de
+        # acesso e o upload).
+        campo = self._aguardar_formulario_carregado(
+            "campo de série (tipo do documento) não encontrado — o "
+            "formulário de documento externo carregou?"
+        )
+        caminho = caminho_do_frame(self.driver)
+        marcar_pagina(self.driver)
         # selSerie costuma ser um <select>; usa Select por texto exato e, se não
         # for um select (ou o texto não casar como opção), cai para digitação.
         try:
@@ -193,7 +200,52 @@ class InserirDocumentoExterno:
             _log.debug("Select direto falhou (%s); tentando digitação", exc)
             campo.send_keys(self.tipo_serie)
             campo.send_keys(Keys.TAB)
+        self._aguardar_recarga_apos_serie(caminho)
         _log.info("Série do documento: %r", self.tipo_serie)
+
+    def _aguardar_recarga_apos_serie(self, caminho) -> None:
+        """Espera o formulário reenviado pela troca de série voltar (SEI 5.0.4).
+
+        Sem isso, data, nome, formato e nível de acesso eram preenchidos na
+        página velha e se perdiam com a recarga — a hipótese legal chegava
+        "vazia" (execução EXANTE de 27/10/2026).
+
+        O reenvio parte de DENTRO do clique na opção; quando a página nova
+        chega no meio desse comando, o ChromeDriver perde o frame e passa a
+        responder pelo documento de cima, e o campo velho nem sempre fica
+        "stale". Por isso a troca é detectada pela marca na página, reentrando
+        no frame do formulário (``caminho``) a cada consulta.
+        """
+        if not aguardar_pagina_nova(self.driver, caminho, self.TIMEOUT_RECARGA_SERIE):
+            _log.debug("Formulário não recarregou após a série; seguindo na mesma página")
+            return
+        campo = self._aguardar_formulario_carregado(
+            "o formulário não voltou depois da troca de série"
+        )
+        selecionada = self._serie_selecionada(campo)
+        if selecionada != " ".join(self.tipo_serie.split()):
+            raise DocumentoExternoError(
+                f"série {self.tipo_serie!r} não ficou selecionada após a recarga "
+                f"do formulário (ficou {selecionada!r})"
+            )
+
+    def _aguardar_formulario_carregado(self, erro: str):
+        """Espera o formulário terminar de carregar; devolve o campo de série."""
+        try:
+            return WebDriverWait(self.driver, self.timeout).until(
+                lambda d: d.execute_script("return document.readyState") == "complete"
+                and d.find_element(By.ID, self.ID_SERIE)
+            )
+        except TimeoutException as exc:
+            raise DocumentoExternoError(erro) from exc
+
+    @staticmethod
+    def _serie_selecionada(campo) -> str:
+        try:
+            opcao = Select(campo).first_selected_option
+        except (NoSuchElementException, UnexpectedTagNameException):
+            return ""
+        return " ".join((opcao.get_attribute("textContent") or "").split())
 
     def _preencher_data(self) -> None:
         try:
