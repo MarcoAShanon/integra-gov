@@ -66,6 +66,63 @@ class _DriverFalso:
         self.scripts.append((script, args))
 
 
+class _BotaoForaDaBorda:
+    """"Abrir todas as Pastas" além da borda do ifrArvore (300px): um rótulo
+    longo deixou a árvore com 749px e o ícone ficou em x=320..344 -- o clique
+    nativo dava "element click intercepted at point (331, 18)" (processo real
+    da EXANTE, 04/11/2026)."""
+
+    def is_displayed(self):
+        return True
+
+    def is_enabled(self):
+        return True
+
+    def click(self):
+        from selenium.common.exceptions import ElementClickInterceptedException
+        raise ElementClickInterceptedException("Element is not clickable at point (331, 18)")
+
+
+class _ArvoreQueRecarrega(_DriverFalso):
+    """O clique (JS) no link recarrega o ifrArvore: a página marcada some."""
+
+    def __init__(self):
+        super().__init__()
+        self.botao = _BotaoForaDaBorda()
+        self.marcada = False
+        self.recarregou = False
+
+    def frame(self, nome):
+        pass
+
+    def find_element(self, by, valor):
+        return self.botao
+
+    def execute_script(self, script, *args):
+        self.scripts.append((script, args))
+        if "frameElement" in script:
+            return ["ifrArvore"]
+        if "= true" in script:
+            self.marcada = True
+        elif "!window." in script:
+            return not self.marcada
+        elif "click()" in script and args and args[0] is self.botao:
+            self.marcada = False
+            self.recarregou = True
+        return None
+
+
+def test_expandir_clica_via_javascript_e_espera_a_arvore_recarregar(monkeypatch):
+    monkeypatch.setattr(DocumentosArvore, "_ir_para_arvore", lambda self: None)
+    driver = _ArvoreQueRecarrega()
+
+    assert DocumentosArvore(driver).expandir() is True
+
+    assert driver.recarregou
+    cliques = [s for s, a in driver.scripts if "click()" in s]
+    assert cliques and "scrollIntoView" in cliques[0]
+
+
 def test_selecionar_rola_ate_o_no_e_clica_via_javascript(monkeypatch):
     no = _NoFundoDaArvore()
     driver = _DriverFalso()

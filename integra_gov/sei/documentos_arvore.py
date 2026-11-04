@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import logging
 import re
-import time
 from dataclasses import dataclass
 from enum import Enum
 
@@ -30,6 +29,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from .exceptions import SeiNavegacaoError, SelecaoDocumentoError
 from .iframes import IframesSei
+from .recarga import aguardar_pagina_nova, caminho_do_frame, marcar_pagina
 
 _log = logging.getLogger(__name__)
 
@@ -87,8 +87,14 @@ class DocumentosArvore:
     # das pastas nem entram no DOM e passam despercebidos).
     XPATH_ABRIR_PASTAS = '//img[@title="Abrir todas as Pastas"]'
     TIMEOUT_EXPANDIR = 3
-    # O clique recarrega a árvore com as pastas abertas; espera assentar.
-    INTERVALO_EXPANDIR = 1.5
+    # O link recarrega o ifrArvore com as pastas abertas; clique via JS (com um
+    # rótulo longo a árvore fica mais larga que o frame de 300px e o ícone cai
+    # fora da área visível: "element click intercepted at point (331, 18)",
+    # 04/11/2026) e espera a página nova (integra_gov.sei.recarga).
+    JS_CLICAR_LINK = (
+        "arguments[0].scrollIntoView({block: 'center'});"
+        " (arguments[0].closest('a') || arguments[0]).click();"
+    )
 
     def __init__(self, driver, *, timeout: float = 10):
         self.driver = driver
@@ -114,8 +120,11 @@ class DocumentosArvore:
             self.driver.switch_to.default_content()
             _log.debug("Árvore já expandida (botão 'Abrir todas as Pastas' ausente)")
             return False
-        botao.click()
-        time.sleep(self.INTERVALO_EXPANDIR)  # o clique recarrega a árvore
+        caminho = caminho_do_frame(self.driver)
+        marcar_pagina(self.driver)
+        self.driver.execute_script(self.JS_CLICAR_LINK, botao)
+        if not aguardar_pagina_nova(self.driver, caminho, self.timeout):
+            _log.warning("A árvore não recarregou após 'Abrir todas as Pastas'")
         self.driver.switch_to.default_content()
         _log.info("Árvore de documentos expandida (todas as pastas)")
         return True
