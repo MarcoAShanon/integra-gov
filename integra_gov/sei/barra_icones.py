@@ -35,6 +35,11 @@ _log = logging.getLogger(__name__)
 CSS_NO_SELECIONADO = ".infraArvoreNoSelecionado"
 # Iframe aninhado com o CONTEÚDO do documento; usado só no fallback abaixo.
 NOME_IFRAME_CONTEUDO = "ifrVisualizacao"
+# O ícone é um <img> dentro do link (href ou onclick); clica-se o link.
+JS_CLICAR_ICONE = (
+    "arguments[0].scrollIntoView({block: 'center'});"
+    " (arguments[0].closest('a') || arguments[0]).click();"
+)
 
 
 def clicar_icone_barra(
@@ -150,12 +155,16 @@ def _clicar_icone(driver, titulo: str, timeout: float) -> None:
         except TimeoutException:
             pass  # segue a tentativa direta abaixo; o erro real vem do until
     try:
-        WebDriverWait(driver, timeout).until(
+        icone = WebDriverWait(driver, timeout).until(
             EC.element_to_be_clickable((By.XPATH, xpath))
-        ).click()
+        )
     except TimeoutException as exc:
         levantar_se_sessao_expirada(driver, exc)
         raise SeiNavegacaoError(
             f"ícone {titulo!r} não encontrado ou não clicável na barra"
         ) from exc
+    # Clique via JS no link do ícone: no SEI 5.0.4 o clique nativo às vezes é
+    # engolido sem erro ("Editar Conteúdo" e "Consultar/Alterar Processo" não
+    # abriam; via JS, na hora — 04/11/2026).
+    driver.execute_script(JS_CLICAR_ICONE, icone)
     _log.info("Ícone da barra acionado: %r", titulo)

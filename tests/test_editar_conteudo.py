@@ -214,6 +214,71 @@ def test_escrita_que_nao_pegou_no_editor_aborta_sem_salvar():
         ec._substituir()
 
 
+class _BotaoSalvar:
+    """Salvar do CKEditor 5 (SEI 5.0.4), como observado ao vivo em 04/11/2026:
+    habilitado (salvar__pisca) → clique → ck-disabled + salvar__loading (GRAVANDO,
+    editor somente-leitura) → ~0,3s depois só ck-disabled (gravado)."""
+
+    BASE = "ck ck-button ck-off ck-button_with-text salvar__buttonview"
+
+    def __init__(self, consultas_gravando: int, grava: bool = True):
+        self.classe = self.BASE + " salvar__pisca"
+        self.consultas_gravando = consultas_gravando
+        self.grava = grava
+        self.gravado = False
+
+    def clicar(self):
+        self.classe = self.BASE + " ck-disabled salvar__loading"
+
+    def get_attribute(self, nome):
+        if "salvar__loading" in self.classe and self.grava:
+            if self.consultas_gravando <= 0:
+                self.classe = self.BASE + " ck-disabled"
+                self.gravado = True
+            self.consultas_gravando -= 1
+        return self.classe
+
+
+class _EditorSalvando:
+    def __init__(self, botao):
+        self.botao = botao
+
+        class _SwitchTo:
+            def default_content(self):
+                pass
+
+        self.switch_to = _SwitchTo()
+
+    def find_elements(self, by, xpath):
+        return [self.botao]
+
+    def execute_script(self, script, *args):
+        if "click()" in script and args and args[0] is self.botao:
+            self.botao.clicar()
+
+
+@pytest.fixture
+def salvar_rapido(monkeypatch):
+    monkeypatch.setattr(EditarConteudo, "INTERVALO_SALVAR", 0.001)
+    monkeypatch.setattr(EditarConteudo, "TIMEOUT_SALVAR", 0.2)
+
+
+def test_salvar_espera_a_gravacao_terminar(salvar_rapido):
+    """04/11/2026 (processo real da EXANTE): ck-disabled aparece JÁ durante a
+    gravação; tomá-lo como "salvo" fechava a janela e interrompia a gravação —
+    a Nota Técnica ficou com os placeholders."""
+    botao = _BotaoSalvar(consultas_gravando=3)
+    EditarConteudo(_EditorSalvando(botao), {"{{A}}": "x"})._salvar()
+    assert botao.gravado
+
+
+def test_salvamento_nao_confirmado_e_erro(salvar_rapido):
+    """Antes: aviso "prosseguindo — confira o documento" e sucesso devolvido."""
+    botao = _BotaoSalvar(consultas_gravando=0, grava=False)
+    with pytest.raises(EditarConteudoError, match="não confirmad"):
+        EditarConteudo(_EditorSalvando(botao), {"{{A}}": "x"})._salvar()
+
+
 @pytest.mark.parametrize("classes, desabilitado", [
     ("cke_button cke_button__save cke_button_disabled", True),       # SEI 4.x
     ("cke_button cke_button__save cke_button_off", False),

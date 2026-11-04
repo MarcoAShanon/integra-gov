@@ -86,7 +86,11 @@ def selenium(monkeypatch):
 def test_caminho_feliz_clica_o_icone(selenium):
     driver = _driver()
     clicar_icone_barra(driver, "Enviar Processo")
-    assert driver.els[XPATH_ICONE].click.called
+    icone = driver.els[XPATH_ICONE]
+    # SEI 5.0.4: o clique nativo no ícone às vezes é engolido sem erro
+    # (04/11/2026) — clica-se o link do ícone via JavaScript.
+    assert not icone.click.called
+    assert (bi.JS_CLICAR_ICONE, icone) in [c.args for c in driver.execute_script.call_args_list]
 
 
 def test_no_selecionado_e_clicado_via_javascript(selenium):
@@ -97,7 +101,7 @@ def test_no_selecionado_e_clicado_via_javascript(selenium):
     no = driver.els[bi.CSS_NO_SELECIONADO]
     assert not no.click.called
     cliques_js = [c.args for c in driver.execute_script.call_args_list
-                  if "scrollIntoView" in c.args[0]]
+                  if "scrollIntoView" in c.args[0] and c.args[1:] == (no,)]
     assert len(cliques_js) == 1
     script, alvo = cliques_js[0]
     assert "arguments[0].click()" in script
@@ -136,6 +140,8 @@ def _scripts_da_visualizacao(eventos, recarrega_na_consulta):
                     eventos.append("visualização recarregou")
                 return True
             return False
+        if script == bi.JS_CLICAR_ICONE:
+            eventos.append("clicou o ícone")
         return None
 
     return execute_script
@@ -151,9 +157,6 @@ def test_no_reclicado_espera_a_visualizacao_recarregar(selenium):
     eventos = []
     driver = _driver()
     driver.execute_script.side_effect = _scripts_da_visualizacao(eventos, 3)
-    icone = MagicMock(name="ícone")
-    icone.click.side_effect = lambda: eventos.append("clicou o ícone")
-    driver.els[XPATH_ICONE] = icone
 
     clicar_icone_barra(driver, "Enviar Processo")
 
@@ -162,10 +165,11 @@ def test_no_reclicado_espera_a_visualizacao_recarregar(selenium):
 
 def test_visualizacao_que_nao_recarrega_nao_trava(selenium):
     """Se a página não for trocada (SEI que não recarrega), segue em frente."""
+    eventos = []
     driver = _driver()
-    driver.execute_script.side_effect = _scripts_da_visualizacao([], 0)
+    driver.execute_script.side_effect = _scripts_da_visualizacao(eventos, 0)
     clicar_icone_barra(driver, "Enviar Processo")
-    assert driver.els[XPATH_ICONE].click.called
+    assert eventos == ["clicou o ícone"]
 
 
 def test_no_ausente_com_sessao_viva_e_erro_de_navegacao(selenium):

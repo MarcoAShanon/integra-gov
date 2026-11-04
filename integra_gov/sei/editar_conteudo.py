@@ -149,6 +149,8 @@ class EditarConteudo:
     )
     CLASSE_BOTAO_DESABILITADO = "cke_button_disabled"
     CLASSE_BOTAO_DESABILITADO_CK5 = "ck-disabled"
+    # CKEditor 5: gravação em andamento (o botão já vem com ck-disabled).
+    CLASSE_GRAVANDO_CK5 = "salvar__loading"
 
     # O editor (janela nova) é pesado; espera própria, maior que o timeout base.
     TIMEOUT_EDITOR = 30
@@ -439,20 +441,25 @@ class EditarConteudo:
         # Clique via JS: o botão do CKEditor nem sempre responde ao click nativo.
         self.driver.execute_script("arguments[0].click();", botao)
 
+        # CKEditor 5 (SEI 5.0.4): ck-disabled aparece JÁ na gravação, junto com
+        # salvar__loading; só sem ele está gravado. Fechar antes interrompia a
+        # gravação (processo real da EXANTE, 04/11/2026: Nota Técnica sem os dados).
         limite = time.monotonic() + self.TIMEOUT_SALVAR
         while time.monotonic() < limite:
             try:
                 classes = botao.get_attribute("class") or ""
             except WebDriverException:
                 classes = ""
-            if self._botao_desabilitado(classes):
+            if (self._botao_desabilitado(classes)
+                    and self.CLASSE_GRAVANDO_CK5 not in classes.split()):
                 _log.info("Documento salvo (botão Salvar desabilitado)")
                 return
             time.sleep(self.INTERVALO_SALVAR)
-        _log.warning(
-            "Salvamento não confirmado em %ss (botão não desabilitou); "
-            "prosseguindo — confira o documento",
-            self.TIMEOUT_SALVAR,
+        # Sem confirmação NÃO é sucesso: o chamador daria por salvo um
+        # documento que pode ter ficado com os placeholders.
+        raise EditarConteudoError(
+            f"salvamento não confirmado em {self.TIMEOUT_SALVAR}s (o botão Salvar "
+            "não voltou ao estado de gravado) — confira o documento"
         )
 
     def _esperar_salvar_habilitado(self):
