@@ -36,7 +36,11 @@ import time
 from collections.abc import Iterable
 from datetime import datetime
 
-from selenium.common.exceptions import TimeoutException, WebDriverException
+from selenium.common.exceptions import (
+    JavascriptException,
+    TimeoutException,
+    WebDriverException,
+)
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 
@@ -137,8 +141,14 @@ class EditarConteudo:
     """
 
     ICONE_EDITAR = "Editar Conteúdo"
-    XPATH_BOTAO_SALVAR = '//a[contains(@title, "Salvar")]'
+    # SEI 4.x (CKEditor 4): <a title="Salvar">, desabilitado com cke_button_disabled.
+    # SEI 5.0.4 (CKEditor 5): <button class="... salvar__buttonview">, com ck-disabled.
+    XPATH_BOTAO_SALVAR = (
+        '//a[contains(@title, "Salvar")]'
+        ' | //button[contains(@class, "salvar__buttonview")]'
+    )
     CLASSE_BOTAO_DESABILITADO = "cke_button_disabled"
+    CLASSE_BOTAO_DESABILITADO_CK5 = "ck-disabled"
 
     # O editor (janela nova) é pesado; espera própria, maior que o timeout base.
     TIMEOUT_EDITOR = 30
@@ -154,33 +164,77 @@ class EditarConteudo:
     # Aviso (não erro) se sobrar algo com cara de placeholder após substituir.
     PADRAO_PLACEHOLDER = re.compile(r"\{\{[^{}]+\}\}")
 
-    JS_EDITORES_PRONTOS = """
-        if (typeof CKEDITOR === 'undefined') { return false; }
-        var ks = Object.keys(CKEDITOR.instances);
-        if (ks.length === 0) { return false; }
-        for (var i = 0; i < ks.length; i++) {
-            if (CKEDITOR.instances[ks[i]].status !== 'ready') { return false; }
+    # Dois editores, conforme a versão do SEI:
+    #   - SEI 4.x: CKEditor 4 — CKEDITOR.instances, uma instância por seção;
+    #   - SEI 5.0.4: CKEditor 5 MULTI-RAIZ (InfraEditor) — NÃO há
+    #     CKEDITOR.instances; um único editor, preso em .ckeditorInstance das
+    #     divs .ck-editor__editable, e cada seção é uma raiz com o nome do id
+    #     da div (txaEditor_NNNN); seção somente-leitura tem a classe
+    #     ck-read-only. Conferido ao vivo em 28/10/2026 (1ª Nota Técnica no
+    #     5.0.4: o Object.keys(CKEDITOR.instances) quebrava a espera).
+    # _ck5() devolve o editor do CKEditor 5 (ou null).
+    _JS_CK5 = """
+        function _ck5() {
+            var els = document.querySelectorAll('.ck-editor__editable');
+            for (var i = 0; i < els.length; i++) {
+                if (els[i].ckeditorInstance) { return els[i].ckeditorInstance; }
+            }
+            return null;
         }
-        return true;
+        var ck4 = typeof CKEDITOR !== 'undefined' && !!CKEDITOR.instances;
     """
-    JS_LER_INSTANCIAS = """
+    JS_EDITORES_PRONTOS = _JS_CK5 + """
+        if (typeof CKEDITOR === 'undefined') { return false; }
+        if (ck4) {
+            var ks = Object.keys(CKEDITOR.instances);
+            if (ks.length === 0) { return false; }
+            for (var i = 0; i < ks.length; i++) {
+                if (CKEDITOR.instances[ks[i]].status !== 'ready') { return false; }
+            }
+            return true;
+        }
+        var ed = _ck5();
+        if (!ed || ed.state !== 'ready') { return false; }
+        return typeof infraEditor === 'undefined' || infraEditor.isReady !== false;
+    """
+    JS_LER_INSTANCIAS = _JS_CK5 + """
         var out = {};
-        var ks = Object.keys(CKEDITOR.instances);
-        for (var i = 0; i < ks.length; i++) {
-            var ed = CKEDITOR.instances[ks[i]];
-            out[ks[i]] = {conteudo: ed.getData(), somenteLeitura: !!ed.readOnly};
+        if (ck4) {
+            var ks = Object.keys(CKEDITOR.instances);
+            for (var i = 0; i < ks.length; i++) {
+                var ed4 = CKEDITOR.instances[ks[i]];
+                out[ks[i]] = {conteudo: ed4.getData(), somenteLeitura: !!ed4.readOnly};
+            }
+        } else {
+            var ed = _ck5();
+            ed.model.document.getRootNames().forEach(function (nome) {
+                var el = ed.ui.getEditableElement(nome);
+                out[nome] = {
+                    conteudo: ed.getData({rootName: nome}),
+                    somenteLeitura: ed.isReadOnly || !el || el.classList.contains('ck-read-only')
+                };
+            });
         }
         return JSON.stringify(out);
     """
-    # setData deixa o editor "limpo" (não-sujo); o callback dispara `change`
-    # para o SEI reconhecer a alteração e habilitar o botão Salvar.
-    JS_ESCREVER_INSTANCIA = """
-        var ed = CKEDITOR.instances[arguments[0]];
-        ed.setData(arguments[1], { callback: function () { ed.fire('change'); } });
+    # CKEditor 4: setData deixa o editor "limpo" (não-sujo); o callback dispara
+    # `change` para o SEI reconhecer a alteração e habilitar o botão Salvar.
+    # CKEditor 5: setData só da raiz pedida (as demais ficam intactas).
+    JS_ESCREVER_INSTANCIA = _JS_CK5 + """
+        if (ck4) {
+            var ed4 = CKEDITOR.instances[arguments[0]];
+            ed4.setData(arguments[1], { callback: function () { ed4.fire('change'); } });
+        } else {
+            var dados = {};
+            dados[arguments[0]] = arguments[1];
+            _ck5().setData(dados);
+        }
     """
-    # Defensivo: re-dispara `change` nas instâncias alteradas (garante o evento
-    # mesmo que o callback assíncrono do setData não tenha corrido a tempo).
-    JS_MARCAR_ALTERADO = """
+    # Defensivo (CKEditor 4): re-dispara `change` nas instâncias alteradas
+    # (garante o evento mesmo que o callback assíncrono do setData não tenha
+    # corrido a tempo). No CKEditor 5 a alteração do modelo já basta.
+    JS_MARCAR_ALTERADO = _JS_CK5 + """
+        if (!ck4) { return; }
         var nomes = arguments[0];
         for (var i = 0; i < nomes.length; i++) {
             var ed = CKEDITOR.instances[nomes[i]];
@@ -242,7 +296,7 @@ class EditarConteudo:
         except SeiNavegacaoError as exc:
             raise EditarConteudoError(str(exc)) from exc
 
-        self._entrar_no_editor(janelas_antes)
+        self._entrar_no_editor(janelas_antes, janela_principal)
         try:
             contagens = self._substituir()
             self._salvar()
@@ -257,7 +311,7 @@ class EditarConteudo:
 
     # ----- passos -----
 
-    def _entrar_no_editor(self, janelas_antes: set) -> None:
+    def _entrar_no_editor(self, janelas_antes: set, janela_principal: str) -> None:
         try:
             WebDriverWait(self.driver, self.timeout).until(
                 lambda d: set(d.window_handles) - janelas_antes
@@ -268,12 +322,21 @@ class EditarConteudo:
             ) from exc
         janela_editor = (set(self.driver.window_handles) - janelas_antes).pop()
         self.driver.switch_to.window(janela_editor)
+
+        def prontos(d) -> bool:
+            # Com a janela ainda carregando, o script do editor pode dar erro
+            # de JavaScript (objetos do editor pela metade): ainda não pronto.
+            try:
+                return bool(d.execute_script(self.JS_EDITORES_PRONTOS))
+            except JavascriptException:
+                return False
+
         try:
-            WebDriverWait(self.driver, self.TIMEOUT_EDITOR).until(
-                lambda d: d.execute_script(self.JS_EDITORES_PRONTOS)
-            )
-        except TimeoutException as exc:
-            self._fechar_editor_e_voltar_apos_falha()
+            WebDriverWait(self.driver, self.TIMEOUT_EDITOR).until(prontos)
+        except WebDriverException as exc:  # inclui TimeoutException
+            # Volta à janela PRINCIPAL (não à 1ª da lista, que pode ser o
+            # e-SIAPE): preso no editor, o fluxo seguinte falha em cascata.
+            self._fechar_editor_e_voltar(janela_principal)
             raise EditarConteudoError(
                 "o editor abriu, mas as instâncias do CKEditor não ficaram "
                 f"prontas em {self.TIMEOUT_EDITOR}s"
@@ -332,6 +395,19 @@ class EditarConteudo:
         # Garante que o editor reconheça a alteração (habilita o Salvar).
         self.driver.execute_script(self.JS_MARCAR_ALTERADO, list(novos))
 
+        # Confere relendo: o CKEditor 5 converte o HTML no setData; se a escrita
+        # não pegou numa seção, o placeholder segue lá — aborta sem salvar.
+        relidos = json.loads(self.driver.execute_script(self.JS_LER_INSTANCIAS))
+        nao_gravados = sorted({
+            ph for nome in novos for ph, n in contagens.items()
+            if n and ph in relidos.get(nome, {}).get("conteudo", "")
+        })
+        if nao_gravados:
+            raise EditarConteudoError(
+                "a substituição não ficou no editor (nada foi salvo): "
+                + ", ".join(repr(p) for p in nao_gravados)
+            )
+
         sobras = sorted(
             {m for c in novos.values() for m in self.PADRAO_PLACEHOLDER.findall(c)}
         )
@@ -369,7 +445,7 @@ class EditarConteudo:
                 classes = botao.get_attribute("class") or ""
             except WebDriverException:
                 classes = ""
-            if self.CLASSE_BOTAO_DESABILITADO in classes:
+            if self._botao_desabilitado(classes):
                 _log.info("Documento salvo (botão Salvar desabilitado)")
                 return
             time.sleep(self.INTERVALO_SALVAR)
@@ -389,7 +465,7 @@ class EditarConteudo:
                 By.XPATH, self.XPATH_BOTAO_SALVAR
             ):
                 classes = cand.get_attribute("class") or ""
-                if self.CLASSE_BOTAO_DESABILITADO not in classes:
+                if not self._botao_desabilitado(classes):
                     return cand
             time.sleep(self.INTERVALO_SALVAR)
         return None
@@ -402,11 +478,6 @@ class EditarConteudo:
         self.driver.switch_to.window(janela_principal)
         _log.info("Editor fechado; de volta à janela principal")
 
-    def _fechar_editor_e_voltar_apos_falha(self) -> None:
-        """Fecha o editor e volta à primeira janela restante (melhor esforço,
-        para não deixar o driver preso numa janela morta após uma falha)."""
-        try:
-            self.driver.close()
-            self.driver.switch_to.window(self.driver.window_handles[0])
-        except WebDriverException:
-            pass
+    def _botao_desabilitado(self, classes: str) -> bool:
+        return (self.CLASSE_BOTAO_DESABILITADO in classes
+                or self.CLASSE_BOTAO_DESABILITADO_CK5 in classes.split())
