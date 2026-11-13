@@ -139,8 +139,10 @@ class ControleTerminal3270:
                 time.sleep(self.DELAY_RECONEXAO)
         # Esgotou o despacho mesmo após reconectar: a sessão SIAPE caiu (a janela
         # estava lá, mas não respondeu) — estado irrecuperável; aborte e reinicie.
+        # O comando NÃO entra na mensagem: o que se digita no terminal inclui o
+        # OTP e matrículas, e a exceção vai para logs de quem chama.
         raise SessaoSiapePerdida(
-            f"o Terminal 3270 não respondeu ao comando {comando!r} "
+            "o Terminal 3270 não respondeu ao comando enviado "
             "(sessão SIAPE perdida — reinicie o acesso)"
         ) from ultimo_erro
 

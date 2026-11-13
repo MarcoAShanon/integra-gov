@@ -208,6 +208,18 @@ def test_enviar_teclas_falha_total_levanta_sessao_perdida(monkeypatch):
         ControleTerminal3270().enviar_teclas("{F2}")
 
 
+def test_sessao_perdida_nao_expoe_o_que_foi_digitado(monkeypatch):
+    # O que se digita no terminal inclui o OTP e matrículas: a mensagem da
+    # exceção vai para logs e relatórios de quem chama, e não pode carregá-los.
+    dlg = _FakeDlgFalha(falhas=99)
+    monkeypatch.setattr(dep, "Application", lambda: _FakeApp(dlg))
+    monkeypatch.setattr(dep, "clipboard", _FakeClipboard())
+    monkeypatch.setattr(mod.time, "sleep", lambda *_a, **_k: None)
+    with pytest.raises(SessaoSiapePerdida) as info:
+        ControleTerminal3270().enviar_teclas("987654{ENTER}")
+    assert "987654" not in str(info.value)
+
+
 def test_extrair_texto_coordenadas_invalidas(terminal):
     controle, _dlg, _clip = terminal
     tela = "x" * (ControleTerminal3270.CARACTERES_POR_LINHA * 3)

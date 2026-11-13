@@ -14,6 +14,35 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   no 3.9 não instala as versões novas.
 
 ### Corrigido
+Os cinco primeiros itens são achados de uma revisão de código (13/11/2026); os
+quatro que mudam comportamento têm teste que falhava antes da correção. Nenhum
+foi verificado ao vivo: são correções de lógica,
+cobertas por teste mockado e, na ficha financeira, pelas fichas reais da suíte.
+
+- **`TrocaHabilitacao` (SIAPE 3270) podia marcar a habilitação de outra
+  unidade.** O padrão de busca ÓRGÃO+UPAG não tinha fronteira no fim: quem
+  pedia a UPAG `12` casava a linha da UPAG `123`, e o X ia para ela. O padrão
+  agora exige que a UPAG termine ali e que o órgão não seja o fim de um número
+  maior (vale também para a busca de nível ÓRGÃO).
+- **A leitura de ficha financeira aceitava valor fora do formato pt-BR.**
+  `para_decimal` entregava ao `Decimal` qualquer coisa que ele entendesse:
+  `"1.931"` (um valor que perdeu os centavos) virava 1931, `"1,234.56"` virava
+  1,23456, e `"1E3"` e `"NaN"` passavam. Um valor truncado na extração do PDF
+  saía como número válido. Agora a forma é conferida por inteiro (milhar em
+  grupos de três, exatamente dois centavos) e o que não casa levanta
+  `LinhaNaoReconhecidaError` pelo caminho que já existia.
+- **O parser do e-SIAPE descartava em silêncio valores além das colunas do
+  cabeçalho.** Linha com mais células preenchidas do que meses no cabeçalho
+  perdia as excedentes. Agora levanta `LinhaNaoReconhecidaError`; célula vazia
+  excedente continua tolerada.
+- **O OTP podia aparecer em mensagem de exceção.** `SessaoSiapePerdida`
+  citava o comando digitado no terminal, e o código de segurança é digitado
+  por ali; `TokenOtpError` citava o código capturado quando ele vinha
+  malformado. As duas mensagens deixaram de carregar o conteúdo (a segunda
+  informa só o tamanho).
+- Removida uma definição duplicada de `_nome` em
+  `ficha_financeira/_layout_siape.py` (a primeira era sobrescrita pela segunda).
+
 - **`import integra_gov.siape` quebrava no Python 3.9.** `siape/exceptions.py`
   anotava um parâmetro com `BaseException | None` sem
   `from __future__ import annotations`; no 3.9 a anotação é avaliada na

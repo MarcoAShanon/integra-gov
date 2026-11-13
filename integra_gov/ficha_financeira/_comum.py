@@ -10,10 +10,14 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from typing import Optional, Sequence
 
 __all__ = ["limpar_campo", "normalizar_rotulo", "para_decimal"]
+
+# Valor monetário pt-BR COMPLETO: parte inteira (com ou sem ponto de milhar,
+# em grupos de três) e exatamente dois centavos.
+_VALOR_PT_BR = re.compile(r"(?:\d{1,3}(?:\.\d{3})*|\d+),\d{2}")
 
 
 def para_decimal(texto: str) -> Decimal:
@@ -23,17 +27,23 @@ def para_decimal(texto: str) -> Decimal:
     aceito: o sinal na ficha é a coluna ``R/D``, e um menos impresso seria uma
     semântica que os parsers não conhecem — melhor levantar do que adivinhar.
 
+    A forma é conferida **antes** da conversão, e por inteiro: milhar em
+    grupos de três e exatamente dois centavos. O ``Decimal`` sozinho aceitaria
+    ``"1.931"`` (um valor que perdeu os centavos, lido como 1931),
+    ``"1,234.56"``, ``"1E3"`` e ``"NaN"`` — e um valor truncado na extração do
+    PDF viraria número válido em vez de erro.
+
     Raises:
-        ValueError: se o texto não for um número pt-BR, ou vier negativo.
+        ValueError: se o texto não for um valor pt-BR completo, ou vier
+            negativo.
     """
-    limpo = texto.replace(".", "").replace(",", ".")
+    limpo = texto.strip()
     if limpo.startswith("-") or limpo.endswith("-"):
         raise ValueError("valor negativo não é esperado nesta ficha "
                          "(o sinal é a coluna R/D)")
-    try:
-        return Decimal(limpo)
-    except InvalidOperation:
-        raise ValueError("não é um número no formato pt-BR") from None
+    if not _VALOR_PT_BR.fullmatch(limpo):
+        raise ValueError("não é um valor no formato pt-BR (ex.: 1.931,56)")
+    return Decimal(limpo.replace(".", "").replace(",", "."))
 
 
 def limpar_campo(bruto: str, rotulos: Sequence[str]) -> Optional[str]:

@@ -93,6 +93,15 @@ def test_otp_invalido_levanta(selenium):
         AcessoSiapeWeb(driver).executar()
 
 
+def test_otp_invalido_nao_expoe_o_codigo_na_mensagem(selenium):
+    # Um código quase válido (um dígito a menos) ainda é segredo de uso único.
+    driver = _driver(token="98765")
+    with pytest.raises(TokenOtpError) as info:
+        AcessoSiapeWeb(driver).executar()
+    assert "98765" not in str(info.value)
+    assert "5 caractere" in str(info.value)  # diz o tamanho, não o conteúdo
+
+
 def test_otp_com_espacos_e_normalizado(selenium):
     driver = _driver(token="12 34 56")
     assert AcessoSiapeWeb(driver).executar() == "123456"

@@ -138,10 +138,15 @@ class TrocaHabilitacao:
             upag_formatada = self.upag.zfill(self.UPAG_DIGITOS)
             # Tolera espaçamento variável entre ÓRGÃO e UPAG e zeros à
             # esquerda na UPAG (a tela pode formatar diferente do
-            # ``orgao + upag.zfill(9)``).
+            # ``orgao + upag.zfill(9)``). As fronteiras de dígito impedem o
+            # casamento parcial: a UPAG 12 não é a 123, e o órgão 26232 não é
+            # o fim de 126232 — sem elas o X ia para a linha de outra unidade.
             candidatos.append(
                 (
-                    re.compile(re.escape(self.orgao) + r"\s+0*" + re.escape(self.upag)),
+                    re.compile(
+                        r"(?<!\d)" + re.escape(self.orgao)
+                        + r"\s+0*" + re.escape(self.upag) + r"(?!\d)"
+                    ),
                     f"ÓRGÃO+UPAG ({self.orgao} {upag_formatada})",
                 )
             )
@@ -150,7 +155,7 @@ class TrocaHabilitacao:
         # vizinhos (ex.: 99994/99996 não casam com o padrão de 99995).
         candidatos.append(
             (
-                re.compile(re.escape(self.orgao) + r"\s+ORGAO\b"),
+                re.compile(r"(?<!\d)" + re.escape(self.orgao) + r"\s+ORGAO\b"),
                 f"nível ÓRGÃO ({self.orgao})",
             )
         )

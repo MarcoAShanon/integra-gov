@@ -354,28 +354,6 @@ def _identificacao(linhas: Sequence[str], rotulo: str) -> Identificacao:
 
 
 def _nome(bruto: str) -> Optional[str]:
-    """Isola o campo e normaliza o espaçamento interno.
-
-    O relatório emenda dois campos na mesma linha, então o texto capturado à
-    direita de um rótulo pode arrastar o rótulo seguinte junto: o corte é feito
-    no **próximo rótulo conhecido** (:data:`_ROTULOS_A_DIREITA`).
-
-    Cortar no primeiro bloco de dois espaços — o jeito óbvio — perde dado
-    impresso: o SIAPE preenche o nome até a largura do campo e emenda o sufixo
-    de UF, de modo que ``"UNIDADE FICTICIA DE TESTE  - DF"`` viraria
-    ``"UNIDADE FICTICIA DE TESTE"``, com o ``- DF`` descartado. Por isso
-    os espaços internos são **colapsados**, nunca usados como separador.
-    """
-    texto = bruto
-    for rotulo in _ROTULOS_A_DIREITA:
-        posicao = texto.find(rotulo)
-        if posicao != -1:
-            texto = texto[:posicao]
-    nome = re.sub(r"\s{2,}", " ", texto).strip()
-    return nome or None
-
-
-def _nome(bruto: str) -> Optional[str]:
     """Isola um campo do cabeçalho deste layout."""
     return limpar_campo(bruto, _ROTULOS_A_DIREITA)
 

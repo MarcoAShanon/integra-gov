@@ -208,9 +208,10 @@ class AcessoSiapeWeb:
         # ASCII estrito: ``isdigit()`` aceitaria dígitos unicode (sobrescritos,
         # algarismos árabes/devanágari) que o terminal 3270 não consegue digitar.
         if not re.fullmatch(r"[0-9]{%d}" % self.OTP_DIGITOS, token):
+            # Só o tamanho: mesmo malformado, o conteúdo é segredo de uso único.
             raise TokenOtpError(
                 f"código OTP inválido: esperados {self.OTP_DIGITOS} dígitos "
-                f"ASCII, obtido {token!r}"
+                f"ASCII, obtidos {len(token)} caractere(s) fora desse formato"
             )
         # Não loga nenhum dígito do OTP (código curto de uso único).
         _log.info("Código OTP capturado (%d dígitos)", self.OTP_DIGITOS)

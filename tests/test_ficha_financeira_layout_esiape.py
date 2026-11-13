@@ -215,6 +215,26 @@ def test_valor_em_coluna_sem_mes_levanta():
                                  cabecalho=cabecalho)])
 
 
+def test_valor_alem_das_colunas_do_cabecalho_levanta():
+    # Cabeçalho com dois meses e linha com três valores: o terceiro não tem
+    # coluna. Descartá-lo em silêncio seria perder dado impresso.
+    cabecalho = "|".join(["Rubrica", "Nome Rubrica".ljust(40), "R/D", "Seq.",
+                          "    JAN     ", "    FEV     "])
+    with pytest.raises(LinhaNaoReconhecidaError, match="além das colunas"):
+        parsear_paginas([_pagina(
+            [_rubrica(valores=("  10,00", "  20,00", "  30,00"))],
+            cabecalho=cabecalho)])
+
+
+def test_celula_vazia_alem_das_colunas_e_tolerada():
+    cabecalho = "|".join(["Rubrica", "Nome Rubrica".ljust(40), "R/D", "Seq.",
+                          "    JAN     ", "    FEV     "])
+    linha = parsear_paginas([_pagina(
+        [_rubrica(valores=("  10,00", "  20,00", "        "))],
+        cabecalho=cabecalho)])[0].linhas[0]
+    assert [v for _c, v in linha.valores] == [Decimal("10.00"), Decimal("20.00")]
+
+
 def test_bloco_sem_titulo_levanta():
     # A página é do layout (o 1º bloco tem título), mas o 2º perdeu o dele.
     # Deixá-lo cair fora do retorno apagaria as rubricas daquele semestre.

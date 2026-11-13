@@ -336,7 +336,16 @@ def _valores(texto: str, celulas: Sequence[str],
              numero_pagina: int) -> tuple[tuple[Competencia, Decimal], ...]:
     """Lê as células preenchidas, pareando por posição de coluna."""
     lidos = []
-    for competencia, celula in zip(por_coluna, celulas[_CAMPOS_FIXOS:]):
+    valores = celulas[_CAMPOS_FIXOS:]
+    # Célula preenchida além das colunas do cabeçalho é dado impresso sem
+    # mês: o ``zip`` abaixo a descartaria em silêncio.
+    for celula in valores[len(por_coluna):]:
+        if celula.strip():
+            raise LinhaNaoReconhecidaError(
+                f"valor {celula.strip()!r} na página {numero_pagina} está "
+                f"além das colunas do cabeçalho da tabela",
+                linha=texto, pagina=numero_pagina)
+    for competencia, celula in zip(por_coluna, valores):
         bruto = celula.strip()
         if not bruto:
             continue

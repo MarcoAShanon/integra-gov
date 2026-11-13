@@ -119,6 +119,32 @@ def test_busca_tolera_espacamento_e_zeros():
     assert "X" in enviados  # encontrou e selecionou apesar do formato diferente
 
 
+def test_upag_nao_casa_prefixo_de_outra_upag():
+    c = _controle()
+    # A lista só tem a UPAG 123. Quem pediu a UPAG 12 não pode cair nela: o
+    # padrão sem fronteira no fim marcava a habilitação de OUTRA unidade.
+    c.copiar_tela.return_value = _tela_com_texto_na_linha("26232 000000123", 13)
+    with pytest.raises(HabilitacaoNaoEncontrada):
+        TrocaHabilitacao(c, "26232", "12").trocar()
+    enviados = [ch.args[0] for ch in c.enviar_teclas.call_args_list if ch.args]
+    assert "X" not in enviados  # nada foi marcado
+
+
+def test_orgao_nao_casa_sufixo_de_outro_numero():
+    c = _controle()
+    # "126232" não é o órgão 26232.
+    c.copiar_tela.return_value = _tela_com_texto_na_linha("126232 000987654", 13)
+    with pytest.raises(HabilitacaoNaoEncontrada):
+        TrocaHabilitacao(c, "26232", "987654").trocar()
+
+
+def test_nivel_orgao_nao_casa_sufixo_de_outro_numero():
+    c = _controle()
+    c.copiar_tela.return_value = _tela_com_texto_na_linha("126232      ORGAO", 13)
+    with pytest.raises(HabilitacaoNaoEncontrada):
+        TrocaHabilitacao(c, "26232").trocar()
+
+
 def test_selecionar_na_linha_antes_da_lista_levanta():
     troca = TrocaHabilitacao(_controle(), "26232", "987654")
     with pytest.raises(TerminalError):
