@@ -17,9 +17,10 @@ Publicados: o contrato de dados
 (:mod:`~integra_gov.ficha_financeira.modelo`), as exceções, a leitura bruta do
 PDF (:mod:`~integra_gov.ficha_financeira.leitura`) — inclusive
 :func:`tem_camada_de_texto`, o guard que distingue um PDF legível de um
-impresso com os glifos convertidos em curva vetorial —, o parser do relatório
-do SIAPE mainframe e a conciliação (:func:`conciliar`). Falta o parser da
-impressão web do e-SIAPE e a API de conveniência que despacha entre os dois.
+impresso com os glifos convertidos em curva vetorial —, os parsers dos dois
+layouts (o relatório do SIAPE mainframe e a impressão web do e-SIAPE), a
+conciliação (:func:`conciliar`) e a API de conveniência que despacha entre os
+dois layouts (:func:`ler_fichas_financeiras` e :func:`ler_ficha_financeira`).
 """
 
 from .api import ler_ficha_financeira, ler_fichas_financeiras

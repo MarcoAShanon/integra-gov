@@ -1,6 +1,6 @@
 # integra-gov
 
-Biblioteca Python de **automação de sistemas do governo federal brasileiro** — hoje o **SEI** (Sistema Eletrônico de Informações) e o **SIAPE** (terminal 3270). O objetivo é ajudar servidores públicos a automatizar tarefas repetitivas de forma segura e reutilizável.
+Biblioteca Python de **automação de sistemas do governo federal brasileiro**. Hoje cobre o **SEI** (Sistema Eletrônico de Informações), o **SIAPE** (terminal 3270), o **e-SIAPE** (web) e a **leitura de fichas financeiras em PDF**. O objetivo é ajudar servidores públicos a automatizar tarefas repetitivas de forma segura e reutilizável.
 
 > **Status:** 🚧 em construção. O projeto é publicado **de forma incremental** — cada módulo é generalizado, testado e documentado antes de ser disponibilizado.
 
@@ -11,6 +11,19 @@ Biblioteca Python de **automação de sistemas do governo federal brasileiro** �
 - **Acesso autorizado:** a biblioteca automatiza o acesso que o próprio usuário já possui aos sistemas. Não burla autenticação, captcha nem controles de acesso.
 - **Sem dados pessoais no repositório:** nenhum dado real (CPF, nome, número de processo, e-mail) é versionado. Exemplos usam valores fictícios.
 - **Reutilizável entre órgãos:** parâmetros específicos de órgão/unidade são **configuráveis**, não embutidos no código.
+
+## Versões do SEI
+
+O SEI não é centralizado: cada órgão mantém a própria instalação, em versões
+diferentes. A biblioteca convive com elas **no mesmo código**, sem ramo por
+versão. Os módulos foram verificados ao vivo no SEI **4.1.5**; a navegação de
+iframes também atende o SEI 3.x.
+
+No SEI **5.0.4** (editor novo, o CKEditor 5), já foram ajustados e usados ao
+vivo: a consulta e a seleção na árvore de documentos, a barra de ícones, a
+inclusão de documento externo e interno e a edição de conteúdo. Os demais
+módulos ainda não têm registro de verificação nessa versão; o
+[CHANGELOG](CHANGELOG.md) traz o detalhe de cada ajuste.
 
 ## Instalação
 
@@ -155,7 +168,8 @@ virá depois; a edição do conteúdo será um módulo próprio.
 O padrão para instrução processual **em escala**: a equipe mantém um documento
 **modelo** no próprio SEI (com placeholders no texto, ex.: `{{NOME}}`), a
 automação **clona** o modelo (`documento_modelo=`) e preenche os campos. A
-substituição é injetada direto na API do CKEditor (`getData`/`setData`) — sem
+substituição é injetada direto na API do editor — o CKEditor 4 do SEI 4.x ou o
+CKEditor 5 do SEI 5.x, reconhecido automaticamente — sem
 simular teclado, sem "localizar e substituir" na tela, e **sem nenhuma
 habilitação institucional** (usa a mesma sessão logada de sempre):
 
@@ -219,7 +233,14 @@ AssinarDocumento(driver, senha=getpass("Senha do SEI: ")).assinar()
 ```
 
 O módulo **não reporta "assinado" por suposição**: só retorna com sucesso quando
-o modal de assinatura fecha sem erro; senha recusada levanta `AssinaturaError`.
+o documento passa a exibir os marcadores de assinatura do SEI; senha recusada
+levanta `AssinaturaError`.
+
+Quem tem **mais de um cargo** na unidade precisa dizer com qual assina, pelo
+texto exato da opção do modal: `AssinarDocumento(driver, senha=...,
+cargo_funcao="Analista Técnico Executivo")`. Sem a indicação e com vários
+cargos, o módulo levanta `AssinaturaError` listando as opções, antes de digitar
+a senha.
 
 > ⚠️ **Governança:** assinar em lote é assinar **sem revisar** cada documento. A
 > conferência antes da assinatura é responsabilidade da aplicação que monta o
@@ -621,7 +642,7 @@ Detalhes em [Ler uma ficha financeira](docs/uso-basico.md#ler-uma-ficha-financei
 | `integra_gov.sei.iniciar_processo` | Criação de um novo processo (devolve o NUP) | ✅ |
 | `integra_gov.sei.inserir_documento_externo` | Inclui um documento externo (upload de arquivo) | ✅ |
 | `integra_gov.sei.incluir_documento_interno` | Inclui um documento interno (Despacho, Nota Técnica…) | ✅ |
-| `integra_gov.sei.editar_conteudo` | Substitui placeholders no editor (injeção CKEditor) | ✅ |
+| `integra_gov.sei.editar_conteudo` | Substitui placeholders no editor (injeção na API do CKEditor 4 ou 5) | ✅ |
 | `integra_gov.sei.assinar_documento` | Assinatura eletrônica (senha do próprio servidor) | ✅ |
 | `integra_gov.sei.incluir_documento_bloco` | Inclui documento em bloco de assinatura (assinatura em lote) | ✅ |
 | `integra_gov.sei.documentos_arvore` | Consulta/seleção de documentos na árvore | ✅ |
@@ -633,6 +654,7 @@ Detalhes em [Ler uma ficha financeira](docs/uso-basico.md#ler-uma-ficha-financei
 | `integra_gov.sei.nivel_acesso` | Nível de acesso (público/restrito) — reutilizável | ✅ |
 | `integra_gov.sei.barra_icones` | Clique em ícones da barra do documento — reutilizável | ✅ |
 | `integra_gov.sei.gerar_documento` | Tela "Gerar Documento" (escolha do tipo) — reutilizável | ✅ |
+| `integra_gov.sei.recarga` | Espera a página nova de um frame depois de um clique que o recarrega — reutilizável | ✅ |
 | `integra_gov.sei.exceptions` | Exceções tipadas | ✅ |
 
 ### SIAPE 3270 — Windows, extra `[siape]`

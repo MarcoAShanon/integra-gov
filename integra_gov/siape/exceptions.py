@@ -1,5 +1,7 @@
 """Exceções tipadas do subpacote ``integra_gov.siape`` (terminal 3270)."""
 
+from __future__ import annotations
+
 
 class SiapeError(Exception):
     """Erro base da automação do SIAPE via terminal 3270."""

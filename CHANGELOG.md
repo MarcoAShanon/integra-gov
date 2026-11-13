@@ -6,6 +6,59 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não publicado]
 
 ### Corrigido
+- **`import integra_gov.siape` quebrava no Python 3.9.** `siape/exceptions.py`
+  anotava um parâmetro com `BaseException | None` sem
+  `from __future__ import annotations`; no 3.9 a anotação é avaliada na
+  definição da função e o import levantava `TypeError`. O pacote declara
+  `requires-python >=3.9`, e o job `test (3.9)` do CI falhava na coleta dos
+  testes do SIAPE. Corrigido com o import que os demais módulos já tinham.
+
+### Alterado — SEI 5.0.4
+O ColaboraGov/MGI passou do SEI 4.1.5 para o **5.0.4** no fim de setembro de
+2026. Os ajustes abaixo saíram do uso ao vivo na versão nova (25/10 a
+04/11/2026). O código antigo continua no lugar: não há ramo por versão, e os
+caminhos do SEI 3.x/4.x seguem cobertos pelos mesmos testes. Os demais módulos
+do SEI ainda não têm registro de verificação na 5.0.4.
+
+- **`EditarConteudo` reconhece o CKEditor 5.** A 5.0.4 trocou o CKEditor 4 pelo
+  CKEditor 5: não existe `CKEDITOR.instances`; há um único editor de várias
+  raízes, uma por seção do documento, e o Salvar é um `<button>`. O módulo
+  agora traz scripts para os dois editores e escolhe pelo que a janela expõe.
+  Três mudanças de comportamento vieram junto:
+  - depois de escrever, o conteúdo é **relido**; substituição que não ficou no
+    editor aborta sem salvar;
+  - o salvamento só é dado por feito quando a gravação termina. No CKEditor 5
+    o botão fica desabilitado já **durante** a gravação, e tomar isso por
+    "salvo" fechava a janela no meio dela (um documento real saiu com os
+    placeholders). Sem confirmação no prazo, levanta `EditarConteudoError`;
+    antes era um aviso em log seguido de sucesso;
+  - falha ao abrir o editor fecha a janela dele e devolve o driver à janela
+    principal, em vez de deixá-lo preso.
+- **Cliques na árvore e na barra de ícones passam a ser por JavaScript, depois
+  de rolar até o elemento.** Na 5.0.4 o `ifrArvore` tem altura fixa: numa
+  árvore longa, ou com um rótulo largo, o nó ou o ícone ficam fora da área
+  visível e o clique nativo levantava `ElementClickInterceptedException`, ou
+  era engolido sem erro. Vale para `DocumentosArvore.selecionar` e `expandir`
+  ("Abrir todas as Pastas"), `ProcessoSei.ir_para_raiz` e `clicar_icone_barra`
+  (nó selecionado e ícone). A espera por elemento clicável antes do clique foi
+  mantida.
+- **A inclusão de documento espera a página nova do frame.** Três corridas de
+  tempo apareceram na 5.0.4: a série do documento externo reenvia o formulário
+  cerca de 1 s depois da escolha, e o que se preenchia em seguida se perdia (a
+  hipótese legal chegava vazia); o clique num nó da árvore recarrega a
+  visualização em 0,8 a 1,5 s, e a pausa fixa de 1,2 s às vezes perdia; e,
+  quando um clique navega o próprio frame, o ChromeDriver pode passar a
+  responder pelo documento de cima. `InserirDocumentoExterno` agora confere
+  que a série ficou selecionada depois da recarga.
+
+### Adicionado
+- **`integra_gov.sei.recarga`** (componente compartilhado): reconhece a troca
+  de página dentro de um frame por uma marca posta na página velha, reentrando
+  no frame pelo caminho de nomes a cada consulta. É o que sustenta as esperas
+  do item acima, usado em `gerar_documento`, `inserir_documento_externo`,
+  `barra_icones` e `documentos_arvore`.
+
+### Corrigido
 - **`MarcadorProcesso.incluir` tolera a lista do dropdown ainda oculta.** Ao vivo
   (11/09/2026) o clique na opção falhava com `ElementNotInteractableException`
   porque a lista não estava visível. Agora o alvo é o `li` da opção, a lista é

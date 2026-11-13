@@ -14,6 +14,7 @@ Módulos:
   - ``controle``     : interação base com o terminal (ler tela, enviar teclas)  ✅ ¹
   - ``conexao``      : acesso/login (OTP) + acessar transação (``>COMANDO``)     ✅ ¹
   - ``habilitacao``  : troca de habilitação (ÓRGÃO/UPAG) via TROCAHAB           ✅ ¹
+  - ``ficha_pensionista`` : ficha financeira anual do pensionista (FPEMPSFICF) ✅
   - ``exceptions``   : exceções tipadas do subpacote                           ✅
 
 ¹ Portado, testado (Selenium/pywinauto mockado) e **verificado ao vivo** no

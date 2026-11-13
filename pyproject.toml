@@ -9,12 +9,12 @@ build-backend = "setuptools.build_meta"
 # permite este pacote ser consumido como dependência dele.
 name = "integra-gov"
 version = "0.0.1"
-description = "Automação de sistemas do governo federal brasileiro (a começar pelo SEI), para ajudar servidores públicos."
+description = "Automação de sistemas do governo federal brasileiro (SEI, SIAPE e e-SIAPE), para ajudar servidores públicos."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "Marco Aurélio da Silva" }]
-keywords = ["sei", "governo", "automação", "selenium", "administração pública", "rpa"]
+keywords = ["sei", "siape", "e-siape", "governo", "automação", "selenium", "administração pública", "rpa"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -22,6 +22,8 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Operating System :: OS Independent",
     "Topic :: Office/Business",
 ]

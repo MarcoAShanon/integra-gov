@@ -1,17 +1,25 @@
 """Edição do conteúdo de um documento interno via API do CKEditor (injeção).
 
 O editor "WYSIWYG" do SEI é o **CKEditor**: o conteúdo do documento é HTML e a
-janela do editor expõe a API JavaScript ``CKEDITOR.instances``. Em vez de
-simular teclado e "localizar/substituir" na tela (lento e frágil), este módulo
-**lê o HTML** de cada seção (``getData()``), faz as substituições como string no
-Python e **devolve o documento pronto** (``setData()``) — determinístico e
-rápido, usando apenas a sessão logada comum (nenhuma habilitação institucional,
-API ou web service é necessária).
+janela do editor expõe uma API JavaScript. Em vez de simular teclado e
+"localizar/substituir" na tela (lento e frágil), este módulo **lê o HTML** de
+cada seção (``getData()``), faz as substituições como string no Python e
+**devolve o documento pronto** (``setData()``) — determinístico e rápido,
+usando apenas a sessão logada comum (nenhuma habilitação institucional, API ou
+web service é necessária).
 
-Estrutura do editor, verificada ao vivo no pacote de origem: **4 instâncias**
-CKEditor (cabeçalho, identificação, corpo do texto, rodapé). Este módulo aplica
-as substituições em **todas as instâncias editáveis** — onde quer que o
-placeholder esteja — e ignora as somente-leitura.
+Dois editores são atendidos pelo mesmo código, reconhecidos pelo que a janela
+expõe:
+
+  - **CKEditor 4** (SEI 4.x): ``CKEDITOR.instances``, uma instância por seção
+    do documento (cabeçalho, identificação, corpo do texto, rodapé);
+  - **CKEditor 5** (SEI 5.0.4): não há ``CKEDITOR.instances``; é um único
+    editor de várias raízes, uma por seção.
+
+Nos dois casos as substituições valem para **todas as seções editáveis** —
+onde quer que o placeholder esteja — e as somente-leitura são ignoradas.
+Depois de escrever, o conteúdo é **relido**: substituição que não ficou no
+editor aborta sem salvar.
 
 Fluxo pensado para os **modelos pré-definidos**: crie o documento com
 :class:`~integra_gov.sei.incluir_documento_interno.IncluirDocumentoInterno` usando
@@ -22,8 +30,11 @@ encontrado, o módulo **fecha o editor sem salvar** e falha listando o que
 faltou — nada é gravado pela metade.
 
 A confirmação do salvamento usa o comportamento real do editor do SEI: o botão
-"Salvar" (um ``<a>``, não ``<button>``) **fica desabilitado** quando a gravação
-conclui.
+"Salvar" **fica desabilitado** quando a gravação conclui. No CKEditor 4 ele é
+um ``<a>``; no CKEditor 5, um ``<button>`` que já aparece desabilitado
+**durante** a gravação, e por isso o módulo espera o indicador de gravação em
+andamento sair antes de dar o documento por salvo. Sem confirmação no prazo, o
+módulo levanta em vez de reportar sucesso.
 """
 
 from __future__ import annotations
@@ -288,7 +299,9 @@ class EditarConteudo:
         Raises:
             EditarConteudoError: se o editor não abrir/carregar, algum
                 placeholder não for encontrado (com ``exigir_todas=True``;
-                nesse caso **nada é salvo**) ou o botão Salvar não existir.
+                nesse caso **nada é salvo**), a substituição não ficar no
+                editor ao reler (também sem salvar), o botão Salvar não
+                habilitar, ou o salvamento não for confirmado no prazo.
         """
         janela_principal = self.driver.current_window_handle
         janelas_antes = set(self.driver.window_handles)
@@ -423,13 +436,19 @@ class EditarConteudo:
     def _salvar(self) -> None:
         """Espera o botão Salvar habilitar, clica e confirma pela desabilitação.
 
-        Comportamento real do editor do SEI: o "Salvar" é um ``<a>`` com a classe
-        ``cke_button_disabled`` quando não há nada a salvar. Ao **reabrir** um
-        documento já salvo, ele nasce desabilitado; só habilita depois que o
-        editor reconhece a alteração (o evento `change` disparado no
-        :meth:`_substituir`). Por isso **esperamos** ele habilitar antes de
-        clicar — a volta ao estado desabilitado após o clique confirma a
-        gravação.
+        Comportamento real do editor do SEI: o "Salvar" fica desabilitado
+        quando não há nada a salvar (no CKEditor 4, um ``<a>`` com a classe
+        ``cke_button_disabled``; no CKEditor 5, um ``<button>`` com
+        ``ck-disabled``). Ao **reabrir** um documento já salvo, ele nasce
+        desabilitado; só habilita depois que o editor reconhece a alteração
+        (no CKEditor 4, pelo evento `change` disparado no :meth:`_substituir`).
+        Por isso **esperamos** ele habilitar antes de clicar — a volta ao
+        estado desabilitado após o clique, já sem o indicador de gravação em
+        andamento do CKEditor 5, confirma a gravação.
+
+        Raises:
+            EditarConteudoError: se o botão não habilitar ou a gravação não
+                for confirmada em :attr:`TIMEOUT_SALVAR`.
         """
         self.driver.switch_to.default_content()
         botao = self._esperar_salvar_habilitado()

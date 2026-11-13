@@ -17,7 +17,7 @@ documentados):
   - ``inserir_documento_externo`` : inclui um documento externo (upload)  ✅
   - ``gerar_documento``   : tela "Gerar Documento" (escolha do tipo) — compartilhado ✅
   - ``incluir_documento_interno`` : inclui um documento interno (Despacho…) ✅
-  - ``editar_conteudo``   : substitui placeholders no editor (CKEditor)    ✅
+  - ``editar_conteudo``   : substitui placeholders no editor (CKEditor 4 e 5) ✅
   - ``assinar_documento`` : assinatura eletrônica (senha do servidor)      ✅
   - ``documentos_arvore`` : consulta/seleção de documentos na árvore        ✅
   - ``download_documento``: baixa o documento selecionado (headless, via fetch)  ✅
@@ -26,6 +26,7 @@ documentados):
   - ``concluir_processo`` : conclui (encerra) um processo                     ✅
   - ``enviar_processo``   : envia o processo a outra unidade                  ✅
   - ``incluir_documento_bloco`` : inclui documento(s) em bloco de assinatura  ✅
+  - ``recarga``           : espera a página nova de um frame — compartilhado  ✅
 """
 
 from .assinar_documento import AssinarDocumento

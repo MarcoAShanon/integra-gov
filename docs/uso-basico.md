@@ -340,7 +340,8 @@ não embute nenhum template.
 
 **2. Clone e preencha na automação.** `IncluirDocumentoInterno` com
 `documento_modelo=` clona o modelo; `EditarConteudo` injeta os valores direto na
-API do editor (CKEditor), sem simular teclado e sem "localizar/substituir" na
+API do editor (o CKEditor 4 do SEI 4.x ou o CKEditor 5 do SEI 5.x, reconhecido
+automaticamente), sem simular teclado e sem "localizar/substituir" na
 tela:
 
 ```python
