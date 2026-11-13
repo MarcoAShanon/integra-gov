@@ -27,6 +27,8 @@ módulos ainda não têm registro de verificação nessa versão; o
 
 ## Instalação
 
+Requer **Python 3.10 ou mais novo**.
+
 ```bash
 pip install -e ".[dev]"     # ambiente de desenvolvimento
 pip install -e ".[siape]"   # módulos SIAPE 3270 (Windows; instala o pywinauto)

@@ -5,13 +5,22 @@ e [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não publicado]
 
+### Alterado
+- **O piso de Python subiu de 3.9 para 3.10** (`requires-python >=3.10`). O
+  3.9 saiu de suporte em outubro de 2025 e a imagem atual do CI
+  (`ubuntu-latest`) deixou de oferecê-lo, então a versão já não era testada.
+  A matriz do CI passa a 3.10, 3.11, 3.12 e 3.13, sem cancelar as demais
+  versões quando uma falha. É **mudança de compatibilidade**: quem ainda está
+  no 3.9 não instala as versões novas.
+
 ### Corrigido
 - **`import integra_gov.siape` quebrava no Python 3.9.** `siape/exceptions.py`
   anotava um parâmetro com `BaseException | None` sem
   `from __future__ import annotations`; no 3.9 a anotação é avaliada na
-  definição da função e o import levantava `TypeError`. O pacote declara
-  `requires-python >=3.9`, e o job `test (3.9)` do CI falhava na coleta dos
-  testes do SIAPE. Corrigido com o import que os demais módulos já tinham.
+  definição da função e o import levantava `TypeError`. O pacote declarava
+  `requires-python >=3.9` na época, e o job `test (3.9)` do CI falhava na
+  coleta dos testes do SIAPE. Corrigido com o import que os demais módulos já
+  tinham.
 
 ### Alterado — SEI 5.0.4
 O ColaboraGov/MGI passou do SEI 4.1.5 para o **5.0.4** no fim de setembro de

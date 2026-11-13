@@ -11,7 +11,7 @@ name = "integra-gov"
 version = "0.0.1"
 description = "Automação de sistemas do governo federal brasileiro (SEI, SIAPE e e-SIAPE), para ajudar servidores públicos."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Marco Aurélio da Silva" }]
 keywords = ["sei", "siape", "e-siape", "governo", "automação", "selenium", "administração pública", "rpa"]
@@ -21,9 +21,10 @@ classifiers = [
     "Natural Language :: Portuguese (Brazilian)",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
     "Topic :: Office/Business",
 ]
@@ -59,7 +60,7 @@ integra_gov = ["py.typed"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py310"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
